@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph DEV["💻 Máquina del profesor — git clone + docker compose up"]
+        subgraph DC["Docker Compose"]
+            C1["kancha-db<br/>postgis/postgis:16-3.4<br/>:5432"]
+            C2["kancha-api<br/>node:22-alpine<br/>:3000"]
+            C3["kancha-web<br/>nginx:alpine<br/>:8080"]
+        end
+        VOL[("volumen<br/>kancha-db-data")]
+    end
+
+    subgraph CLOUD["☁️ Demo pública — respaldo de la defensa"]
+        R1["Render Web Service<br/>imagen Docker de la API"]
+        R2["Render Static Site<br/>build web de Expo"]
+        S1[("Supabase<br/>Postgres + PostGIS")]
+    end
+
+    subgraph MOBILE["📱 App nativa"]
+        M1["Expo Go<br/>Android / iOS vía QR"]
+    end
+
+    subgraph EXT["Servicios externos"]
+        E1["Transbank Webpay<br/>ambiente Integración"]
+        E2["Expo Push API"]
+        E3["Tiles OSM / OpenFreeMap"]
+    end
+
+    C3 -->|"HTTP :3000"| C2
+    C2 -->|"Prisma"| C1
+    C1 --- VOL
+    R2 -->|"HTTPS"| R1
+    R1 -->|"SSL"| S1
+    M1 -->|"HTTPS"| R1
+    C2 -.-> E1 & E2
+    C3 -.-> E3
+    M1 -.-> E3
+
+    style DEV fill:#1A1A1A,color:#FFFFFF
+    style CLOUD fill:#2A2A2A,color:#FFFFFF

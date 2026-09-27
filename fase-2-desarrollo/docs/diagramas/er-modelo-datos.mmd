@@ -1,0 +1,74 @@
+erDiagram
+    USER ||--o{ MATCH : "organiza"
+    USER ||--o{ PARTICIPATION : "postula"
+    MATCH ||--o{ PARTICIPATION : "recibe"
+    PARTICIPATION ||--o| PAYMENT : "genera"
+    USER ||--o{ RATING : "califica como rater"
+    USER ||--o{ RATING : "recibe como rated"
+    MATCH ||--o{ RATING : "contextualiza"
+
+    USER {
+        uuid     id PK
+        string   email UK
+        string   passwordHash
+        string   name
+        enum     favoriteSport
+        int      matchesPlayed
+        decimal  honorScore "NULL si no tiene reseñas"
+        decimal  attendanceRate
+        decimal  punctualityRate
+        decimal  fairPlayRate
+        string   expoPushToken
+        datetime createdAt
+    }
+
+    MATCH {
+        uuid      id PK
+        uuid      organizerId FK
+        string    title
+        enum      sport
+        string    venueName
+        string    address
+        enum      level "principiante medio avanzado"
+        geography location "Point 4326, índice GIST"
+        datetime  startsAt
+        int       durationMin
+        int       totalSlots
+        int       filledSlots
+        int       totalCost "CLP entero"
+        enum      status
+        datetime  createdAt
+    }
+
+    PARTICIPATION {
+        uuid     id PK
+        uuid     matchId FK
+        uuid     userId FK
+        enum     status
+        int      amountDue "CLP entero"
+        datetime joinedAt
+    }
+
+    RATING {
+        uuid     id PK
+        uuid     matchId FK
+        uuid     raterId FK
+        uuid     ratedId FK
+        int      punctuality "1 a 5"
+        int      conduct "1 a 5"
+        datetime createdAt
+    }
+
+    PAYMENT {
+        uuid     id PK
+        uuid     participationId FK "UNIQUE - relacion 1 a 1"
+        int      amount
+        int      commission "10 por ciento de amount"
+        int      retained
+        enum     status
+        string   buyOrder UK
+        string   sessionId
+        string   token "token_ws de Webpay"
+        datetime authorizedAt
+        datetime createdAt
+    }

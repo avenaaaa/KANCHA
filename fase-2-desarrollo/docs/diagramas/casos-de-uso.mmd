@@ -1,0 +1,36 @@
+flowchart LR
+    AL(["👤 Agente Libre"])
+    OR(["👤 Organizador"])
+    AD(["👤 Administrador"])
+    TBK(["⚙️ Transbank Webpay"])
+    PUSH(["⚙️ Expo Push API"])
+    MAP(["⚙️ Tiles OSM / MapLibre"])
+
+    subgraph KANCHA["Sistema Kancha"]
+        UC1["UC1 · Registrarse y autenticarse<br/>HU-01"]
+        UC2["UC2 · Consultar carta de jugador<br/>HU-02"]
+        UC3["UC3 · Publicar partido con cupos<br/>HU-03"]
+        UC4["UC4 · Buscar partidos por radio<br/>HU-04"]
+        UC5["UC5 · Postularse a un partido<br/>HU-05"]
+        UC6["UC6 · Aprobar postulación<br/>HU-05"]
+        UC7["UC7 · Pagar cupo fraccionado<br/>HU-08"]
+        UC8["UC8 · Cancelar con retención<br/>HU-09"]
+        UC9["UC9 · Calificar compañeros<br/>HU-06"]
+        UC10["UC10 · Recalcular puntaje de honor<br/>HU-07"]
+        UC11["UC11 · Recibir notificación de cupo<br/>HU-10"]
+        UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
+    end
+
+    AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
+    OR --> UC1 & UC3 & UC6 & UC9
+    AD --> UC12
+
+    UC7 -.-> TBK
+    UC8 -.-> TBK
+    UC9 -.->|"include"| UC10
+    UC4 -.-> MAP
+    UC11 -.-> PUSH
+    UC3 -.->|"trigger"| UC11
+
+    style UC12 stroke-dasharray: 5 5
+    style KANCHA fill:#1A1A1A,color:#FFFFFF

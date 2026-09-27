@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> OPEN: el organizador publica (HU-03)
+    OPEN --> FULL: filledSlots == totalSlots
+    FULL --> OPEN: un jugador cancela y libera cupo (HU-09)
+    OPEN --> CANCELLED: el organizador cancela
+    FULL --> CANCELLED: el organizador cancela
+    OPEN --> IN_PROGRESS: llega startsAt
+    FULL --> IN_PROGRESS: llega startsAt
+    IN_PROGRESS --> FINISHED: startsAt + durationMin
+    FINISHED --> ARCHIVED: 48 h sin más calificaciones (HU-06)
+    CANCELLED --> [*]
+    ARCHIVED --> [*]
+
+    note right of FINISHED
+        Ventana abierta de 48 h
+        para calificar compañeros
+    end note

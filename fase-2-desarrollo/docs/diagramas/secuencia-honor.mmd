@@ -1,0 +1,39 @@
+sequenceDiagram
+    autonumber
+    actor J as Jugador
+    participant APP as App Expo
+    participant API as API Express
+    participant HON as honor.service
+    participant DB as PostgreSQL
+
+    Note over J,DB: El partido terminó. Se abre una ventana de 48 h
+
+    J->>APP: Abre "Calificar compañeros"
+    APP->>API: GET /matches/:id/ratings/pending
+    API-->>APP: lista de asistentes aún no calificados
+    J->>APP: puntúa puntualidad y conducta (1–5)
+    APP->>API: POST /matches/:id/ratings
+
+    API->>HON: submitRating(...)
+    HON->>DB: verifica ventana de 48 h
+
+    alt Pasaron más de 48 h
+        HON-->>API: 409 · partido archivado
+        API-->>APP: "La ventana de calificación ya cerró"
+    else Dentro de la ventana
+        HON->>DB: INSERT Rating (UNIQUE matchId+raterId+ratedId)
+        alt Ya había calificado a ese jugador
+            DB-->>HON: violación de restricción única
+            HON-->>API: 409 · doble calificación
+        else Primera calificación
+            DB-->>HON: OK
+            HON->>DB: lee las últimas 20 reseñas del calificado
+            HON->>HON: punctualityRate y fairPlayRate
+            HON->>DB: lee historial PAID / NO_SHOW
+            HON->>HON: attendanceRate
+            HON->>HON: honorScore = agregado, 1 decimal
+            HON->>DB: UPDATE User
+            HON-->>API: 201 · honor actualizado
+            API-->>APP: badge naranja se actualiza en vivo
+        end
+    end

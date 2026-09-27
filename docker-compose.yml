@@ -1,0 +1,67 @@
+# Kancha - levanta la base de datos, la API y la version web con un solo comando:
+#   docker compose up --build
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: kancha-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kancha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kancha}
+      POSTGRES_DB: ${POSTGRES_DB:-kancha}
+    ports:
+      - "5432:5432"
+    volumes:
+      - kancha-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kancha} -d ${POSTGRES_DB:-kancha}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./fase-2-desarrollo/backend
+    container_name: kancha-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kancha}:${POSTGRES_PASSWORD:-kancha}@db:5432/${POSTGRES_DB:-kancha}
+      JWT_SECRET: ${JWT_SECRET:-cambiar-esta-clave-en-produccion-kancha}
+      PORT: 3000
+      API_BASE_URL: http://localhost:3000
+      TBK_ENV: ${TBK_ENV:-integration}
+      TBK_RETURN_URL: ${TBK_RETURN_URL:-http://localhost:3000/api/v1/payments/return}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Migraciones versionadas (prisma/migrations), nunca "db push": asi la base de la demo,
+    # la del CI y la de la nube tienen exactamente el mismo esquema.
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             (npx tsx prisma/seed.ts || echo 'Seed omitido: la base ya tiene datos') &&
+             node dist/server.js"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  web:
+    build:
+      context: ./fase-2-desarrollo/mobile
+      args:
+        EXPO_PUBLIC_API_URL: http://localhost:3000/api/v1
+    container_name: kancha-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  kancha-db-data:

@@ -1,0 +1,25 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+web-build/
+.expo/
+coverage/
+*.tsbuildinfo
+
+# Secretos: nunca al repositorio
+.env
+.env.*
+!.env.example
+
+# Material local fuera del repositorio
+_revisar/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.log
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend (lint, build, tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: kancha
+          POSTGRES_PASSWORD: kancha
+          POSTGRES_DB: kancha_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://kancha:kancha@localhost:5432/kancha_test
+      JWT_SECRET: ci-secret
+      NODE_ENV: test
+      TBK_ENV: integration
+    defaults:
+      run:
+        working-directory: fase-2-desarrollo/backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: fase-2-desarrollo/backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  mobile:
+    name: App Expo (tipos y build web)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fase-2-desarrollo/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: fase-2-desarrollo/mobile/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo export --platform web
+
+  docker:
+    name: Imagenes Docker
+    needs: [backend, mobile]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker compose build

@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    actor U as Agente Libre
+    participant APP as App Expo
+    participant API as API Express
+    participant SVC as matching.service
+    participant DB as PostgreSQL + PostGIS
+
+    U->>APP: Abre la pestaña Mapa
+    APP->>APP: expo-location solicita permiso
+    APP-->>U: Permiso concedido
+    APP->>API: GET /matches/nearby?lat&lng&radius=5000&sport
+    API->>API: middleware auth valida JWT
+    API->>API: middleware validate (Zod) valida query
+    API->>SVC: findNearby(coords, radio, filtros)
+    SVC->>DB: $queryRaw con ST_DWithin sobre índice GIST
+    DB-->>SVC: partidos ordenados por distancia
+    SVC->>SVC: calcula cupos restantes por partido
+    SVC-->>API: lista de partidos + distanceM
+    API-->>APP: 200 OK · JSON
+    APP->>APP: pinta pines en el mapa oscuro
+
+    alt No hay partidos en el radio
+        APP-->>U: "No hay partidos cerca. Amplía el radio o cambia de deporte"
+    else Hay resultados
+        APP-->>U: pines por deporte + carta emergente al tocar
+    end

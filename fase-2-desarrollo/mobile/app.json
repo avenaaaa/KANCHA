@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Kancha",
+    "slug": "kancha",
+    "version": "0.3.0",
+    "orientation": "portrait",
+    "scheme": "kancha",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#1A1A1A",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A1A"
+    },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "cl.kancha.app" },
+    "android": {
+      "package": "cl.kancha.app",
+      "adaptiveIcon": { "backgroundColor": "#1A1A1A" }
+    },
+    "web": { "bundler": "metro", "output": "static" },
+    "plugins": [
+      "expo-router",
+      ["expo-location", {
+        "locationAlwaysAndWhenInUsePermission": "Kancha usa tu ubicación para mostrarte los partidos con cupos que están cerca de ti."
+      }]
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}

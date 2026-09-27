@@ -1,0 +1,41 @@
+sequenceDiagram
+    autonumber
+    actor J as Jugador confirmado
+    participant APP as App Expo
+    participant API as API Express
+    participant PAY as payment.service
+    participant DB as PostgreSQL
+    participant TBK as Transbank Webpay
+
+    J->>APP: Toca "Pagar mi parte"
+    APP->>API: POST /payments/:participationId/init
+    API->>PAY: initPayment(participationId)
+    PAY->>DB: lee Participation (status APPROVED)
+    DB-->>PAY: amountDue = ceil(totalCost / totalSlots)
+    PAY->>PAY: genera buyOrder único · comisión = 10%
+    PAY->>DB: crea Payment status=INITIATED
+    PAY->>TBK: Webpay.create(buyOrder, sessionId, amount, returnUrl)
+    TBK-->>PAY: { url, token }
+    PAY-->>API: { url, token }
+    API-->>APP: 201 Created
+    APP->>J: abre el formulario de Transbank
+
+    J->>TBK: ingresa tarjeta de prueba y confirma
+    TBK->>API: redirige a returnUrl con token_ws
+    API->>PAY: commitPayment(token_ws)
+    PAY->>TBK: Webpay.commit(token)
+    TBK-->>PAY: { responseCode, authorizationCode }
+
+    alt responseCode == 0 (aprobado)
+        PAY->>DB: BEGIN TRANSACTION
+        PAY->>DB: Payment.status = AUTHORIZED
+        PAY->>DB: Participation.status = PAID
+        PAY->>DB: COMMIT
+        PAY-->>APP: cupo "Confirmado y pagado"
+        APP-->>J: comprobante en pantalla
+    else Pago rechazado
+        PAY->>DB: Payment.status = FAILED
+        PAY->>DB: libera el cupo (Participation vuelve a APPROVED)
+        PAY-->>APP: error con opción de reintentar
+        APP-->>J: "El pago no se completó. Intenta de nuevo"
+    end
