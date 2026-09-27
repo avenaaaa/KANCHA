@@ -31,12 +31,17 @@ npx prisma migrate dev # crea y aplica una migración
 npx prisma studio      # explorador visual de la base de datos
 ```
 
-## Migración manual pendiente
+## Migraciones
 
-Prisma no genera índices GIST. Después de la primera migración, añade a mano:
+| Migración | Contenido |
+|---|---|
+| `…_init` | Extensión PostGIS, enums, las 5 tablas, índices y restricciones únicas |
+| `…_indice_gist_ubicacion` | Índice GIST `idx_match_location` sobre `Match.location` (búsqueda por radio, HU-04) |
 
-```sql
-CREATE INDEX idx_match_location ON "Match" USING GIST (location);
-```
+El índice GIST se escribió a mano porque Prisma no lo genera sobre una columna `Unsupported`, y además
+está declarado en `schema.prisma` (`@@index([location], type: Gist)`). Sin esa declaración, el siguiente
+`migrate dev` lo consideraría sobrante y generaría un `DROP INDEX`.
 
-Sin ese índice la búsqueda por radio funciona igual, pero recorre toda la tabla.
+La imagen `postgis/postgis` instala extensiones extra al crear un volumen nuevo. Si `migrate dev`
+responde *Drift detected* tras un `docker compose down -v`, ejecuta `npx prisma migrate reset`: la base
+local se vacía y se recrea desde las migraciones. Nunca lo hagas contra una base de producción.

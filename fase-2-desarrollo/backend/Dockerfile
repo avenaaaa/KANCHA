@@ -16,7 +16,7 @@ ENV NODE_ENV=production
 RUN apk add --no-cache wget openssl
 COPY package*.json ./
 # Se copian todas las dependencias del build: el arranque necesita el CLI de
-# Prisma (db push, db execute) y tsx (seed), que son devDependencies.
+# Prisma (migrate deploy) y tsx (seed), que son devDependencies.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma

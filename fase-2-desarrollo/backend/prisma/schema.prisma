@@ -88,7 +88,8 @@ model Match {
   address   String
 
   /// PostGIS. Prisma no tipa geometrías: se consulta con $queryRaw y ST_DWithin.
-  /// El índice GIST se crea a mano en la migración.
+  /// El índice GIST se creó a mano (migración indice_gist_ubicacion) y se declara abajo
+  /// para que `migrate dev` no lo considere sobrante y genere un DROP INDEX.
   location Unsupported("geography(Point, 4326)")
 
   startsAt    DateTime
@@ -107,6 +108,8 @@ model Match {
   @@index([startsAt])
   @@index([sport, status])
   @@index([level])
+  /// Búsqueda por radio con ST_DWithin (HU-04). Evidencia de C3.
+  @@index([location], map: "idx_match_location", type: Gist)
 }
 
 model Participation {

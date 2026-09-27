@@ -336,10 +336,18 @@ model Payment {
 
 ### 4.2 Migración manual para el índice espacial
 
-Prisma no genera índices GIST. Añádelo a mano en la migración:
+Prisma no genera el índice GIST sobre una columna `Unsupported`, así que se escribió a mano en la
+migración `…_indice_gist_ubicacion`:
 
 ```sql
-CREATE INDEX idx_match_location ON "Match" USING GIST (location);
+CREATE INDEX IF NOT EXISTS idx_match_location ON "Match" USING GIST (location);
+```
+
+Además se declara en el modelo `Match` de `schema.prisma`, para que `migrate dev` no lo trate como
+sobrante y genere un `DROP INDEX` en la siguiente migración:
+
+```prisma
+@@index([location], map: "idx_match_location", type: Gist)
 ```
 
 ### 4.3 Búsqueda por radio (HU-04) — la consulta central del producto

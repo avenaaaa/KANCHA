@@ -287,6 +287,8 @@ Commits pequeños y diarios valen más que uno gigante el domingo: el historial 
 | `npm ci` falla en Docker o en el CI | Falta `package-lock.json` | Repite el paso 4 y haz commit del lock |
 | La web dice "API no disponible" | La API aún no arranca o falló | `docker compose logs api` |
 | `gh: not logged in` | Falta el login | `gh auth login` |
+| `migrate dev` dice *Drift detected* con `postgis_topology`, `fuzzystrmatch`… | La imagen `postgis/postgis` instala extensiones extra al crear un volumen nuevo | En la base **local**: `npx prisma migrate reset` (la vacía y la recrea desde las migraciones) |
+| Docker Desktop abre pero el motor queda en `stopped` | Falta WSL 2 (Windows 11 Home) | PowerShell como administrador: `wsl --install --no-distribution` y reinicia |
 
 ---
 
