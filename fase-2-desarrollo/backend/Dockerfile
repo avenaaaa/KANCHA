@@ -20,5 +20,8 @@ COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+# El seed importa honor.service desde src/ (lo ejecuta tsx, no el build).
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
