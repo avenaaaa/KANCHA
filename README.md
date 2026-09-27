@@ -19,16 +19,18 @@ docker compose up --build
 | Dirección | Qué hay |
 |---|---|
 | http://localhost:8080 | La app Kancha (versión web) |
-| http://localhost:3000/api/docs | Documentación de la API (Swagger) |
+| http://localhost:3000/api/docs | Documentación de la API (Swagger) — disponible desde el Sprint 4 |
 | http://localhost:3000/api/v1/health | Estado de la API y la base de datos |
 
 ## Estructura del repositorio
 
-| Carpeta | Contenido |
-|---|---|
-| [`fase-1-definicion/`](fase-1-definicion/) | Definición del proyecto: documento consolidado, Excel ágiles y diagramas |
-| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y `docs/` (modelo de datos, UML, evidencias) |
-| [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas finales y cierre |
+Una carpeta por cada fase del Portafolio de Título.
+
+| Carpeta | Contenido | Estado |
+|---|---|---|
+| [`fase-1-definicion/`](fase-1-definicion/) | Definición del proyecto: documento consolidado, Excel ágiles y diagramas | ✅ Entregada · agosto 2026 |
+| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y `docs/` (modelo de datos, UML, evidencias) | 🔄 En curso · Sprints 3 a 7 |
+| [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas finales y cierre | ⏳ Sprints 8 y 9 · nov–dic 2026 |
 
 ## Stack
 
