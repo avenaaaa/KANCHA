@@ -11,18 +11,32 @@
       "resizeMode": "contain",
       "backgroundColor": "#1A1A1A"
     },
-    "ios": { "supportsTablet": true, "bundleIdentifier": "cl.kancha.app" },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "cl.kancha.app"
+    },
     "android": {
       "package": "cl.kancha.app",
-      "adaptiveIcon": { "backgroundColor": "#1A1A1A" }
+      "adaptiveIcon": {
+        "backgroundColor": "#1A1A1A"
+      }
     },
-    "web": { "bundler": "metro", "output": "static" },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
     "plugins": [
       "expo-router",
-      ["expo-location", {
-        "locationAlwaysAndWhenInUsePermission": "Kancha usa tu ubicación para mostrarte los partidos con cupos que están cerca de ti."
-      }]
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Kancha usa tu ubicación para mostrarte los partidos con cupos que están cerca de ti."
+        }
+      ],
+      "expo-asset"
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
