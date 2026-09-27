@@ -1,5 +1,7 @@
 # Kancha
 
+[![CI](https://github.com/avenaaaa/KANCHA/actions/workflows/ci.yml/badge.svg)](https://github.com/avenaaaa/KANCHA/actions/workflows/ci.yml)
+
 **Juega. Conecta. Vive Mejor.**
 
 Plataforma web y móvil geolocalizada que conecta a jugadores sin equipo ("agentes libres") con partidos amateur a los que les falta gente, en la comuna de La Florida. Incluye un Sistema de Honor con reputación entre jugadores y pago fraccionado del arriendo con Transbank.
@@ -11,8 +13,8 @@ Proyecto de Título · Ingeniería en Informática · Duoc UC Sede Plaza Vespuci
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
 ```bash
-git clone https://github.com/USUARIO/kancha.git
-cd kancha
+git clone https://github.com/avenaaaa/KANCHA.git
+cd KANCHA
 docker compose up --build
 ```
 
