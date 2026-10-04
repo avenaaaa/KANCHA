@@ -1,0 +1,86 @@
+classDiagram
+    direction LR
+
+    class HonorService {
+        <<service>>
+        +calculateHonor(ratings, attendance) HonorBreakdown
+        +isRatingWindowOpen(startsAt, durationMin, now) Boolean
+    }
+
+    class PaymentService {
+        <<service>>
+        +calculateAmountDue(totalCost, totalSlots) Int
+        +calculateCommission(amount, rate) Int
+        +calculateRefund(amountPaid, startsAt, now) RefundBreakdown
+        +buildBuyOrder(participationId, now) String
+    }
+
+    class MatchingService {
+        <<service>>
+        +findNearby(lat, lng, radiusM, filters) Match[]
+        +approveParticipation(participationId) Participation
+    }
+
+    class HonorBreakdown {
+        <<value object>>
+        +Number attendanceRate
+        +Number punctualityRate
+        +Number fairPlayRate
+        +Number honorScore
+    }
+
+    class RatingSample {
+        <<value object>>
+        +Int punctuality
+        +Int conduct
+    }
+
+    class AttendanceSample {
+        <<value object>>
+        +Int attended
+        +Int noShow
+    }
+
+    class RefundBreakdown {
+        <<value object>>
+        +Int refunded
+        +Int retained
+        +Boolean withinRetentionWindow
+    }
+
+    class AppError {
+        +Int statusCode
+        +String code
+        +String message
+        +Unknown details
+    }
+
+    class Env {
+        <<config>>
+        +Number PLATFORM_COMMISSION_RATE
+        +Number RETENTION_WINDOW_HOURS
+        +Number RETENTION_RATE
+        +Number RATING_WINDOW_HOURS
+        +Int HONOR_SAMPLE_SIZE
+    }
+
+    class User
+    class Match
+    class Participation
+    class Rating
+    class Payment
+
+    HonorService ..> RatingSample : recibe
+    HonorService ..> AttendanceSample : recibe
+    HonorService ..> HonorBreakdown : devuelve
+    HonorService ..> Env : lee
+    PaymentService ..> RefundBreakdown : devuelve
+    PaymentService ..> Env : lee
+
+    HonorService ..> Rating : promedia
+    HonorService ..> User : actualiza honorScore
+    PaymentService ..> Payment : crea y confirma
+    PaymentService ..> Participation : marca PAID
+    MatchingService ..> Match : busca por radio
+    MatchingService ..> Participation : aprueba y cuenta cupos
+    MatchingService ..> AppError : lanza

@@ -94,7 +94,7 @@ KANCHA/
 ├── .env.example            variables de ejemplo
 ├── .gitignore / .gitattributes
 ├── .github/workflows/      CI de GitHub Actions
-├── fase-1-definicion/      documento consolidado, excel/, diagramas/, presentacion/
+├── fase-1-definicion/      entrega/ (lo evaluado) y docs/ (documento consolidado, word/, excel/, diagramas/)
 ├── fase-2-desarrollo/
 │   ├── backend/            API
 │   ├── mobile/             app Expo
