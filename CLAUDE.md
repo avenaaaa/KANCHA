@@ -16,7 +16,8 @@ Antes de responder o escribir código, abre el archivo que manda sobre el tema e
 | Colores, tipografía, componentes, iconografía, reglas visuales | **`DESIGN.md`** |
 | Qué es Kancha, épicas, historias, alcance, roadmap, convenciones | **este archivo** |
 | Estado real de sprints, historias y tareas | **Jira** — proyecto `KAN` en `lukasguerrerokancha.atlassian.net` |
-| Documentación académica entregada | `fase-1-definicion/`, `fase-2-desarrollo/docs/`, `fase-3-implementacion/` |
+| Documentos de cada fase (evidencia del trabajo) | `fase-1-definicion/docs/`, `fase-2-desarrollo/docs/`, cada una con su `README.md` de índice |
+| Lo que se presenta en cada evaluación | `entrega/` dentro de cada fase: `1-documentacion-grupal/`, `2-documentos-individuales/`, `3-presentacion/` |
 
 Si detectas una contradicción entre dos de estos archivos, **no elijas por tu cuenta**: dilo y pregunta.
 
@@ -78,14 +79,22 @@ La estructura detallada está en `DESARROLLO.md` §3.
 
 ## 3. Épicas del MVP
 
-| ID | Jira | Épica | Prioridad |
-|----|------|-------|-----------|
-| E1 | KAN-1 | Gestión de Usuarios y Perfiles | Alta |
-| E2 | KAN-2 | Publicación y Búsqueda Geolocalizada | Alta |
-| E3 | KAN-3 | Sistema de Honor y Reputación | Alta |
-| E4 | KAN-4 | Reservas y Pagos Fraccionados | Alta |
-| E5 | KAN-5 | Comunicación y Notificaciones | Media |
-| E6 | KAN-6 | Administración y Backoffice | Baja |
+| ID | Jira | Épica | Prioridad | Historias |
+|----|------|-------|-----------|-----------|
+| E1 | KAN-1 | Cuentas de usuario | Alta | HU-01 |
+| E2 | KAN-25 | Carta de jugador | Alta | HU-02 |
+| E3 | KAN-2 | Publicación de partidos | Alta | HU-03 |
+| E4 | KAN-26 | Búsqueda geolocalizada | Alta | HU-04 |
+| E5 | KAN-27 | Postulación a partidos | Alta | HU-05 |
+| E6 | KAN-3 | Sistema de Honor | Alta | HU-06, HU-07 |
+| E7 | KAN-4 | Pago fraccionado | Alta | HU-08 |
+| E8 | KAN-28 | Retención por deserción | Alta | HU-09 |
+| E9 | KAN-5 | Notificaciones | Media | HU-10 |
+| E10 | KAN-6 | Moderación | Baja | HU-11 |
+
+> **Diez épicas, una capacidad cada una.** La Fase 1 se entregó con seis épicas que agrupaban dos cosas
+> cada una (por ejemplo, "Gestión de Usuarios y Perfiles"). Tras la observación de la evaluación se
+> dividieron el 4 de octubre de 2026 en los documentos de `fase-1-definicion/docs/` y en Jira.
 
 ---
 
@@ -94,21 +103,22 @@ La estructura detallada está en `DESARROLLO.md` §3.
 **Jira es la fuente de verdad de los criterios de aceptación.** Esta tabla es el índice; antes de
 implementar una historia, lee su issue en Jira para tener los Gherkin completos y actualizados.
 
-| HU | Jira | Título | MoSCoW | Pts | Sprint |
-|----|------|--------|--------|-----|--------|
-| HU-01 | KAN-7 | Registro de agente libre | Must | 3 | 4 |
-| HU-02 | KAN-8 | Perfil tipo carta de jugador | Should | 5 | 6 |
-| HU-03 | KAN-9 | Publicar partido con cupos incompletos | Must | 5 | 4 |
-| HU-04 | KAN-10 | Buscar partidos cercanos en el mapa | Must | 8 | 6 |
-| HU-05 | KAN-11 | Postularme a un partido | Must | 3 | 6 |
-| HU-06 | KAN-12 | Calificar compañeros post-partido | Must | 5 | 5 |
-| HU-07 | KAN-13 | Cálculo automático de puntaje de honor | Should | 5 | 5 |
-| HU-08 | KAN-14 | Reserva con pago fraccionado | Must | 8 | 5 |
-| HU-09 | KAN-15 | Retención por deserción | Should | 5 | 5 |
-| HU-10 | KAN-16 | Notificación de cupo disponible | Could | 3 | 7 |
-| HU-11 | KAN-17 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
+| HU | Jira | Épica | Título | MoSCoW | Pts | Sprint |
+|----|------|-------|--------|--------|-----|--------|
+| HU-01 | KAN-7 | E1 | Registro de agente libre | Must | 3 | 5 |
+| HU-02 | KAN-8 | E2 | Perfil tipo carta de jugador | Should | 5 | 8 |
+| HU-03 | KAN-9 | E3 | Publicar partido con cupos incompletos | Must | 5 | 5 |
+| HU-04 | KAN-10 | E4 | Buscar partidos cercanos en el mapa | Must | 8 | 6 |
+| HU-05 | KAN-11 | E5 | Postularme a un partido | Must | 3 | 6 |
+| HU-06 | KAN-12 | E6 | Calificar compañeros post-partido | Must | 5 | 8 |
+| HU-07 | KAN-13 | E6 | Cálculo automático de puntaje de honor | Should | 5 | 8 |
+| HU-08 | KAN-14 | E7 | Reserva con pago fraccionado | Must | 8 | 7 |
+| HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
+| HU-10 | KAN-16 | E9 | Notificación de cupo disponible | Could | 3 | 9 |
+| HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
 
-**Total comprometido MVP (HU-01 a HU-10): 50 puntos en 4 sprints de desarrollo.**
+**Total comprometido MVP (HU-01 a HU-10): 50 puntos en 5 sprints de desarrollo (5 a 9).**
+La columna Sprint refleja la replanificación del 27 de septiembre de 2026, vigente en Jira.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -155,16 +165,19 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 |--------|--------|-----------|------|
 | 1 | 10–23 ago 2026 | Definición APT | Fase 1 |
 | 2 | 24–31 ago 2026 | Formulación Guía 1 | Fase 1 |
-| 3 | 01–14 sep 2026 | Modelo de datos, UML y scaffolding del repo (KAN-22) | Fase 2 |
-| 4 | 15–28 sep 2026 | HU-01, HU-03 — auth, registro, publicación de partidos | Fase 2 |
-| 5 | 29 sep–12 oct 2026 | HU-06, HU-07, HU-08, HU-09 — honor y pagos | Fase 2 |
-| 6 | 13–26 oct 2026 | HU-02, HU-04, HU-05 — frontend, mapa, postulación | Fase 2 |
-| 7 | 27 oct–09 nov 2026 | HU-10 + cierre de pruebas C1 + Docker final | Fase 2 |
-| 8 | 10–23 nov 2026 | Despliegue, README, video de respaldo | Fase 3 |
-| 9 | 24 nov–07 dic 2026 | Ensayo y defensa ante la comisión | Fase 3 |
+| 3 | 01–14 sep 2026 | Hecho: modelo de datos, UML y esqueleto del repo (KAN-22) | Fase 2 |
+| 4 | 15–28 sep 2026 | Hecho: ambiente de desarrollo, repositorio público, Docker y CI (KAN-24). HU-01 y HU-03 no se iniciaron | Fase 2 |
+| 5 | 29 sep–12 oct 2026 | HU-01, HU-03 — auth, registro, publicación de partidos · documentación de la Fase 2 (KAN-23) | Fase 2 |
+| 6 | 13–26 oct 2026 | HU-04, HU-05 — búsqueda en el mapa y postulación | Fase 2 |
+| 7 | 27 oct–09 nov 2026 | HU-08, HU-09 — pago fraccionado y retención | Fase 2 |
+| 8 | 10–23 nov 2026 | HU-02, HU-06, HU-07 — carta de jugador, calificación y honor · despliegue | Fase 3 |
+| 9 | 24 nov–07 dic 2026 | HU-10 · cierre de pruebas C1 · README final, ensayo y defensa ante la comisión | Fase 3 |
 
-> El Sprint 5 concentra la lógica más difícil y menos vistosa. Si se atrasa, comprime el Sprint 6 y
-> la demo llega vacía. Es el sprint que hay que proteger.
+> **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
+> dejar operativo el ambiente. Las historias se corrieron un sprint y el desarrollo ahora llega hasta
+> el Sprint 9. **El plan quedó sin holgura:** los sprints 8 y 9 combinan desarrollo, despliegue y
+> defensa. HU-10 es *Could* y es la primera candidata a salir del alcance si un sprint se atrasa.
+> El registro de cada sprint está en `fase-2-desarrollo/docs/scrum/`.
 
 ---
 
@@ -212,10 +225,10 @@ Frontend   tokens de DESIGN.md (nunca colores hardcodeados) · componentes funci
 
 | Código | Competencia | Dónde se evidencia |
 |--------|-------------|--------------------|
-| C1 | Pruebas de certificación | Plan y suite de pruebas del Sprint 7 · `fase-2-desarrollo/docs/evidencias/` |
-| C2 | Gestión de proyectos informáticos | Jira + GitHub Projects + 9 releases fechados |
-| C3 | Modelos de datos escalables | Modelo ER con PostGIS, migraciones Prisma, índice GIST |
-| C4 | Desarrollo de solución de software | API REST + app Expo, empaquetado en Docker |
+| C1 | Pruebas de certificación | `fase-2-desarrollo/docs/04-plan-pruebas.md` y suite de pruebas · `fase-2-desarrollo/docs/evidencias/` |
+| C2 | Gestión de proyectos informáticos | Jira · documentos por sprint en `fase-2-desarrollo/docs/scrum/` · releases fechados |
+| C3 | Modelos de datos escalables | `fase-2-desarrollo/docs/01-modelo-datos.md`: modelo normalizado con PostGIS, migraciones Prisma, índice GIST |
+| C4 | Desarrollo de solución de software | API REST + app Expo, empaquetado en Docker · `fase-2-desarrollo/docs/03-arquitectura.md` |
 
 ---
 
@@ -252,8 +265,9 @@ funcionamiento.
 3. **Al terminar:** commit con referencia al issue, PR a `develop`, CI en verde, cerrar en Jira.
 4. **Si algo contradice a otra cosa:** detente y pregunta. No resuelvas contradicciones por tu cuenta.
 5. **Si cambias el modelo de datos:** actualiza también `fase-2-desarrollo/docs/` (modelo de datos y `diagramas/`). Van juntos.
+6. **Si cambias el plan en Jira:** actualiza en el mismo commit el roadmap de este archivo, `DESARROLLO.md` §11 y el `README.md`.
 
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 27 de septiembre de 2026 (Sprint 4)*
+*Última actualización: 4 de octubre de 2026 (Sprint 5)*

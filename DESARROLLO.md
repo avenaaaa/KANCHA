@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.2 — 27 de septiembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.3 — 4 de octubre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -143,11 +143,16 @@ kancha/
 ├── .gitignore
 ├── .gitattributes
 │
-├── fase-1-definicion/           ← entregables de Fase 1
-│   ├── Kancha_Documentacion_Fase1.docx
-│   ├── excel/                   ← historias, backlog priorizado
-│   ├── diagramas/               ← mapa mental, actores, visión, impact mapping, story mapping
-│   └── presentacion/
+├── fase-1-definicion/
+│   ├── entrega/                 ← lo que se presenta en la evaluación
+│   │   ├── 1-documentacion-grupal/     guía de la asignatura
+│   │   ├── 2-documentos-individuales/  autoevaluaciones y diario de reflexión
+│   │   └── 3-presentacion/
+│   └── docs/                    ← documentos de la fase
+│       ├── Kancha_Documentacion_Fase1.docx   documento consolidado
+│       ├── word/                los diez documentos ágiles
+│       ├── excel/               versiones editables
+│       └── diagramas/           mapa mental, actores, visión, impact mapping, story mapping
 │
 ├── fase-2-desarrollo/
 │   ├── docs/
@@ -644,14 +649,15 @@ jobs:
 ### 7.5 GitHub Projects
 
 Tablero `Kancha MVP` con columnas `Backlog → Sprint actual → En progreso → En revisión → Terminado`.
-Un issue por HU, etiquetado con su épica (`E1`…`E6`) y su sprint. El tablero es la evidencia visual
+Un issue por HU, etiquetado con su épica (`E1`…`E10`) y su sprint. El tablero es la evidencia visual
 de Scrum para la competencia C2; mantenlo sincronizado con Jira, no lo dejes atrasado.
 
 ### 7.6 Releases
 
 Al cierre de cada sprint, un tag y un release con notas:
-`v0.4.0 — Sprint 4: Registro y publicación de partidos (HU-01, HU-03)`.
-Nueve releases son nueve pruebas fechadas de avance incremental.
+`v0.5.0 — Sprint 5: Registro y publicación de partidos (HU-01, HU-03)`.
+Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0` (27 de septiembre de
+2026), con el esqueleto del Sprint 3 y el ambiente del Sprint 4.
 
 ---
 
@@ -686,7 +692,7 @@ const tx = new WebpayPlus.Transaction(new Options(
 ```
 
 Las tarjetas y credenciales de prueba (VISA que siempre aprueba, RUT `11.111.111-1`, clave `123`)
-están en la documentación oficial de Transbank Developers. **Confírmalas al inicio del Sprint 5**
+están en la documentación oficial de Transbank Developers. **Confírmalas al inicio del Sprint 7**
 y déjalas anotadas en `fase-2-desarrollo/docs/credenciales-prueba.md` para tenerlas a mano el día de la defensa.
 
 ### Flujo (HU-08)
@@ -711,13 +717,18 @@ Escribe esta URL en una variable de entorno, nunca hardcodeada.
 
 ## 10. Plan de pruebas (competencia C1)
 
+El plan completo, con cada caso y su estado, está en `fase-2-desarrollo/docs/04-plan-pruebas.md`.
+Esta tabla es el resumen de la estrategia.
+
 | Tipo | Herramienta | Qué cubre | Meta |
 |---|---|---|---|
 | Unitarias backend | Vitest | `honor.service`, `payment.service`, `matching.service` | ≥ 80% en `services/` |
 | Integración API | Vitest + Supertest | Cada endpoint de la tabla §5, camino feliz y error | 100% de endpoints |
 | Espaciales | Vitest + BD de prueba | `ST_DWithin`: dentro y fuera del radio, borde exacto | 100% |
 | Componentes | Jest + RNTL | `MatchCard`, `HonorBadge`, `SportFilter` | Componentes críticos |
-| Manuales | Checklist en `fase-2-desarrollo/docs/plan-pruebas.md` | Flujo end-to-end del walking skeleton | 100% |
+| Caja negra | Casos CN del plan de pruebas | Criterios de aceptación de cada historia, con valores límite | 100% de las historias |
+| Rendimiento | k6 + `EXPLAIN ANALYZE` | Búsqueda por radio bajo carga y uso del índice GIST | Umbrales del plan de pruebas |
+| Seguridad | Supertest + `npm audit` | Controles OWASP: autenticación, acceso a objetos ajenos, inyección | 12 controles del plan |
 
 **Casos que no pueden faltar** (son los que la comisión preguntará):
 
@@ -737,17 +748,18 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 
 | Sprint | Fechas | Entregable técnico |
 |---|---|---|
-| **3** | 01–14 sep | Modelo ER, diagramas UML. **Scaffolding:** repo en GitHub, `docker-compose.yml`, `schema.prisma`, CI en verde con 1 test trivial. Terminar con `docker compose up` levantando db + api vacía |
-| **4** | 15–28 sep | HU-01, HU-03. Auth JWT, registro, login, `POST /matches`, PostGIS activo e índice GIST creado, `seed.ts` con datos de La Florida, Swagger publicado |
-| **5** | 29 sep–12 oct | HU-06, HU-07, HU-08, HU-09. `honor.service` y `payment.service` completos con Transbank Integración. Aquí va la mayor carga de pruebas unitarias |
-| **6** | 13–26 oct | HU-02, HU-04, HU-05. Todo el frontend Expo: tema desde `DESIGN.md`, mapa nativo y web, carta de jugador, filtro de 3 deportes, flujo de postulación |
-| **7** | 27 oct–09 nov | HU-10 push. **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. Dockerfiles finales optimizados |
-| **8** | 10–23 nov | Despliegue en Render + Supabase. README final. Video de respaldo de la demo |
-| **9** | 24 nov–07 dic | Ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
+| **3** | 01–14 sep | **Hecho.** Modelo ER, diagramas UML y esqueleto local: backend con `honor.service` y `payment.service` probados, app Expo, `docker-compose.yml` y `schema.prisma` |
+| **4** | 15–28 sep | **Hecho.** Ambiente de desarrollo, repositorio público en GitHub, migraciones e índice GIST, arranque en Docker corregido y CI activo (KAN-24). HU-01 y HU-03 no se iniciaron |
+| **5** | 29 sep–12 oct | HU-01, HU-03. Auth JWT, registro, login, `POST /matches` con PostGIS, Swagger publicado. Documentación de la Fase 2 (KAN-23) |
+| **6** | 13–26 oct | HU-04, HU-05. `matching.service`, búsqueda por radio, mapa nativo y web con filtro de 3 deportes, flujo de postulación sin sobreventa |
+| **7** | 27 oct–09 nov | HU-08, HU-09. Integración con Transbank Integración sobre `payment.service`, retención por deserción |
+| **8** | 10–23 nov | HU-02, HU-06, HU-07. Carta de jugador, calificación y recálculo de honor sobre `honor.service`. Despliegue en Render + Supabase |
+| **9** | 24 nov–07 dic | HU-10 push. **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
-> **Consejo de secuencia:** el backend de pagos y honor (Sprint 5) es lo más difícil y lo menos visible.
-> El frontend (Sprint 6) es lo más visible y lo que impresiona. No inviertas el orden: si el Sprint 5 se
-> retrasa, el Sprint 6 se comprime y la demo queda vacía.
+> **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y
+> las historias se corrieron un sprint. El plan quedó sin holgura: los sprints 8 y 9 combinan desarrollo,
+> despliegue y defensa. Cada historia se entrega completa, con su API, su pantalla y sus pruebas, para
+> que la demo crezca sprint a sprint en vez de depender de un sprint final de frontend.
 
 ---
 
@@ -822,7 +834,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 4. **Descubrir (1 min)** — el pin aparece en el mapa oscuro; filtras por deporte; el radio de 5 km funciona
 5. **Unirse y pagar (1,5 min)** — postulas, el organizador aprueba, pagas tu parte con la tarjeta de prueba de Transbank, el cupo pasa a "Confirmado y pagado"
 6. **Honor (1 min)** — terminado el partido, calificas puntualidad y conducta; el puntaje del perfil se recalcula en vivo
-7. **Cierre técnico (30 s)** — muestras GitHub: CI en verde, 9 releases, cobertura de pruebas, y el `docker compose up` que ellos mismos pueden correr
+7. **Cierre técnico (30 s)** — muestras GitHub: CI en verde, los releases de cada sprint, cobertura de pruebas, y el `docker compose up` que ellos mismos pueden correr
 
 > Haz una copia de seguridad de la base de datos con el seed cargado (`pg_dump`) y guárdala en `fase-2-desarrollo/docs/`.
 > Si algo se rompe minutos antes, restauras y sigues.
@@ -836,7 +848,8 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 | Render duerme el servicio y la demo tarda 50 s | Alto | Docker local es el plan A; abre la URL 5 min antes |
 | PostGIS no disponible en el hosting gratis elegido | Alto | Supabase y Neon lo soportan; verifícalo en Sprint 3, no en Sprint 8 |
 | El mapa nativo se comporta distinto al web | Medio | Interfaz `KanchaMap` común; probar en ambos desde el primer día del Sprint 6 |
-| Sprint 5 (pagos + honor) se desborda | Alto | Es el sprint más difícil: empiézalo con el servicio de honor, que no depende de terceros |
+| Sprint 7 (pagos con Transbank) se desborda | Alto | Las funciones de cálculo ya existen y están probadas: el riesgo es la integración con Webpay, que se empieza el primer día del sprint |
+| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | HU-10 es *Could* y es la primera candidata a salir del alcance si el Sprint 8 no cierra |
 | Trabajo en solitario, sin revisor de código | Medio | Pull Requests a ti mismo + CI obligatorio: la disciplina reemplaza al revisor |
 | Deuda de documentación al final | Alto | Cada release de sprint incluye su documentación; no la dejes para el Sprint 9 |
 
