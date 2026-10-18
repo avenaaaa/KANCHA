@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.3 — 4 de octubre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.4 — 16 de octubre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -188,22 +188,22 @@ kancha/
 │   │
 │   └── mobile/
 │       ├── app/                 ← Expo Router
-│       │   ├── (auth)/login.tsx · register.tsx
-│       │   ├── (tabs)/index.tsx (mapa) · matches.tsx · profile.tsx
-│       │   ├── match/[id].tsx
-│       │   └── _layout.tsx
+│       │   ├── (auth)/login.tsx · registro.tsx
+│       │   ├── index.tsx (redirige al mapa) · (tabs)/mapa.tsx · partidos.tsx · perfil.tsx
+│       │   ├── partido/[id].tsx · publicar.tsx
+│       │   └── _layout.tsx                ← las rutas van en español: son las URL que ve el usuario
 │       ├── src/
 │       │   ├── components/
 │       │   │   ├── KanchaMap/   ← index.native.tsx + index.web.tsx + types.ts
-│       │   │   ├── MatchCard/
-│       │   │   ├── PlayerCard/
-│       │   │   ├── HonorBadge/
-│       │   │   ├── SportFilter/
-│       │   │   └── ui/          Button · Chip · ProgressBar · Skeleton
-│       │   ├── theme/           colors.ts · typography.ts · spacing.ts  ← desde DESIGN.md
-│       │   ├── api/             client.ts + hooks de TanStack Query
+│       │   │   ├── icons/       paths.ts (íconos propios de los 3 deportes) · Icon.tsx
+│       │   │   ├── MatchCard · SlotBar · HonorBadge · SportFilter · SportPicker · Avatar
+│       │   │   └── ui/          Button · Chip · TextField · Skeleton
+│       │   ├── theme/           colors.ts · typography.ts · spacing.ts · sports.ts · geo.ts  ← desde DESIGN.md
+│       │   ├── api/             client.ts · hooks.ts (TanStack Query) · types.ts
 │       │   ├── store/           authStore.ts · filterStore.ts
-│       │   └── utils/
+│       │   ├── hooks/           useOrigin.ts (geolocalización con respaldo en La Florida)
+│       │   ├── lib/             format.ts (pesos, fechas, distancias)
+│       │   └── __tests__/       Jest + React Native Testing Library
 │       ├── assets/              logo, fuentes, íconos de los 3 deportes
 │       ├── Dockerfile           ← build web + nginx
 │       ├── .dockerignore
@@ -388,22 +388,26 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 
 | Método | Ruta | HU | Auth | Descripción |
 |---|---|---|---|---|
-| POST | `/auth/register` | HU-01 | — | Crea cuenta con `honorScore = null` |
-| POST | `/auth/login` | HU-01 | — | Devuelve access + refresh token |
-| GET | `/users/me` | HU-02 | ✔ | Perfil propio completo |
-| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública |
+| POST | `/auth/register` | HU-01 | — | Crea cuenta con `honorScore = null` · **implementado** |
+| POST | `/auth/login` | HU-01 | — | Devuelve el JWT de acceso (7 días) · **implementado**. El refresh token está pendiente |
+| GET | `/users/me` | HU-01, HU-02 | ✔ | Perfil propio completo · **implementado** |
+| GET | `/users/me/matches` | HU-05 | ✔ | Partidos que organizo o a los que postulé, con mi estado y las postulaciones por revisar · **implementado** |
+| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública · versión básica implementada |
 | PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push |
-| POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado |
-| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=&level=&from=&to=` |
-| GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes |
-| POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` |
-| PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` |
+| POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
+| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=` · **implementado** |
+| GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
+| POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
+| PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
 | DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; aplica retención si faltan < 12 h |
 | POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay, devuelve `url` + `token` |
 | PUT | `/payments/commit` | HU-08 | — | Callback de Transbank con `token_ws` |
 | POST | `/matches/:id/ratings` | HU-06 | ✔ | Califica puntualidad y conducta (1–5). 409 si pasaron 48 h |
 | GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar |
 | GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck |
+
+El contrato navegable está en `http://localhost:3000/api/docs` (Swagger UI) y en `/api/docs.json`.
+Su fuente es `backend/src/docs/openapi.ts`: cada endpoint nuevo se documenta ahí en el mismo commit.
 
 ### 5.1 Formato de error único
 
@@ -750,8 +754,8 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 |---|---|---|
 | **3** | 01–14 sep | **Hecho.** Modelo ER, diagramas UML y esqueleto local: backend con `honor.service` y `payment.service` probados, app Expo, `docker-compose.yml` y `schema.prisma` |
 | **4** | 15–28 sep | **Hecho.** Ambiente de desarrollo, repositorio público en GitHub, migraciones e índice GIST, arranque en Docker corregido y CI activo (KAN-24). HU-01 y HU-03 no se iniciaron |
-| **5** | 29 sep–12 oct | HU-01, HU-03. Auth JWT, registro, login, `POST /matches` con PostGIS, Swagger publicado. Documentación de la Fase 2 (KAN-23) |
-| **6** | 13–26 oct | HU-04, HU-05. `matching.service`, búsqueda por radio, mapa nativo y web con filtro de 3 deportes, flujo de postulación sin sobreventa |
+| **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
+| **6** | 13–26 oct | HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | HU-08, HU-09. Integración con Transbank Integración sobre `payment.service`, retención por deserción |
 | **8** | 10–23 nov | HU-02, HU-06, HU-07. Carta de jugador, calificación y recálculo de honor sobre `honor.service`. Despliegue en Render + Supabase |
 | **9** | 24 nov–07 dic | HU-10 push. **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
@@ -760,6 +764,9 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 > las historias se corrieron un sprint. El plan quedó sin holgura: los sprints 8 y 9 combinan desarrollo,
 > despliegue y defensa. Cada historia se entrega completa, con su API, su pantalla y sus pruebas, para
 > que la demo crezca sprint a sprint en vez de depender de un sprint final de frontend.
+>
+> **Replanificación del 16 de octubre de 2026.** El Sprint 5 cerró sin incremento por la carga laboral
+> de la práctica. HU-01 y HU-03 se sumaron al Sprint 6, que concentra el recorrido central de la demo.
 
 ---
 

@@ -23,17 +23,19 @@ Versión interactiva: [`diagramas/arquitectura/componentes.html`](diagramas/arqu
 
 ### 1.1 Responsabilidad de cada componente
 
-| Componente | Responsabilidad | Ubicación | Estado al 4-oct |
+| Componente | Responsabilidad | Ubicación | Estado al 16-oct |
 |---|---|---|---|
-| **Pantallas** | Navegación y vistas con Expo Router | `mobile/app/` | Pantalla puente que consulta `/health`. Las vistas de negocio se construyen desde el Sprint 6 |
+| **Pantallas** | Navegación y vistas con Expo Router | `mobile/app/` | Entrada, registro, mapa, detalle del partido, publicar, mis partidos y perfil (HU-01, HU-03, HU-04, HU-05) |
 | **Cliente API** | Único punto de la app que habla con el backend: agrega el JWT y unifica los errores | `mobile/src/api/client.ts` | Implementado |
-| **KanchaMap** | Un mismo componente de mapa con implementación nativa y web | `mobile/src/components/KanchaMap/` | Por implementar (HU-04) |
-| **Rutas `/api/v1`** | Declaran los endpoints y encadenan `auth` y `validate` antes del controlador | `backend/src/routes/`, `backend/src/middlewares/` | `/health` y los tres middlewares implementados |
-| **Controladores** | Traducen HTTP a llamadas de servicio y de vuelta. Sin lógica de negocio | `backend/src/controllers/` | Por implementar |
-| **matching.service** | Búsqueda por radio, aprobación de postulaciones y conteo de cupos sin sobreventa | `backend/src/services/` | Por implementar (HU-04, HU-05) |
+| **KanchaMap** | Un mismo componente de mapa con implementación nativa y web | `mobile/src/components/KanchaMap/` | Implementado: MapLibre GL en web, react-native-maps en móvil |
+| **Rutas `/api/v1`** | Declaran los endpoints y encadenan `auth` y `validate` antes del controlador | `backend/src/routes/`, `backend/src/middlewares/` | `/health`, `auth`, `users`, `matches` y `participations` implementados |
+| **Controladores** | Traducen HTTP a llamadas de servicio y de vuelta. Sin lógica de negocio | `backend/src/controllers/` | Implementados para HU-01, HU-03, HU-04 y HU-05 |
+| **matching.service** | Búsqueda por radio, aprobación de postulaciones y conteo de cupos sin sobreventa | `backend/src/services/matching.service.ts` | Implementado · `ST_DWithin` y aprobación con `SELECT … FOR UPDATE` · 10 pruebas unitarias y 8 de integración |
 | **honor.service** | Cálculo de reputación 0–10 y ventana de 48 h para calificar | `backend/src/services/honor.service.ts` | Implementado · 10 pruebas unitarias |
+| **auth.service** | Registro, inicio de sesión, JWT y la forma pública del usuario (nunca expone el hash) | `backend/src/services/auth.service.ts` | Implementado (HU-01) · 8 pruebas unitarias y 9 de integración |
+| **match.service** | Publicación de partidos, detalle con participantes y "Mis partidos" | `backend/src/services/match.service.ts` | Implementado (HU-03) · 14 pruebas unitarias y 12 de integración |
 | **payment.service** | Cuota individual, comisión, retención por deserción y orden de compra Webpay | `backend/src/services/payment.service.ts` | Implementado · 12 pruebas unitarias |
-| **Repositorios** | Único acceso a datos: Prisma y `$queryRaw` para las consultas PostGIS | `backend/src/repositories/` | Por implementar · el cliente Prisma ya está configurado |
+| **Repositorios** | Único acceso a datos: Prisma y `$queryRaw` para las consultas PostGIS | `backend/src/repositories/` | `user`, `match` y `participation` implementados |
 | **PostgreSQL + PostGIS** | Persistencia relacional y búsqueda geoespacial | `backend/prisma/` | Esquema, dos migraciones y datos de demo listos |
 
 ### 1.2 Reglas de dependencia

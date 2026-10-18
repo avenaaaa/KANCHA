@@ -1,0 +1,33 @@
+Kancha · backend · npm test con cobertura · 16 de octubre de 2026
+Base de pruebas: PostgreSQL 16 + PostGIS 3.4 (kancha_test)
+
+ RUN  v2.1.9 fase-2-desarrollo/backend
+      Coverage enabled with v8
+ ✓ tests/integration/participations.int.test.ts (8 tests) 551ms
+ ✓ tests/integration/matches.int.test.ts (12 tests) 280ms
+ ✓ tests/integration/auth.int.test.ts (9 tests) 162ms
+ ✓ tests/unit/match.service.test.ts (14 tests) 16ms
+ ✓ tests/unit/matching.service.test.ts (10 tests) 6ms
+ ✓ tests/unit/payment.service.test.ts (12 tests) 7ms
+ ✓ tests/unit/honor.service.test.ts (10 tests) 6ms
+ ✓ tests/unit/auth.service.test.ts (8 tests) 11ms
+ ✓ tests/unit/errors.test.ts (7 tests) 4ms
+ Test Files  9 passed (9)
+      Tests  90 passed (90)
+   Start at  19:15:21
+   Duration  5.98s (transform 305ms, setup 0ms, collect 1.92s, tests 1.04s, environment 2ms, prepare 768ms)
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   97.39 |    88.61 |     100 |   97.39 |                   
+ services          |   97.49 |    90.09 |     100 |   97.49 |                   
+  auth.service.ts  |   94.11 |     87.5 |     100 |   94.11 | 77-79             
+  honor.service.ts |     100 |      100 |     100 |     100 |                   
+  match.service.ts |     100 |    95.83 |     100 |     100 | 108               
+  ...ng.service.ts |   95.12 |    85.36 |     100 |   95.12 | 70-71,111-112     
+  ...nt.service.ts |     100 |    81.81 |     100 |     100 | 35,53             
+ utils             |   96.42 |       75 |     100 |   96.42 |                   
+  db-errors.ts     |    87.5 |       40 |     100 |    87.5 | 12                
+  errors.ts        |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------

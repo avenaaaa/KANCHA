@@ -8,8 +8,8 @@ Retrospective.
 |---|---|---|---|---|
 | 3 | 1 – 14 sep 2026 | Diseño: modelo de datos, UML y esqueleto | Diseño entregado · documentación pendiente | [sprint-03.md](sprint-03.md) |
 | 4 | 15 – 28 sep 2026 | HU-01 y HU-03 | 0 de 8 puntos · ambiente y repositorio publicados | [sprint-04.md](sprint-04.md) |
-| 5 | 29 sep – 12 oct 2026 | HU-01 y HU-03 | En curso | [sprint-05.md](sprint-05.md) |
-| 6 | 13 – 26 oct 2026 | HU-04 y HU-05 | Planificado | — |
+| 5 | 29 sep – 12 oct 2026 | HU-01 y HU-03 | 0 de 8 puntos · impedimento laboral · historias al Sprint 6 | [sprint-05.md](sprint-05.md) |
+| 6 | 13 – 26 oct 2026 | HU-01, HU-03, HU-04 y HU-05 | En curso | [sprint-06.md](sprint-06.md) |
 | 7 | 27 oct – 9 nov 2026 | HU-08 y HU-09 | Planificado | — |
 | 8 | 10 – 23 nov 2026 | HU-02, HU-06 y HU-07 | Planificado | — |
 | 9 | 24 nov – 7 dic 2026 | HU-10 | Planificado | — |
