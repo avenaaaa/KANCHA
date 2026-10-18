@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import { apiRouter } from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFound } from './utils/errors.js';
+import { openapi } from './docs/openapi.js';
 
 export function createApp() {
   const app = express();
@@ -11,6 +13,19 @@ export function createApp() {
   app.use(helmet());
   app.use(cors());
   app.use(express.json({ limit: '1mb' }));
+
+  // Documentación navegable del contrato (DESARROLLO.md §6.4).
+  app.get('/api/docs.json', (_req, res) => {
+    res.json(openapi);
+  });
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openapi, {
+      customSiteTitle: 'Kancha API',
+      swaggerOptions: { persistAuthorization: true },
+    }),
+  );
 
   app.use('/api/v1', apiRouter);
 

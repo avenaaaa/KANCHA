@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kancha — Diagrama de componentes",
+    "locale": "es",
+    "output": "componentes.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "pantallas",
+      "type": "frontend",
+      "label": "Pantallas",
+      "sublabel": "Expo Router · app/",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "clienteApi",
+      "type": "frontend",
+      "label": "Cliente API",
+      "sublabel": "fetch + TanStack Query",
+      "pos": [
+        290,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "mapa",
+      "type": "frontend",
+      "label": "KanchaMap",
+      "sublabel": "mapa nativo y web",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "rutas",
+      "type": "backend",
+      "label": "Rutas /api/v1",
+      "sublabel": "auth · validate (Zod)",
+      "pos": [
+        580,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "JWT"
+    },
+    {
+      "id": "controladores",
+      "type": "backend",
+      "label": "Controladores",
+      "sublabel": "HTTP ↔ servicio",
+      "pos": [
+        830,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "matching",
+      "type": "backend",
+      "label": "matching.service",
+      "sublabel": "cupos · radio ST_DWithin",
+      "pos": [
+        580,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "honor",
+      "type": "backend",
+      "label": "honor.service",
+      "sublabel": "reputación 0–10 · 48 h",
+      "pos": [
+        830,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "payment",
+      "type": "backend",
+      "label": "payment.service",
+      "sublabel": "cuota · retención 12 h",
+      "pos": [
+        1080,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "repos",
+      "type": "backend",
+      "label": "Repositorios",
+      "sublabel": "Prisma · $queryRaw",
+      "pos": [
+        830,
+        380
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL + PostGIS",
+      "sublabel": "5 tablas · índice GIST",
+      "pos": [
+        830,
+        540
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "transbank",
+      "type": "external",
+      "label": "Transbank Webpay",
+      "sublabel": "ambiente Integración",
+      "pos": [
+        1330,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "push",
+      "type": "external",
+      "label": "Expo Push API",
+      "sublabel": "aviso de cupo (HU-10)",
+      "pos": [
+        290,
+        380
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "tiles",
+      "type": "external",
+      "label": "OpenFreeMap",
+      "sublabel": "tiles del mapa oscuro",
+      "pos": [
+        40,
+        380
+      ],
+      "size": [
+        150,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "App Expo — fase-2-desarrollo/mobile",
+      "wraps": [
+        "pantallas",
+        "clienteApi",
+        "mapa"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "API REST Express — fase-2-desarrollo/backend",
+      "wraps": [
+        "rutas",
+        "controladores",
+        "matching",
+        "honor",
+        "payment",
+        "repos"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "pantallas-cliente",
+      "from": "pantallas",
+      "to": "clienteApi",
+      "label": "hooks"
+    },
+    {
+      "id": "pantallas-mapa",
+      "from": "pantallas",
+      "to": "mapa",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "mapa-tiles",
+      "from": "mapa",
+      "to": "tiles",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "cliente-rutas",
+      "from": "clienteApi",
+      "to": "rutas",
+      "label": "REST + JWT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "rutas-controladores",
+      "from": "rutas",
+      "to": "controladores",
+      "label": "valida"
+    },
+    {
+      "id": "ctrl-honor",
+      "from": "controladores",
+      "to": "honor",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "ctrl-matching",
+      "from": "controladores",
+      "to": "matching"
+    },
+    {
+      "id": "ctrl-payment",
+      "from": "controladores",
+      "to": "payment"
+    },
+    {
+      "id": "honor-repos",
+      "from": "honor",
+      "to": "repos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "matching-repos",
+      "from": "matching",
+      "to": "repos"
+    },
+    {
+      "id": "payment-repos",
+      "from": "payment",
+      "to": "repos"
+    },
+    {
+      "id": "repos-db",
+      "from": "repos",
+      "to": "db",
+      "label": "SQL",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "payment-transbank",
+      "from": "payment",
+      "to": "transbank",
+      "label": "Webpay",
+      "variant": "dashed"
+    },
+    {
+      "id": "matching-push",
+      "from": "matching",
+      "to": "push",
+      "label": "notifica",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "App Expo",
+      "items": [
+        "Un solo código para Android, iOS y web",
+        "KanchaMap oculta la diferencia entre el mapa nativo y el web",
+        "El cliente API es el único punto que habla con el backend"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "API en capas",
+      "items": [
+        "Flujo fijo: ruta → controlador → servicio → repositorio",
+        "Una ruta nunca toca la base de datos",
+        "Las reglas de negocio viven en los servicios y se prueban sin HTTP"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado al 4 de octubre de 2026",
+      "items": [
+        "Implementado: honor.service, payment.service, middlewares, cliente API y /health",
+        "En diseño: matching.service, controladores, repositorios y rutas de negocio",
+        "Se construyen en los sprints 5 a 8"
+      ]
+    }
+  ]
+}

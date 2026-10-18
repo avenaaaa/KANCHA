@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kancha — Diagrama de despliegue",
+    "locale": "es",
+    "output": "despliegue.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "kancha-web",
+      "sublabel": "nginx:alpine · :8080",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "kancha-api",
+      "sublabel": "node:22-alpine · :3000",
+      "pos": [
+        300,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "dbLocal",
+      "type": "database",
+      "label": "kancha-db",
+      "sublabel": "postgis 16-3.4 · :5432",
+      "pos": [
+        560,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "volumen",
+      "type": "database",
+      "label": "kancha-db-data",
+      "sublabel": "volumen Docker",
+      "pos": [
+        820,
+        60
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "tiles",
+      "type": "external",
+      "label": "OpenFreeMap",
+      "sublabel": "tiles del mapa",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "transbank",
+      "type": "external",
+      "label": "Transbank Webpay",
+      "sublabel": "ambiente Integración",
+      "pos": [
+        300,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "push",
+      "type": "external",
+      "label": "Expo Push API",
+      "sublabel": "notificaciones",
+      "pos": [
+        560,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "estatico",
+      "type": "cloud",
+      "label": "Render Static Site",
+      "sublabel": "build web de Expo",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "servicio",
+      "type": "cloud",
+      "label": "Render Web Service",
+      "sublabel": "imagen Docker de la API",
+      "pos": [
+        300,
+        420
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "supabase",
+      "type": "database",
+      "label": "Supabase",
+      "sublabel": "Postgres + PostGIS",
+      "pos": [
+        560,
+        420
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "expoGo",
+      "type": "frontend",
+      "label": "Expo Go",
+      "sublabel": "Android / iOS por QR",
+      "pos": [
+        300,
+        600
+      ],
+      "size": [
+        150,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Equipo local — git clone + docker compose up",
+      "wraps": [
+        "web",
+        "api",
+        "dbLocal",
+        "volumen"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Demo pública en la nube — respaldo de la defensa",
+      "wraps": [
+        "estatico",
+        "servicio",
+        "supabase"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "web-api",
+      "from": "web",
+      "to": "api",
+      "label": "HTTP :3000",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-db",
+      "from": "api",
+      "to": "dbLocal",
+      "label": "Prisma"
+    },
+    {
+      "id": "db-volumen",
+      "from": "dbLocal",
+      "to": "volumen",
+      "label": "persiste"
+    },
+    {
+      "id": "web-tiles",
+      "from": "web",
+      "to": "tiles",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-transbank",
+      "from": "api",
+      "to": "transbank",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-push",
+      "from": "api",
+      "to": "push",
+      "variant": "dashed"
+    },
+    {
+      "id": "estatico-servicio",
+      "from": "estatico",
+      "to": "servicio",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "servicio-supabase",
+      "from": "servicio",
+      "to": "supabase",
+      "label": "SSL"
+    },
+    {
+      "id": "estatico-tiles",
+      "from": "estatico",
+      "to": "tiles",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "servicio-transbank",
+      "from": "servicio",
+      "to": "transbank",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "servicio-push",
+      "from": "servicio",
+      "to": "push",
+      "variant": "dashed"
+    },
+    {
+      "id": "expo-servicio",
+      "from": "expoGo",
+      "to": "servicio",
+      "label": "HTTPS",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Plan A: Docker local",
+      "items": [
+        "Tres contenedores con un solo comando",
+        "La API aplica las migraciones y carga los datos de demo al arrancar",
+        "No depende de internet salvo por el mapa y el pago de prueba"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Plan B: demo en la nube",
+      "items": [
+        "La misma imagen de la API, desplegada en Render",
+        "Base de datos en Supabase con PostGIS",
+        "Se monta en los sprints 8 y 9 (Fase 3)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Servicios externos",
+      "items": [
+        "Transbank Webpay en ambiente de Integración, sin dinero real",
+        "Expo Push API para el aviso de cupo liberado",
+        "La app nativa en Expo Go usa la API de la nube"
+      ]
+    }
+  ]
+}

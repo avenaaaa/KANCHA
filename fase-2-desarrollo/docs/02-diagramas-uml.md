@@ -228,6 +228,9 @@ flowchart TB
     style CLOUD fill:#2A2A2A,color:#FFFFFF
 ```
 
+> La versión detallada de este diagrama, junto con el **diagrama de componentes**, está en
+> [`03-arquitectura.md`](03-arquitectura.md).
+
 **Lectura:** el bloque de la izquierda es el plan A de la defensa — todo corre en la máquina del
 profesor con un solo comando, sin depender de internet. El bloque de la nube es el respaldo, y la
 app nativa se demuestra por QR sobre la misma API desplegada.
@@ -258,4 +261,250 @@ stateDiagram-v2
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026*
+## 7. Diagrama de clases — Modelo de dominio
+
+Las cinco entidades del sistema con sus atributos, tipos y multiplicidades. Corresponde uno a uno
+con `backend/prisma/schema.prisma`.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class User {
+        +UUID id
+        +String email
+        -String passwordHash
+        +String name
+        +Sport favoriteSport
+        +Int matchesPlayed
+        +Decimal honorScore
+        +Decimal attendanceRate
+        +Decimal punctualityRate
+        +Decimal fairPlayRate
+        +String expoPushToken
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Match {
+        +UUID id
+        +UUID organizerId
+        +String title
+        +Sport sport
+        +SkillLevel level
+        +String venueName
+        +String address
+        +Geography location
+        +DateTime startsAt
+        +Int durationMin
+        +Int totalSlots
+        +Int filledSlots
+        +Int totalCost
+        +MatchStatus status
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Participation {
+        +UUID id
+        +UUID matchId
+        +UUID userId
+        +PartStatus status
+        +Int amountDue
+        +DateTime joinedAt
+        +DateTime updatedAt
+    }
+
+    class Rating {
+        +UUID id
+        +UUID matchId
+        +UUID raterId
+        +UUID ratedId
+        +Int punctuality
+        +Int conduct
+        +DateTime createdAt
+    }
+
+    class Payment {
+        +UUID id
+        +UUID participationId
+        +Int amount
+        +Int commission
+        +Int retained
+        +PayStatus status
+        +String buyOrder
+        +String sessionId
+        +String token
+        +DateTime authorizedAt
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Sport {
+        <<enumeration>>
+        FUTBOL
+        PADEL
+        BASQUETBOL
+    }
+
+    class SkillLevel {
+        <<enumeration>>
+        PRINCIPIANTE
+        MEDIO
+        AVANZADO
+    }
+
+    class MatchStatus {
+        <<enumeration>>
+        OPEN
+        FULL
+        IN_PROGRESS
+        FINISHED
+        ARCHIVED
+        CANCELLED
+    }
+
+    class PartStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        PAID
+        CANCELLED
+        NO_SHOW
+    }
+
+    class PayStatus {
+        <<enumeration>>
+        INITIATED
+        AUTHORIZED
+        FAILED
+        REFUNDED
+        RETAINED
+    }
+
+    User "1" --> "0..*" Match : organiza
+    User "1" --> "0..*" Participation : postula
+    Match "1" *-- "0..*" Participation : recibe
+    Participation "1" *-- "0..1" Payment : genera
+    Match "1" *-- "0..*" Rating : contextualiza
+    User "1" --> "0..*" Rating : califica (rater)
+    User "1" --> "0..*" Rating : es calificado (rated)
+
+    User ..> Sport
+    Match ..> Sport
+    Match ..> SkillLevel
+    Match ..> MatchStatus
+    Participation ..> PartStatus
+    Payment ..> PayStatus
+```
+
+**Lectura:** el rombo relleno es composición: una participación, una reseña o un pago no existen sin
+su partido o su participación, y se borran con ellos (`ON DELETE CASCADE`). La flecha simple es
+asociación: el usuario sobrevive aunque se borre el partido. `honorScore` y las tres tasas de `User`
+admiten valor nulo, que la interfaz muestra como "Sin calificaciones aún".
+
+---
+
+## 8. Diagrama de clases — Servicios de negocio
+
+Las operaciones del sistema viven en la capa de servicios, no en las entidades. Cada servicio es un
+módulo de funciones puras: recibe datos, devuelve un resultado y no guarda estado.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class HonorService {
+        <<service>>
+        +calculateHonor(ratings, attendance) HonorBreakdown
+        +isRatingWindowOpen(startsAt, durationMin, now) Boolean
+    }
+
+    class PaymentService {
+        <<service>>
+        +calculateAmountDue(totalCost, totalSlots) Int
+        +calculateCommission(amount, rate) Int
+        +calculateRefund(amountPaid, startsAt, now) RefundBreakdown
+        +buildBuyOrder(participationId, now) String
+    }
+
+    class MatchingService {
+        <<service>>
+        +findNearby(lat, lng, radiusM, filters) Match[]
+        +approveParticipation(participationId) Participation
+    }
+
+    class HonorBreakdown {
+        <<value object>>
+        +Number attendanceRate
+        +Number punctualityRate
+        +Number fairPlayRate
+        +Number honorScore
+    }
+
+    class RatingSample {
+        <<value object>>
+        +Int punctuality
+        +Int conduct
+    }
+
+    class AttendanceSample {
+        <<value object>>
+        +Int attended
+        +Int noShow
+    }
+
+    class RefundBreakdown {
+        <<value object>>
+        +Int refunded
+        +Int retained
+        +Boolean withinRetentionWindow
+    }
+
+    class AppError {
+        +Int statusCode
+        +String code
+        +String message
+        +Unknown details
+    }
+
+    class Env {
+        <<config>>
+        +Number PLATFORM_COMMISSION_RATE
+        +Number RETENTION_WINDOW_HOURS
+        +Number RETENTION_RATE
+        +Number RATING_WINDOW_HOURS
+        +Int HONOR_SAMPLE_SIZE
+    }
+
+    class User
+    class Match
+    class Participation
+    class Rating
+    class Payment
+
+    HonorService ..> RatingSample : recibe
+    HonorService ..> AttendanceSample : recibe
+    HonorService ..> HonorBreakdown : devuelve
+    HonorService ..> Env : lee
+    PaymentService ..> RefundBreakdown : devuelve
+    PaymentService ..> Env : lee
+
+    HonorService ..> Rating : promedia
+    HonorService ..> User : actualiza honorScore
+    PaymentService ..> Payment : crea y confirma
+    PaymentService ..> Participation : marca PAID
+    MatchingService ..> Match : busca por radio
+    MatchingService ..> Participation : aprueba y cuenta cupos
+    MatchingService ..> AppError : lanza
+```
+
+**Lectura:** las operaciones de `HonorService` y `PaymentService` existen en el código y tienen 22
+pruebas unitarias. `MatchingService` y la persistencia de los resultados (flechas hacia `User`,
+`Rating`, `Payment`, `Participation` y `Match`) son diseño: se implementan junto con sus historias.
+`Env` reúne los parámetros de negocio configurables, para que cambiar la comisión o la ventana de
+retención no exija tocar código.
+
+---
+
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 4 de octubre de 2026*

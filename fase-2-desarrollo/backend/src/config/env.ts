@@ -11,6 +11,8 @@ const schema = z.object({
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  /** Costo de bcrypt. 12 en producción (S-07); las pruebas lo bajan para ir rápido. */
+  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
   API_BASE_URL: z.string().url().default('http://localhost:3000'),
 
   TBK_ENV: z.enum(['integration', 'production']).default('integration'),

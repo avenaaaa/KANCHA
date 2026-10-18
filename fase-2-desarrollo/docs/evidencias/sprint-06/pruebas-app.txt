@@ -1,0 +1,29 @@
+Kancha · app · npm test · 16 de octubre de 2026
+
+PASS src/__tests__/components.test.tsx
+  HonorBadge (DESIGN.md §4.5)
+    ✓ M-07 · sin reseñas dice "Sin calificaciones aún", nunca 0 (278 ms)
+    ✓ M-08 · con reseñas muestra el puntaje con un decimal (4 ms)
+  SlotBar
+    ✓ M-09 · informa ocupados y total a los lectores de pantalla (2 ms)
+  SportFilter (DESIGN.md §4.4)
+    ✓ M-10 · muestra los tres deportes en orden Fútbol → Pádel → Básquet (16 ms)
+    ✓ M-11 · tocar un chip avisa qué deporte cambió (6 ms)
+  MatchCard (DESIGN.md §4.2)
+    ✓ M-12 · muestra cupos, cuota por jugador, lugar y distancia (7 ms)
+    ✓ M-13 · tocar la carta abre el partido (6 ms)
+
+PASS src/__tests__/format.test.ts
+  formatos de la interfaz
+    ✓ M-01 · muestra pesos chilenos con punto de miles y "Gratis" para 0 (1 ms)
+    ✓ M-02 · el CTA dice cuántos faltan (DESIGN.md §4.3)
+    ✓ M-03 · distancias en metros bajo 1 km y en km con coma decimal (1 ms)
+    ✓ M-04 · hoy y mañana se nombran; el resto lleva día y fecha
+    ✓ M-05 · "Este finde" desde un viernes va del sábado al domingo
+    ✓ M-06 · "Cuando sea" no limita el horario
+
+Test Suites: 2 passed, 2 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        1.416 s, estimated 2 s
+Ran all test suites.

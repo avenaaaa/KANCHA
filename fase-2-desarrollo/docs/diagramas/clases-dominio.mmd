@@ -1,0 +1,129 @@
+classDiagram
+    direction TB
+
+    class User {
+        +UUID id
+        +String email
+        -String passwordHash
+        +String name
+        +Sport favoriteSport
+        +Int matchesPlayed
+        +Decimal honorScore
+        +Decimal attendanceRate
+        +Decimal punctualityRate
+        +Decimal fairPlayRate
+        +String expoPushToken
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Match {
+        +UUID id
+        +UUID organizerId
+        +String title
+        +Sport sport
+        +SkillLevel level
+        +String venueName
+        +String address
+        +Geography location
+        +DateTime startsAt
+        +Int durationMin
+        +Int totalSlots
+        +Int filledSlots
+        +Int totalCost
+        +MatchStatus status
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Participation {
+        +UUID id
+        +UUID matchId
+        +UUID userId
+        +PartStatus status
+        +Int amountDue
+        +DateTime joinedAt
+        +DateTime updatedAt
+    }
+
+    class Rating {
+        +UUID id
+        +UUID matchId
+        +UUID raterId
+        +UUID ratedId
+        +Int punctuality
+        +Int conduct
+        +DateTime createdAt
+    }
+
+    class Payment {
+        +UUID id
+        +UUID participationId
+        +Int amount
+        +Int commission
+        +Int retained
+        +PayStatus status
+        +String buyOrder
+        +String sessionId
+        +String token
+        +DateTime authorizedAt
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Sport {
+        <<enumeration>>
+        FUTBOL
+        PADEL
+        BASQUETBOL
+    }
+
+    class SkillLevel {
+        <<enumeration>>
+        PRINCIPIANTE
+        MEDIO
+        AVANZADO
+    }
+
+    class MatchStatus {
+        <<enumeration>>
+        OPEN
+        FULL
+        IN_PROGRESS
+        FINISHED
+        ARCHIVED
+        CANCELLED
+    }
+
+    class PartStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        PAID
+        CANCELLED
+        NO_SHOW
+    }
+
+    class PayStatus {
+        <<enumeration>>
+        INITIATED
+        AUTHORIZED
+        FAILED
+        REFUNDED
+        RETAINED
+    }
+
+    User "1" --> "0..*" Match : organiza
+    User "1" --> "0..*" Participation : postula
+    Match "1" *-- "0..*" Participation : recibe
+    Participation "1" *-- "0..1" Payment : genera
+    Match "1" *-- "0..*" Rating : contextualiza
+    User "1" --> "0..*" Rating : califica (rater)
+    User "1" --> "0..*" Rating : es calificado (rated)
+
+    User ..> Sport
+    Match ..> Sport
+    Match ..> SkillLevel
+    Match ..> MatchStatus
+    Participation ..> PartStatus
+    Payment ..> PayStatus

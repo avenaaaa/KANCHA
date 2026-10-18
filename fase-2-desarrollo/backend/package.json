@@ -1,6 +1,6 @@
 {
   "name": "kancha-backend",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "private": true,
   "description": "API REST de Kancha — plataforma geolocalizada para partidos amateur",
   "type": "module",

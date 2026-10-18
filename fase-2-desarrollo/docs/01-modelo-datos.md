@@ -186,17 +186,34 @@ erDiagram
 
 ## 4. Índices
 
+Son los índices que crean las migraciones de `backend/prisma/migrations/`, con sus nombres reales.
+
 ```sql
-CREATE INDEX idx_match_location ON "Match" USING GIST (location);  -- búsqueda por radio (HU-04)
-CREATE INDEX idx_match_starts_at ON "Match" ("startsAt");          -- filtro temporal
-CREATE INDEX idx_match_sport_status ON "Match" (sport, status);    -- filtro por deporte
-CREATE UNIQUE INDEX idx_participation_unique ON "Participation" ("matchId", "userId");
-CREATE UNIQUE INDEX idx_rating_unique ON "Rating" ("matchId", "raterId", "ratedId");
-CREATE UNIQUE INDEX idx_payment_participation ON "Payment" ("participationId");
+-- Búsqueda geoespacial (HU-04). Se crea a mano: Prisma no genera índices GIST.
+CREATE INDEX idx_match_location ON "Match" USING GIST (location);
+
+-- Filtros del mapa
+CREATE INDEX "Match_startsAt_idx"      ON "Match" ("startsAt");
+CREATE INDEX "Match_sport_status_idx"  ON "Match" ("sport", "status");
+CREATE INDEX "Match_level_idx"         ON "Match" ("level");
+
+-- Consultas de perfil y de honor
+CREATE INDEX "User_favoriteSport_idx"          ON "User" ("favoriteSport");
+CREATE INDEX "Participation_userId_status_idx" ON "Participation" ("userId", "status");
+CREATE INDEX "Rating_ratedId_createdAt_idx"    ON "Rating" ("ratedId", "createdAt");
+CREATE INDEX "Payment_status_idx"              ON "Payment" ("status");
+
+-- Unicidad: reglas de negocio garantizadas por la base de datos
+CREATE UNIQUE INDEX "User_email_key"                     ON "User" ("email");
+CREATE UNIQUE INDEX "Participation_matchId_userId_key"   ON "Participation" ("matchId", "userId");
+CREATE UNIQUE INDEX "Rating_matchId_raterId_ratedId_key" ON "Rating" ("matchId", "raterId", "ratedId");
+CREATE UNIQUE INDEX "Payment_participationId_key"        ON "Payment" ("participationId");
+CREATE UNIQUE INDEX "Payment_buyOrder_key"               ON "Payment" ("buyOrder");
 ```
 
 El índice GIST es el que sostiene el argumento de escalabilidad de la competencia C3: convierte la
 búsqueda geoespacial de un recorrido lineal sobre toda la tabla a una búsqueda sobre un árbol espacial.
+`Rating_ratedId_createdAt_idx` sirve al cálculo de honor, que lee las últimas 20 reseñas de un jugador.
 
 ---
 
@@ -213,4 +230,70 @@ búsqueda geoespacial de un recorrido lineal sobre toda la tabla a una búsqueda
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026*
+## 6. Normalización
+
+El modelo está en **tercera forma normal (3FN)**, con cuatro desnormalizaciones deliberadas que se
+justifican más abajo.
+
+### 6.1 Verificación por forma normal
+
+| Forma | Qué exige | Cómo la cumple el modelo |
+|---|---|---|
+| **1FN** | Valores atómicos, sin grupos repetidos, clave primaria en cada tabla | Cada tabla tiene un `id` UUID. No hay columnas multivaluadas: los participantes de un partido no son una lista dentro de `Match`, son filas de `Participation`; las reseñas son filas de `Rating`. `location` es un único valor geográfico, no un par de columnas sueltas |
+| **2FN** | Ningún atributo depende de solo una parte de una clave compuesta | Todas las claves primarias son simples, así que no puede haber dependencia parcial. En las claves candidatas compuestas la dependencia también es total: `status` y `amountDue` dependen del par `(matchId, userId)`; `punctuality` y `conduct` dependen del trío `(matchId, raterId, ratedId)` |
+| **3FN** | Ningún atributo depende de otro atributo que no sea clave | Los datos del organizador no se copian en `Match`: se llega a ellos por `organizerId`. Los datos del jugador no se copian en `Participation` ni en `Rating`. El detalle de la transacción vive en `Payment`, separado de `Participation`. Los dominios cerrados (`sport`, `level`, estados) son tipos ENUM, no texto libre |
+
+### 6.2 Dependencias funcionales por tabla
+
+| Tabla | Clave primaria | Claves candidatas | Dependencias |
+|---|---|---|---|
+| `User` | `id` | `email` | `id` → todos los atributos |
+| `Match` | `id` | — | `id` → todos los atributos |
+| `Participation` | `id` | `(matchId, userId)` | `id` → todos · `(matchId, userId)` → `status`, `amountDue`, `joinedAt` |
+| `Rating` | `id` | `(matchId, raterId, ratedId)` | `id` → todos · `(matchId, raterId, ratedId)` → `punctuality`, `conduct`, `createdAt` |
+| `Payment` | `id` | `participationId`, `buyOrder` | `id` → todos los atributos |
+
+### 6.3 Desnormalizaciones deliberadas
+
+Son excepciones a la 3FN tomadas a conciencia. Cada una tiene un motivo y una regla que evita que el
+dato duplicado quede inconsistente.
+
+| Dato | Por qué rompe la forma normal | Por qué se acepta | Cómo se mantiene consistente |
+|---|---|---|---|
+| `User.honorScore`, `attendanceRate`, `punctualityRate`, `fairPlayRate` | Se derivan de `Rating` y `Participation` | La carta de jugador se muestra en cada pin y en cada lista: recalcular sobre 20 reseñas por cada render no escala | Solo `honor.service` los escribe, y lo hace en la misma transacción que guarda la reseña |
+| `User.matchesPlayed` | Es un conteo de `Participation` | Evita un `COUNT` en cada consulta de perfil | Se incrementa al cerrar una participación como asistida |
+| `Match.filledSlots` | Es un conteo de `Participation` aprobadas | Evita un `COUNT` por cada pin del mapa y permite bloquear la fila para no sobrevender cupos | Se actualiza en la misma transacción que aprueba o cancela la participación |
+| `Match.venueName`, `address`, `location` | Si un recinto se repite, `venueName` determina `address` y `location`: dependencia transitiva | El MVP no administra recintos: cada organizador escribe el lugar de su partido, que puede ser una cancha pública sin dueño | Cada partido conserva su propia copia. Si el producto pasa a gestionar recintos, se extrae una tabla `Venue` y `Match` queda con `venueId` |
+
+Dos atributos parecen derivados pero no lo son: **`Participation.amountDue`** y **`Payment.commission`**.
+Se calculan una vez (cuota = costo / cupos, comisión = 10 %) y se **congelan**. Son hechos históricos:
+si mañana cambia el costo del partido o la tasa de comisión, lo ya cobrado no debe cambiar.
+
+### 6.4 Integridad referencial
+
+| Relación | Al borrar el padre | Motivo |
+|---|---|---|
+| `Match` → `Participation`, `Rating` | `CASCADE` | Un partido eliminado no deja filas huérfanas que alteren el cálculo de honor |
+| `Participation` → `Payment` | `CASCADE` | El pago no existe sin su participación |
+| `User` → `Match`, `Participation`, `Rating` | `RESTRICT` | No se puede borrar un usuario con historial: se perdería la trazabilidad de pagos y reseñas |
+
+---
+
+## 7. Script de creación
+
+El modelo relacional se materializa con las migraciones versionadas de Prisma. Son SQL estándar de
+PostgreSQL y se aplican solas al levantar el proyecto con Docker.
+
+| Archivo | Contenido |
+|---|---|
+| [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) | Definición del modelo, fuente de verdad |
+| [`migrations/20260927193802_init/migration.sql`](../backend/prisma/migrations/20260927193802_init/migration.sql) | Extensión PostGIS, tipos ENUM, las cinco tablas, índices y claves foráneas |
+| [`migrations/20260927193816_indice_gist_ubicacion/migration.sql`](../backend/prisma/migrations/20260927193816_indice_gist_ubicacion/migration.sql) | Índice espacial GIST sobre `Match.location` |
+| [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
+
+`User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el
+ORM actualiza en cada modificación.
+
+---
+
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 4 de octubre de 2026*
