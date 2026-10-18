@@ -23,7 +23,10 @@ export async function dbReady(): Promise<boolean> {
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5_000)),
     ]);
     return true;
-  } catch {
+  } catch (err) {
+    // En el CI (GitHub define CI=true) la base es obligatoria: omitir en silencio
+    // dejaría el check en verde sin haber probado nada contra PostGIS.
+    if (process.env['CI']) throw new Error(`CI sin base de datos de pruebas: ${String(err)}`);
     console.warn('⚠️  Sin base de datos de pruebas (kancha_test): se omiten las pruebas de integración.');
     return false;
   }
