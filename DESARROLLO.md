@@ -139,6 +139,8 @@ kancha/
 ├── GUIA-ARRANQUE.md             ← setup inicial paso a paso
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
+├── iniciar-kancha.bat           ← Windows: levanta todo y abre la app con doble clic
+├── detener-kancha.bat           ← Windows: apaga los contenedores
 ├── .env.example
 ├── .gitignore
 ├── .gitattributes
