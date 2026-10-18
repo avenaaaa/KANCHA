@@ -16,7 +16,7 @@ healthRouter.get('/health', async (_req, res) => {
   res.status(db === 'connected' ? 200 : 503).json({
     status: db === 'connected' ? 'ok' : 'degraded',
     db,
-    version: process.env['npm_package_version'] ?? '0.3.0',
+    version: process.env['npm_package_version'] ?? '0.6.0',
     timestamp: new Date().toISOString(),
   });
 });

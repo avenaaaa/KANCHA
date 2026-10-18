@@ -11,7 +11,11 @@ export default defineConfig({
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://kancha:kancha@localhost:5432/kancha_test',
       JWT_SECRET: 'test-secret-solo-para-pruebas',
+      BCRYPT_ROUNDS: '4',
     },
+    // Las pruebas de integración comparten la base kancha_test: se ejecutan en serie.
+    fileParallelism: false,
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
