@@ -30,3 +30,9 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     next(unauthorized('Token inválido o expirado'));
   }
 }
+
+/** Id del usuario autenticado. Solo se usa detrás de authenticate. */
+export function requireUserId(req: Request): string {
+  if (!req.user?.sub) throw unauthorized();
+  return req.user.sub;
+}

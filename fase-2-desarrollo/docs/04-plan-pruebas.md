@@ -2,11 +2,12 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 4 de octubre de 2026 (Sprint 5).
+> Corte del documento: 16 de octubre de 2026 (Sprint 6).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Hoy el backend tiene la lógica de honor y de pagos
-como funciones puras y el endpoint `/health`; los endpoints de negocio se construyen desde el Sprint 5.
+se automatiza cuando exista el código que prueba). Al 16 de octubre están ejecutados los casos de
+HU-01, HU-03, HU-04 y HU-05 (registro, publicación, búsqueda por radio y postulación), además de las
+reglas de honor y de pagos como funciones puras.
 
 ---
 
@@ -28,13 +29,13 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 4-oct |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 16-oct |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` | **22 ejecutadas, 22 pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/blackbox/` | 14 casos cubiertos, 15 diseñados |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | Diseñadas |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` y `mobile/src/__tests__/` | **61 del backend y 13 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 26 casos cubiertos, 3 diseñados |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **29 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/security/` | 3 controles implementados, 1 verificado, resto diseñado |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 7 controles verificados con pruebas, resto diseñado |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -62,12 +63,12 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 4 de octubre de 2026 |
-| Archivos de prueba | 2 |
-| Casos | 22 ejecutados · 22 pasan · 0 fallan |
-| Cobertura de `services/` | 100 % de líneas y funciones · 93,33 % de ramas |
-| `honor.service.ts` | 100 % líneas · 100 % ramas |
-| `payment.service.ts` | 100 % líneas · 81,81 % ramas |
+| Fecha | 16 de octubre de 2026 |
+| Archivos de prueba del backend | 9 (6 unitarios y 3 de integración) |
+| Casos del backend | 90 ejecutados · 90 pasan · 0 fallan (61 unitarias, 29 de integración) |
+| Cobertura de `services/` y `utils/` | 97,39 % de líneas · 88,61 % de ramas · 100 % de funciones |
+| Casos de la app (Jest + React Native Testing Library) | 13 ejecutados · 13 pasan |
+| Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
 
@@ -96,14 +97,35 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | U-21 | `buildBuyOrder` | Respeta el máximo de 26 caracteres de Transbank | HU-08 | Pasa |
 | U-22 | `buildBuyOrder` | Órdenes distintas para participaciones distintas | HU-08 | Pasa |
 
-### 4.3 Unitarias pendientes
+Casos agregados en el Sprint 6:
+
+| IDs | Módulo | Qué prueban | HU |
+|---|---|---|---|
+| U-23 a U-25 | `match.service` · `assertFutureStart` | Fecha futura aceptada; pasada y "ahora exacto" rechazadas con 422 `MATCH_IN_PAST` | HU-03 |
+| U-26 a U-30 | `createMatchSchema` | Valores por defecto, `totalSlots = 0`, partido sin cupo libre, campos extra y montos con decimales | HU-03 |
+| U-31 a U-34 | `nearbyQuerySchema` | Radio de 5 km por defecto, varios deportes, inyección en `sport`, coordenadas no numéricas | HU-04 |
+| U-35, U-36 | `toMatchSummary` | Cupos libres, cuota por jugador y honor `null` del organizador | HU-04 |
+| U-37 a U-41 | `matching.service` · `checkCanJoin` | Organizador, partido lleno, iniciado y cancelado | HU-05 |
+| U-42 a U-46 | `matching.service` · `decideApproval` | Suma de cupo, paso a `FULL`, último cupo ya tomado, aprobación ajena (403), doble aprobación | HU-05 |
+| U-47 a U-54 | `auth.service` y `registerSchema` | El hash nunca sale, honor `null`, correo solo en el perfil propio, JWT, contraseña de 7 y de 8 caracteres | HU-01 |
+| U-55, U-56 | `utils/errors.ts` | Cada constructor devuelve su código HTTP (cierra DEF-01) | — |
+
+### 4.3 Pruebas de la app
+
+| ID | Componente | Caso | Resultado |
+|---|---|---|---|
+| M-01 a M-06 | `lib/format.ts` | Pesos chilenos, texto "Falta 1 / Faltan N", distancias, días y rangos del filtro "Cuándo" | Pasa |
+| M-07, M-08 | `HonorBadge` | Sin reseñas muestra "Sin calificaciones aún" y nunca 0; con reseñas, un decimal | Pasa |
+| M-09 | `SlotBar` | Anuncia "3 de 4 jugadores" a los lectores de pantalla | Pasa |
+| M-10, M-11 | `SportFilter` | Los tres deportes en orden y activos al inicio; tocar un chip avisa cuál cambió | Pasa |
+| M-12, M-13 | `MatchCard` | Muestra cupos, cuota, lugar y distancia; tocarla abre el partido | Pasa |
+
+### 4.4 Unitarias pendientes
 
 | Módulo | Qué falta probar | Sprint |
 |---|---|---|
-| `utils/errors.ts` | Cada constructor devuelve el código HTTP correcto | 5 |
-| `payment.service.ts` | Ramas de montos negativos en comisión y reembolso | 5 |
-| `matching.service.ts` | Conteo de cupos y paso a `FULL` | 6 |
-| Componentes Expo | `MatchCard`, `HonorBadge`, `SportFilter` con Jest y React Native Testing Library | 6 |
+| `payment.service.ts` | Ramas de montos negativos en comisión y reembolso | 7 |
+| `KanchaMap` | Pines y selección en web y en móvil | 7 |
 
 ---
 
@@ -119,18 +141,18 @@ exista.
 
 | ID | HU | Técnica | Entrada | Resultado esperado | Estado |
 |---|---|---|---|---|---|
-| CN-01 | HU-01 | Equivalencia | Registro con datos válidos | 201 · `honorScore` es `null` | Diseñado |
-| CN-02 | HU-01 | Equivalencia | Correo ya registrado | 409 | Diseñado |
-| CN-03 | HU-01 | Límite | Contraseña bajo el mínimo | 422 | Diseñado |
-| CN-04 | HU-03 | Equivalencia | Partido con fecha futura y cupos > 0 | 201 · estado `OPEN` | Diseñado |
-| CN-05 | HU-03 | Límite | `startsAt` en el pasado | 422 | Diseñado |
-| CN-06 | HU-03 | Límite | `totalSlots` = 0 | 422 | Diseñado |
-| CN-07 | HU-04 | Límite | Partido a 4,9 km con radio de 5 km | Aparece en el resultado | Diseñado |
-| CN-08 | HU-04 | Límite | Partido a 5,1 km con radio de 5 km | No aparece | Diseñado |
-| CN-09 | HU-04 | Equivalencia | Filtro por deporte = pádel | Solo partidos de pádel | Diseñado |
-| CN-10 | HU-04 | Equivalencia | Partido lleno o ya iniciado | No aparece | Diseñado |
-| CN-11 | HU-05 | Equivalencia | Postular dos veces al mismo partido | 409 | Diseñado |
-| CN-12 | HU-05 | Límite | Dos jugadores toman el último cupo a la vez | Solo uno queda aprobado | Diseñado |
+| CN-01 | HU-01 | Equivalencia | Registro con datos válidos | 201 · `honorScore` es `null` | Cubierto (integración) |
+| CN-02 | HU-01 | Equivalencia | Correo ya registrado | 409 | Cubierto (integración) |
+| CN-03 | HU-01 | Límite | Contraseña bajo el mínimo | 422 | Cubierto (integración) |
+| CN-04 | HU-03 | Equivalencia | Partido con fecha futura y cupos > 0 | 201 · estado `OPEN` | Cubierto (integración) |
+| CN-05 | HU-03 | Límite | `startsAt` en el pasado | 422 | Cubierto (integración) |
+| CN-06 | HU-03 | Límite | `totalSlots` = 0 | 422 | Cubierto (integración) |
+| CN-07 | HU-04 | Límite | Partido a 4,9 km con radio de 5 km | Aparece en el resultado | Cubierto (integración) |
+| CN-08 | HU-04 | Límite | Partido a 5,1 km con radio de 5 km | No aparece | Cubierto (integración) |
+| CN-09 | HU-04 | Equivalencia | Filtro por deporte = pádel | Solo partidos de pádel | Cubierto (integración) |
+| CN-10 | HU-04 | Equivalencia | Partido lleno o ya iniciado | No aparece | Cubierto (integración) |
+| CN-11 | HU-05 | Equivalencia | Postular dos veces al mismo partido | 409 | Cubierto (integración) |
+| CN-12 | HU-05 | Límite | Dos jugadores toman el último cupo a la vez | Solo uno queda aprobado | Cubierto (integración) |
 | CN-13 | HU-06 | Límite | Calificar a las 47 h 59 min | Aceptado | Cubierto (U-09) |
 | CN-14 | HU-06 | Límite | Calificar a las 48 h 01 min | Rechazado | Cubierto (U-10) |
 | CN-15 | HU-06 | Límite | Calificar antes de que termine el partido | Rechazado | Cubierto (U-07) |
@@ -158,11 +180,11 @@ se prueba en su camino feliz y en su error principal.
 
 | ID | Qué integra | Caso | Sprint | Estado |
 |---|---|---|---|---|
-| I-01 | API + PostgreSQL | `GET /health` responde `ok` con la base conectada y `503` sin ella | 5 | Diseñado |
-| I-02 | API + PostgreSQL | Registro y login devuelven un JWT utilizable (HU-01) | 5 | Diseñado |
-| I-03 | API + PostGIS | `POST /matches` guarda la ubicación como `geography` (HU-03) | 5 | Diseñado |
-| I-04 | API + PostGIS | `GET /matches/nearby` usa `ST_DWithin` y ordena por distancia (HU-04) | 6 | Diseñado |
-| I-05 | API + transacción | Aprobar el último cupo en paralelo no sobrevende (HU-05) | 6 | Diseñado |
+| I-01 | API + PostgreSQL | `GET /health` responde `ok` con la base conectada y `503` sin ella | 5 | **Pasa** |
+| I-02 | API + PostgreSQL | Registro y login devuelven un JWT utilizable (HU-01) | 5 | **Pasa** |
+| I-03 | API + PostGIS | `POST /matches` guarda la ubicación como `geography` (HU-03) | 5 | **Pasa** |
+| I-04 | API + PostGIS | `GET /matches/nearby` usa `ST_DWithin` y ordena por distancia (HU-04) | 6 | **Pasa** |
+| I-05 | API + transacción | Aprobar el último cupo en paralelo no sobrevende (HU-05) | 6 | **Pasa** |
 | I-06 | API + Transbank | `init` crea la transacción y `commit` la confirma con tarjeta de prueba (HU-08) | 7 | Diseñado |
 | I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | Diseñado |
 | I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | Diseñado |
@@ -198,15 +220,15 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 
 | ID | Riesgo | Prueba | Resultado esperado | Estado |
 |---|---|---|---|---|
-| S-01 | Autenticación rota | Llamar un endpoint protegido sin token, con token alterado y con token vencido | 401 en los tres casos | Control implementado (`middlewares/auth.ts`) · prueba diseñada |
-| S-02 | Acceso a objetos ajenos | Aprobar una postulación de un partido que organiza otro usuario | 403 | Diseñado |
+| S-01 | Autenticación rota | Llamar un endpoint protegido sin token, con token alterado y con token vencido | 401 en los tres casos | **Verificado** (`auth.int.test.ts`) |
+| S-02 | Acceso a objetos ajenos | Aprobar una postulación de un partido que organiza otro usuario | 403 | **Verificado** (`participations.int.test.ts`, U-45) |
 | S-03 | Acceso a objetos ajenos | Pagar o cancelar la participación de otro jugador | 403 | Diseñado |
-| S-04 | Inyección | Enviar `'; DROP TABLE "Match"; --` en `sport`, `lat` y `lng` | 422, la tabla sigue intacta | Diseñado · las consultas usan parámetros de `$queryRaw` |
-| S-05 | Validación de entrada | Enviar tipos erróneos y campos extra en cada `POST` | 422 con el formato único de error | Control implementado (`middlewares/validate.ts`) · prueba diseñada |
-| S-06 | Exposición de datos | Revisar que ninguna respuesta incluya `passwordHash` | El campo nunca sale | Diseñado |
-| S-07 | Almacenamiento de credenciales | Revisar la tabla `User` tras un registro | Solo hash bcrypt con costo 12 | Diseñado |
+| S-04 | Inyección | Enviar `'; DROP TABLE "Match"; --` en `sport`, `lat` y `lng` | 422, la tabla sigue intacta | **Verificado** en `sport` (`matches.int.test.ts`, U-33) · las consultas usan parámetros de `$queryRaw` |
+| S-05 | Validación de entrada | Enviar tipos erróneos y campos extra en cada `POST` | 422 con el formato único de error | **Verificado** en registro y publicación (CN-03, CN-06, U-29) |
+| S-06 | Exposición de datos | Revisar que ninguna respuesta incluya `passwordHash` | El campo nunca sale | **Verificado** (U-47 y `auth.int.test.ts`) |
+| S-07 | Almacenamiento de credenciales | Revisar la tabla `User` tras un registro | Solo hash bcrypt con costo 12 | **Verificado** (`auth.int.test.ts`; las pruebas usan costo 4 para ir rápido) |
 | S-08 | Manipulación del pago | Llamar a `commit` con un `token_ws` inventado o repetido | Rechazado, sin cambios en `Payment` | Diseñado |
-| S-09 | Configuración insegura | Revisar cabeceras HTTP de la API | Cabeceras de `helmet` presentes | Control implementado (`app.ts`) · prueba diseñada |
+| S-09 | Configuración insegura | Revisar cabeceras HTTP de la API | Cabeceras de `helmet` presentes | **Verificado** (`auth.int.test.ts`) |
 | S-10 | Secretos en el repositorio | Buscar claves en el historial de Git | Ningún secreto · `.env` ignorado | Verificado: `.gitignore` excluye `.env` |
 | S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | Diseñado |
 | S-12 | Abuso de recursos | Ráfaga de intentos de login | Límite de peticiones activo (429) | Diseñado · el limitador aún no está implementado |
@@ -251,9 +273,10 @@ sección 7 y los doce controles de seguridad de la sección 8.
 
 | ID | Fecha | Descripción | Severidad | Estado |
 |---|---|---|---|---|
-| DEF-01 | 4-oct-2026 | Con `vitest run --coverage` el umbral global de 80 % falla (77,52 %): `utils/errors.ts` no tiene pruebas. El CI no lo detecta porque ejecuta `npm test` sin cobertura | Media | Abierto |
+| DEF-01 | 4-oct-2026 | Con `vitest run --coverage` el umbral global de 80 % falla (77,52 %): `utils/errors.ts` no tiene pruebas. El CI no lo detecta porque ejecuta `npm test` sin cobertura | Media | Cerrado el 16-oct: U-55 y U-56; cobertura en 97,39 % |
 | DEF-02 | 4-oct-2026 | El diccionario de datos declara notas de 1 a 5 "con CHECK en la migración", pero la migración inicial no crea esa restricción | Media | Abierto |
-| DEF-03 | 4-oct-2026 | No existen pruebas de integración ni siquiera para `/health` | Baja | Abierto |
+| DEF-03 | 4-oct-2026 | No existen pruebas de integración ni siquiera para `/health` | Baja | Cerrado el 16-oct: 29 pruebas de integración, incluida I-01 |
+| DEF-04 | 16-oct-2026 | Con PostgreSQL en una zona horaria distinta de UTC, la hora de un partido se guardaba y se comparaba con un desfase de 3 horas: las fechas viajaban a la base sin zona. Se detectó al probar con una base en hora de Chile | Alta | Cerrado el 16-oct: las fechas viajan como texto ISO con `Z`; lo cubre la prueba I-03b |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.

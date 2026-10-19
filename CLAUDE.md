@@ -105,9 +105,9 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 
 | HU | Jira | Épica | Título | MoSCoW | Pts | Sprint |
 |----|------|-------|--------|--------|-----|--------|
-| HU-01 | KAN-7 | E1 | Registro de agente libre | Must | 3 | 5 |
+| HU-01 | KAN-7 | E1 | Registro de agente libre | Must | 3 | 6 |
 | HU-02 | KAN-8 | E2 | Perfil tipo carta de jugador | Should | 5 | 8 |
-| HU-03 | KAN-9 | E3 | Publicar partido con cupos incompletos | Must | 5 | 5 |
+| HU-03 | KAN-9 | E3 | Publicar partido con cupos incompletos | Must | 5 | 6 |
 | HU-04 | KAN-10 | E4 | Buscar partidos cercanos en el mapa | Must | 8 | 6 |
 | HU-05 | KAN-11 | E5 | Postularme a un partido | Must | 3 | 6 |
 | HU-06 | KAN-12 | E6 | Calificar compañeros post-partido | Must | 5 | 8 |
@@ -118,7 +118,7 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
 
 **Total comprometido MVP (HU-01 a HU-10): 50 puntos en 5 sprints de desarrollo (5 a 9).**
-La columna Sprint refleja la replanificación del 27 de septiembre de 2026, vigente en Jira.
+La columna Sprint refleja la replanificación del 16 de octubre de 2026, vigente en Jira.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -167,8 +167,8 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 2 | 24–31 ago 2026 | Formulación Guía 1 | Fase 1 |
 | 3 | 01–14 sep 2026 | Hecho: modelo de datos, UML y esqueleto del repo (KAN-22) | Fase 2 |
 | 4 | 15–28 sep 2026 | Hecho: ambiente de desarrollo, repositorio público, Docker y CI (KAN-24). HU-01 y HU-03 no se iniciaron | Fase 2 |
-| 5 | 29 sep–12 oct 2026 | HU-01, HU-03 — auth, registro, publicación de partidos · documentación de la Fase 2 (KAN-23) | Fase 2 |
-| 6 | 13–26 oct 2026 | HU-04, HU-05 — búsqueda en el mapa y postulación | Fase 2 |
+| 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
+| 6 | 13–26 oct 2026 | HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | HU-08, HU-09 — pago fraccionado y retención | Fase 2 |
 | 8 | 10–23 nov 2026 | HU-02, HU-06, HU-07 — carta de jugador, calificación y honor · despliegue | Fase 3 |
 | 9 | 24 nov–07 dic 2026 | HU-10 · cierre de pruebas C1 · README final, ensayo y defensa ante la comisión | Fase 3 |
@@ -178,6 +178,9 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 > el Sprint 9. **El plan quedó sin holgura:** los sprints 8 y 9 combinan desarrollo, despliegue y
 > defensa. HU-10 es *Could* y es la primera candidata a salir del alcance si un sprint se atrasa.
 > El registro de cada sprint está en `fase-2-desarrollo/docs/scrum/`.
+>
+> **Replanificación del 16 de octubre de 2026.** El Sprint 5 cerró sin incremento por la carga laboral
+> de la práctica. HU-01 y HU-03 pasaron al Sprint 6, que reúne el recorrido central de la demo.
 
 ---
 
@@ -270,4 +273,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 4 de octubre de 2026 (Sprint 5)*
+*Última actualización: 16 de octubre de 2026 (Sprint 6)*
