@@ -1,7 +1,7 @@
 # Sprint 6 — Recorrido central: registro, publicación, mapa y postulación
 
 > 13 al 26 de octubre de 2026 · Fase 2 · **Sprint en curso**
-> Corte de este documento: 16 de octubre de 2026 (día 4 de 14).
+> Corte de este documento: 18 de octubre de 2026 (día 6 de 14).
 
 ---
 
@@ -19,12 +19,12 @@ organizador publica un partido al que le falta gente.
 
 ## 2. Sprint Backlog
 
-| Issue | Tipo | Título | Prioridad | Puntos | Estado al 16-oct |
+| Issue | Tipo | Título | Prioridad | Puntos | Estado al 18-oct |
 |---|---|---|---|---|---|
-| [KAN-7](https://lukasguerrerokancha.atlassian.net/browse/KAN-7) | Historia | HU-01 — Registro de agente libre | Must | 3 | Código y pruebas listos · falta merge |
-| [KAN-9](https://lukasguerrerokancha.atlassian.net/browse/KAN-9) | Historia | HU-03 — Publicar partido con cupos incompletos | Must | 5 | Código y pruebas listos · falta merge |
-| [KAN-10](https://lukasguerrerokancha.atlassian.net/browse/KAN-10) | Historia | HU-04 — Buscar partidos cercanos en el mapa | Must | 8 | Código y pruebas listos · falta merge |
-| [KAN-11](https://lukasguerrerokancha.atlassian.net/browse/KAN-11) | Historia | HU-05 — Postularme a un partido | Must | 3 | Código y pruebas listos · falta merge y notificación |
+| [KAN-7](https://lukasguerrerokancha.atlassian.net/browse/KAN-7) | Historia | HU-01 — Registro de agente libre | Must | 3 | Listo · PR #3 a `develop` con CI en verde |
+| [KAN-9](https://lukasguerrerokancha.atlassian.net/browse/KAN-9) | Historia | HU-03 — Publicar partido con cupos incompletos | Must | 5 | Listo · PR #3 a `develop` con CI en verde |
+| [KAN-10](https://lukasguerrerokancha.atlassian.net/browse/KAN-10) | Historia | HU-04 — Buscar partidos cercanos en el mapa | Must | 8 | Listo · PR #3 a `develop` con CI en verde |
+| [KAN-11](https://lukasguerrerokancha.atlassian.net/browse/KAN-11) | Historia | HU-05 — Postularme a un partido | Must | 3 | En curso · código y pruebas en `develop`; falta la notificación al organizador |
 | [KAN-23](https://lukasguerrerokancha.atlassian.net/browse/KAN-23) | Tarea | Documentación de la Fase 2 | — | — | En curso |
 
 Desglose técnico:
@@ -38,15 +38,13 @@ Desglose técnico:
 
 ## 3. Scrumboard
 
-Estado del tablero al 16 de octubre:
+Estado del tablero al 18 de octubre:
 
 | Por hacer | En curso | Listo |
 |---|---|---|
-| — | KAN-7 · HU-01 | — |
-| | KAN-9 · HU-03 | |
-| | KAN-10 · HU-04 | |
-| | KAN-11 · HU-05 | |
-| | KAN-23 · Documentación Fase 2 | |
+| — | KAN-11 · HU-05 | KAN-7 · HU-01 |
+| | KAN-23 · Documentación Fase 2 | KAN-9 · HU-03 |
+| | | KAN-10 · HU-04 |
 
 Una historia pasa a *Listo* cuando cumple la Definición de Terminado (`DESARROLLO.md` §13): CI en
 verde en el Pull Request, merge a `develop` y evidencia en `docs/evidencias/`.
@@ -55,8 +53,9 @@ verde en el Pull Request, merge a `develop` y evidencia en `docs/evidencias/`.
 
 ![Burndown del Sprint 6](img/burndown-sprint-06.png)
 
-Al día 4 la línea real sigue en 19 puntos: el código de las cuatro historias existe y sus pruebas
-pasan, pero ninguna cumple todavía la DoD.
+Al día 6 la línea real bajó de 19 a 3 puntos: HU-01, HU-03 y HU-04 cumplieron la DoD con el merge
+del PR #3 a `develop` (CI en verde en sus tres jobs) y su cierre en Jira. Quedan los 3 puntos de HU-05,
+cuyo criterio de notificar al organizador depende de HU-10.
 
 ## 5. Daily Meeting
 
@@ -64,6 +63,7 @@ pasan, pero ninguna cumple todavía la DoD.
 |---|---|---|---|
 | 13–15 oct | Sin avance en el proyecto | — | Carga laboral de la práctica (IMP-09) |
 | 16 oct | Replanificación en Jira (HU-01, HU-03 y KAN-23 al Sprint 6). Backend de HU-01, HU-03, HU-04 y HU-05 con 90 pruebas (61 unitarias y 29 de integración contra PostGIS). Swagger en `/api/docs`. App: diseño propio sobre `DESIGN.md`, entrada, registro, mapa, detalle, publicación, mis partidos y perfil. 13 pruebas de componentes | Commit por historia, Pull Request a `develop`, CI en verde. Probar la app en el celular con Expo Go | Los sprints de Jira siguen sin iniciarse (IMP-01) |
+| 18 oct | Commit por historia y PR #3 a `develop`: CI en verde y merge. PR #4 de `develop` a `main`. KAN-7, KAN-9 y KAN-10 a *Listo*. Lanzadores de doble clic para Windows (`iniciar-kancha.bat`, `detener-kancha.bat`) y guía para ver y probar la app | Merge a `main`. Ensayar la demo. Decidir cómo se cierra la notificación de HU-05 | La notificación de HU-05 depende de HU-10, planificada para el Sprint 9 |
 
 ## 6. Registro de impedimentos
 

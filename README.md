@@ -18,6 +18,10 @@ cd KANCHA
 docker compose up --build
 ```
 
+En Windows basta con un doble clic en `iniciar-kancha.bat`: revisa que Docker Desktop esté abierto,
+levanta los tres contenedores, espera a que la API responda y abre la app en el navegador.
+`detener-kancha.bat` lo apaga.
+
 | Dirección | Qué hay |
 |---|---|
 | http://localhost:8080 | La app Kancha (versión web) |
