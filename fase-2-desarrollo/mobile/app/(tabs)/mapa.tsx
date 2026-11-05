@@ -110,7 +110,9 @@ export default function MapScreen() {
       ? 'Estás fuera de La Florida, la comuna del piloto. Te mostramos sus partidos.'
       : source === 'denied'
         ? 'Sin acceso a tu ubicación. Te mostramos los partidos de La Florida.'
-        : null;
+        : source === 'imprecise'
+          ? 'No pudimos ubicarte con precisión. Te mostramos los partidos de La Florida.'
+          : null;
 
   const secondaryChips = (
     <>

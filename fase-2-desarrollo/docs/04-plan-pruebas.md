@@ -67,7 +67,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Archivos de prueba del backend | 11 (6 unitarios y 5 de integración) |
 | Casos del backend | 119 ejecutados · 119 pasan · 0 fallan (73 unitarias, 46 de integración) |
 | Cobertura de `services/` y `utils/` | 97,88 % de líneas · 89,37 % de ramas · 100 % de funciones |
-| Casos de la app (Jest + React Native Testing Library) | 13 ejecutados · 13 pasan |
+| Casos de la app (Jest + React Native Testing Library) | 16 ejecutados · 16 pasan (incluye M-14 a M-16 de DEF-05) |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -128,6 +128,7 @@ Casos agregados en el Sprint 7:
 | M-09 | `SlotBar` | Anuncia "3 de 4 jugadores" a los lectores de pantalla | Pasa |
 | M-10, M-11 | `SportFilter` | Los tres deportes en orden y activos al inicio; tocar un chip avisa cuál cambió | Pasa |
 | M-12, M-13 | `MatchCard` | Muestra cupos, cuota, lugar y distancia; tocarla abre el partido | Pasa |
+| M-14 a M-16 | `useOrigin` · `resolveOrigin` | Posición precisa en la comuna se usa tal cual; posición de red con km de error y posición fuera de la comuna buscan en La Florida (DEF-05) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -252,7 +253,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-01 | Registro de agente libre | U-01 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12 |
 | HU-02 | Carta de jugador | U-01 | CN-18 | I-09 | S-06 |
 | HU-03 | Publicar partido | — | CN-04 a CN-06 | I-03 | S-05 |
-| HU-04 | Buscar partidos cercanos | — | CN-07 a CN-10 | I-04 | S-04 |
+| HU-04 | Buscar partidos cercanos | M-14 a M-16 | CN-07 a CN-10 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | — | CN-11, CN-12 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10 | CN-13 a CN-17 | I-09 | S-05 |
 | HU-07 | Cálculo de honor | U-01 a U-06 | CN-18 a CN-21 | I-09 | — |
@@ -287,6 +288,7 @@ sección 7 y los doce controles de seguridad de la sección 8.
 | DEF-02 | 4-oct-2026 | El diccionario de datos declara notas de 1 a 5 "con CHECK en la migración", pero la migración inicial no crea esa restricción | Media | Abierto |
 | DEF-03 | 4-oct-2026 | No existen pruebas de integración ni siquiera para `/health` | Baja | Cerrado el 16-oct: 29 pruebas de integración, incluida I-01 |
 | DEF-04 | 16-oct-2026 | Con PostgreSQL en una zona horaria distinta de UTC, la hora de un partido se guardaba y se comparaba con un desfase de 3 horas: las fechas viajaban a la base sin zona. Se detectó al probar con una base en hora de Chile | Alta | Cerrado el 16-oct: las fechas viajan como texto ISO con `Z`; lo cubre la prueba I-03b |
+| DEF-05 | 5-nov-2026 | En la demo en la sala, el mapa web no mostró partidos: el PC se ubicó por la red con kilómetros de error y, como el radio del piloto era de 25 km, la app buscó alrededor de ese punto equivocado. Hubo que fijar La Florida a mano en Chrome. Pasos: abrir `localhost:8080` en un PC sin GPS conectado por cable y permitir la ubicación (HU-04) | Alta | Cerrado el 5-nov: una posición con precisión peor que 1 km o a más de 6 km del centro usa La Florida y lo avisa en pantalla; lo cubren M-14 a M-16 |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.
