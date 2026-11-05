@@ -27,15 +27,15 @@ export interface LockedMatch {
 
 /**
  * Operaciones disponibles dentro de una transacción que mueve cupos: aprobar
- * (HU-05) o liberar por pago fallido (HU-08). La decisión la toma
- * matching.service; aquí solo hay SQL.
+ * (HU-05) o liberar por pago fallido (HU-08) o cancelación (HU-09). La decisión
+ * la toman los servicios; aquí solo hay SQL.
  */
 export interface ApprovalTx {
   findParticipation(id: string): Promise<Participation | null>;
   lockMatch(matchId: string): Promise<LockedMatch | null>;
   markApproved(participationId: string, amountDue: number): Promise<Participation>;
   markParticipation(participationId: string, status: PartStatus): Promise<void>;
-  markPayment(paymentId: string, status: PayStatus): Promise<void>;
+  markPayment(paymentId: string, data: { status: PayStatus; retained?: number; commission?: number }): Promise<void>;
   updateSlots(matchId: string, filledSlots: number, status: MatchStatus): Promise<void>;
 }
 
@@ -65,8 +65,8 @@ function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
       await tx.participation.update({ where: { id: participationId }, data: { status } });
     },
 
-    async markPayment(paymentId, status) {
-      await tx.payment.update({ where: { id: paymentId }, data: { status } });
+    async markPayment(paymentId, data) {
+      await tx.payment.update({ where: { id: paymentId }, data });
     },
 
     async updateSlots(matchId, filledSlots, status) {
@@ -109,6 +109,7 @@ export const participationRepository = {
   },
 
   inApprovalTransaction<T>(fn: (tx: ApprovalTx) => Promise<T>): Promise<T> {
-    return prisma.$transaction((tx) => fn(approvalTx(tx)));
+    // 15 s: una cancelación pagada reembolsa por Transbank dentro de la transacción (HU-09).
+    return prisma.$transaction((tx) => fn(approvalTx(tx)), { timeout: 15_000 });
   },
 };

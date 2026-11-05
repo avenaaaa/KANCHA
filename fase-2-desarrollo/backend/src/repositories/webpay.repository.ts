@@ -77,4 +77,12 @@ export const webpayRepository = {
       };
     });
   },
+
+  /** Reembolso total o parcial (HU-09). El mismo día contable, Transbank lo anula. */
+  refund(token: string, amount: number): Promise<{ type: string }> {
+    return call(async () => {
+      const r = (await transaction().refund(token, amount)) as { type: string };
+      return { type: r.type };
+    });
+  },
 };
