@@ -58,7 +58,7 @@ Región Metropolitana. Genera pérdidas económicas en recintos privados y frust
 **El detalle completo está en `DESARROLLO.md`. Este resumen existe solo para orientarte rápido.**
 
 ```
-Móvil y web   Expo SDK 52 (React Native 0.76) + TypeScript · un código para Android, iOS y web
+Móvil y web   Expo SDK 58 (React Native 0.88) + TypeScript · un código para Android, iOS y web
 Backend       Node.js 22 + Express 5 + TypeScript + Prisma
 Base de datos PostgreSQL 16 + PostGIS  (búsqueda por radio con ST_DWithin sobre índice GIST)
 Pagos         Transbank Webpay Plus, ambiente de Integración

@@ -1,9 +1,14 @@
+import Constants from 'expo-constants';
+
 /**
  * Cliente HTTP de la API de Kancha.
  * La URL viene de EXPO_PUBLIC_API_URL: Expo solo expone al bundle las
- * variables con ese prefijo.
+ * variables con ese prefijo. Sin ella, en Expo Go se usa la IP del PC que sirve
+ * la app (en el celular, "localhost" sería el propio teléfono).
  */
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost ?? 'localhost'}:3000/api/v1`;
 
 export interface ApiError {
   code: string;

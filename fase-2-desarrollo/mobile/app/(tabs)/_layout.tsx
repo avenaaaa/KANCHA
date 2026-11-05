@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
@@ -7,7 +8,7 @@ import { useAuth } from '@/store/authStore';
 
 const tabIcon =
   (name: IconName) =>
-  ({ color }: { color: string }) => <Icon name={name} size={22} color={color} />;
+  ({ color }: { color: ColorValue }) => <Icon name={name} size={22} color={color} />;
 
 export default function TabsLayout() {
   const status = useAuth((s) => s.status);

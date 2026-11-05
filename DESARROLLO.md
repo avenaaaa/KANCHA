@@ -31,9 +31,9 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 
 | Componente | Tecnología | Versión | Costo |
 |---|---|---|---|
-| Framework | Expo SDK | 52 (React Native 0.76, React 18.3) | Libre |
-| Lenguaje | TypeScript | 5.x — `strict: true` | Libre |
-| Navegación | Expo Router (file-based) | v4 | Libre |
+| Framework | Expo SDK | 58 (React Native 0.88, React 19.3) | Libre |
+| Lenguaje | TypeScript | 6.0 — `strict: true` | Libre |
+| Navegación | Expo Router (file-based) | 58 (versión alineada al SDK) | Libre |
 | Estado global | Zustand | 5.x | Libre |
 | Data fetching / caché | TanStack Query | 5.x | Libre |
 | Formularios + validación | React Hook Form + Zod | — | Libre |
@@ -43,11 +43,11 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 | Geolocalización | `expo-location` | — | Libre |
 | Notificaciones push | `expo-notifications` + Expo Push API | — | Libre |
 | Tipografías | Anton + Roboto vía `@expo-google-fonts` | — | Libre |
-| Testing | Jest (`jest-expo`) + React Native Testing Library | — | Libre |
+| Testing | Jest 30 (`jest-expo`) + React Native Testing Library 14 | — | Libre |
 
-> **Versiones reales del scaffolding (Sprint 4).** Estas son las versiones instaladas y verificadas en
-> `package.json`. La v1.1 de este documento declaraba Expo SDK 57, React 19.2 y Zod 4, pero el código
-> se generó con SDK 52 y Zod 3. Subir a SDK 57 es una tarea aparte, con su propio issue en Jira.
+> **Versiones verificadas (Sprint 7, KAN-29).** La app se generó con Expo SDK 52 y el 5 de noviembre
+> de 2026 subió a SDK 58: la Expo Go de App Store y Google Play solo abre el SDK más reciente, y la
+> defensa necesita mostrarla en iPhone y en Android. El backend sigue con Zod 3.
 
 **Por qué Expo y no Flutter ni web pura:** Expo entrega las tres cosas que el proyecto necesita al mismo tiempo
 — app nativa instalable, versión web proyectable y demo instantánea por QR sin publicar en Google Play.
@@ -93,7 +93,7 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        CLIENTES (Expo SDK 52)                   │
+│                        CLIENTES (Expo SDK 58)                   │
 │                                                                 │
 │   📱 Android / iOS              🖥️  Web (react-native-web)      │
 │   (Expo Go · QR)                (build estático · demo comisión) │
