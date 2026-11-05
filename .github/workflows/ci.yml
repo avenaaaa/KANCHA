@@ -22,7 +22,7 @@ jobs:
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://kancha:kancha@localhost:5432/kancha_test
-      JWT_SECRET: ci-secret
+      JWT_SECRET: ci-secret-solo-para-pruebas # env.ts exige 16 caracteres o más
       NODE_ENV: test
       TBK_ENV: integration
     defaults:
