@@ -31,7 +31,8 @@ services:
       PORT: 3000
       API_BASE_URL: http://localhost:3000
       TBK_ENV: ${TBK_ENV:-integration}
-      TBK_RETURN_URL: ${TBK_RETURN_URL:-http://localhost:3000/api/v1/payments/return}
+      # Vacía: Transbank vuelve a la dirección por la que llegó la app (sirve en el PC y en el celular).
+      TBK_RETURN_URL: ${TBK_RETURN_URL:-}
     ports:
       - "3000:3000"
     depends_on:

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
+import { openCheckout } from '@/lib/checkout';
 import type { MatchDetail, MatchSummary, MyMatch, NewMatch, Session, User } from './types';
 import type { SportKey } from '@/theme/sports';
 
@@ -75,6 +76,25 @@ export function useJoinMatch(matchId: string) {
   return useMutation({
     mutationFn: () => api<{ participationId: string; status: string }>(`/matches/${matchId}/join`, { method: 'POST' }),
     onSettled: () => qc.invalidateQueries({ queryKey: ['matches'] }),
+  });
+}
+
+/** HU-08: inicia el pago y abre Webpay. Al volver, el partido muestra el nuevo estado. */
+export function useStartPayment(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (participationId: string) => {
+      const started = await api<{ paymentId: string; amount: number; checkoutPath: string }>(
+        `/payments/${participationId}/init`,
+        { method: 'POST' },
+      );
+      await openCheckout(started.checkoutPath);
+      return started;
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
   });
 }
 

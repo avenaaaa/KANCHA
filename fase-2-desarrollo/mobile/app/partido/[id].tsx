@@ -6,7 +6,7 @@ import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
 import { formatCLP, formatTime, formatDay, slotsCta } from '@/lib/format';
-import { useApproveParticipation, useJoinMatch, useMatch } from '@/api/hooks';
+import { useApproveParticipation, useJoinMatch, useMatch, useStartPayment } from '@/api/hooks';
 import { errorMessage } from '@/api/client';
 import type { MatchDetail, Participant } from '@/api/types';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
 
-/** Detalle del partido, postulación (HU-05) y aprobación por el organizador. */
+/** Detalle del partido, postulación (HU-05), aprobación por el organizador y pago (HU-08). */
 export default function MatchScreen() {
   return (
     <RequireAuth>
@@ -35,6 +35,7 @@ function MatchDetailView() {
   const { data: m, isLoading, isError, error, refetch } = useMatch(id);
   const join = useJoinMatch(id);
   const approve = useApproveParticipation(id);
+  const pay = useStartPayment(id);
 
   if (isLoading || !m) {
     return (
@@ -142,7 +143,14 @@ function MatchDetailView() {
 
       <View style={[s.ctaBar, { paddingBottom: insets.bottom + spacing.md }]}>
         <View style={{ width: '100%', maxWidth: 720 }}>
-          <JoinCta m={m} onJoin={() => join.mutate()} joining={join.isPending} error={join.isError ? errorMessage(join.error) : null} />
+          <JoinCta
+            m={m}
+            onJoin={() => join.mutate()}
+            joining={join.isPending}
+            onPay={() => m.viewer.participationId && pay.mutate(m.viewer.participationId)}
+            paying={pay.isPending}
+            error={join.isError ? errorMessage(join.error) : pay.isError ? errorMessage(pay.error) : null}
+          />
         </View>
       </View>
     </View>
@@ -178,20 +186,66 @@ function PersonRow({ p, children }: { p: Participant; children?: React.ReactNode
 
 /**
  * El CTA "Falta 1" (DESIGN.md §4.3) cambia según el estado del jugador:
- * postular → pendiente → confirmado. Con el partido lleno queda deshabilitado (HU-05).
+ * postular → pendiente → confirmado → pagado (HU-05, HU-08). Con el partido
+ * lleno queda deshabilitado.
  */
-function JoinCta({ m, onJoin, joining, error }: { m: MatchDetail; onJoin: () => void; joining: boolean; error: string | null }) {
+function JoinCta({
+  m,
+  onJoin,
+  joining,
+  onPay,
+  paying,
+  error,
+}: {
+  m: MatchDetail;
+  onJoin: () => void;
+  joining: boolean;
+  onPay: () => void;
+  paying: boolean;
+  error: string | null;
+}) {
+  const { status, payment } = m.viewer;
   if (m.viewer.isOrganizer) {
     return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;
   }
-  if (m.viewer.status === 'PENDING') {
+  if (status === 'PENDING') {
     return <StatusLine tone="warning" text="Postulación enviada. Te confirmamos cuando el organizador la apruebe." />;
   }
-  if (m.viewer.status === 'APPROVED' || m.viewer.status === 'PAID') {
+  if (status === 'PAID') {
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine tone="success" text="Confirmado y pagado. Nos vemos en la cancha." />
+        {payment ? (
+          <Text style={s.caption}>
+            Pagaste {formatCLP(payment.amount)} · Orden de compra {payment.buyOrder}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
+  if (status === 'APPROVED' && m.pricePerPlayer === 0) {
     return <StatusLine tone="success" text="Estás confirmado. Nos vemos en la cancha." />;
+  }
+  if (status === 'APPROVED') {
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine tone="warning" text="Confirmado. Paga tu parte para asegurar el cupo." />
+        {error ? <Text style={s.error}>{error}</Text> : null}
+        <Button
+          label={`Pagar mi parte · ${formatCLP(m.pricePerPlayer + m.serviceFee)}`}
+          onPress={onPay}
+          loading={paying}
+          forward
+          accessibilityHint="Abre Webpay de Transbank para pagar con tarjeta"
+        />
+      </View>
+    );
   }
   return (
     <View style={{ gap: spacing.sm }}>
+      {status === 'CANCELLED' && payment?.status === 'FAILED' ? (
+        <StatusLine tone="muted" text="Tu pago no se completó y el cupo quedó libre. Si aún hay lugar, puedes postular de nuevo." />
+      ) : null}
       {error ? <Text style={s.error}>{error}</Text> : null}
       <Button
         label={m.slotsLeft > 0 ? slotsCta(m.slotsLeft) : 'Partido completo'}

@@ -52,7 +52,13 @@ export interface Participant {
 
 export interface MatchDetail extends MatchSummary {
   serviceFee: number;
-  viewer: { isOrganizer: boolean; participationId: string | null; status: ParticipationStatus | null };
+  viewer: {
+    isOrganizer: boolean;
+    participationId: string | null;
+    status: ParticipationStatus | null;
+    /** Último intento de pago (HU-08). Con status AUTHORIZED es el comprobante. */
+    payment: { status: string; amount: number; buyOrder: string; authorizedAt: string | null } | null;
+  };
   participants: Participant[];
 }
 
