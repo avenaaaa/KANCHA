@@ -1,6 +1,10 @@
 import type { MatchStatus } from '@prisma/client';
 import { env } from '../config/env.js';
-import { participationRepository, type LockedMatch } from '../repositories/participation.repository.js';
+import {
+  participationRepository,
+  type ApprovalTx,
+  type LockedMatch,
+} from '../repositories/participation.repository.js';
 import { paymentRepository, type PaymentWithMatch } from '../repositories/payment.repository.js';
 import { webpayRepository, type WebpayCommit } from '../repositories/webpay.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
@@ -112,21 +116,97 @@ export function decideRelease(match: Pick<LockedMatch, 'filledSlots' | 'status'>
   };
 }
 
+/** Con el partido ya bloqueado: la participación pasa a CANCELLED y el partido queda con un cupo menos. */
+async function releaseLockedSlot(tx: ApprovalTx, participationId: string, match: LockedMatch): Promise<void> {
+  const next = decideRelease(match);
+  await tx.markParticipation(participationId, 'CANCELLED');
+  await tx.updateSlots(match.id, next.filledSlots, next.status);
+}
+
 /**
  * Si el pago falla, queda FAILED y el cupo se libera para otro jugador
  * (DESARROLLO.md §9). Mismo bloqueo de fila que la aprobación (HU-05).
  */
 function releaseUnpaidSlot(participationId: string, paymentId: string): Promise<void> {
   return participationRepository.inApprovalTransaction(async (tx) => {
-    await tx.markPayment(paymentId, 'FAILED');
+    await tx.markPayment(paymentId, { status: 'FAILED' });
     const p = await tx.findParticipation(participationId);
     if (p?.status !== 'APPROVED') return;
-
     const match = await tx.lockMatch(p.matchId);
-    if (!match) return;
-    const next = decideRelease(match);
-    await tx.markParticipation(participationId, 'CANCELLED');
-    await tx.updateSlots(match.id, next.filledSlots, next.status);
+    if (match) await releaseLockedSlot(tx, participationId, match);
+  });
+}
+
+/** Reparto de una cancelación pagada (HU-09): lo retenido va al recinto, menos la comisión de Kancha. */
+export interface CancellationRefund extends RefundBreakdown {
+  platformCommission: number;
+  venueAmount: number;
+}
+
+export type CancellationDecision =
+  | { ok: true; releasesSlot: boolean; refund: CancellationRefund | null }
+  | { ok: false; error: AppError };
+
+/**
+ * HU-09: ¿puede cancelar, libera un cupo y cuánto se devuelve?
+ * Una postulación PENDING no ocupaba cupo; APPROVED y PAID sí. Solo un cupo
+ * pagado tiene reembolso, según la ventana de 12 h de calculateRefund.
+ */
+export function decideCancellation(
+  p: { userId: string; status: string; match: { startsAt: Date }; payment: { status: string; amount: number } | null },
+  userId: string,
+  now: Date = new Date(),
+): CancellationDecision {
+  if (p.userId !== userId) return { ok: false, error: forbidden('Solo puedes cancelar tu propio cupo') };
+  if (!['PENDING', 'APPROVED', 'PAID'].includes(p.status)) {
+    return { ok: false, error: conflict('NOT_CANCELLABLE', 'Este cupo ya está cancelado') };
+  }
+  if (new Date(p.match.startsAt).getTime() <= now.getTime()) {
+    return { ok: false, error: conflict('MATCH_STARTED', 'El partido ya comenzó') };
+  }
+  if (p.status !== 'PAID' || p.payment?.status !== 'AUTHORIZED') {
+    return { ok: true, releasesSlot: p.status !== 'PENDING', refund: null };
+  }
+  const split = calculateRefund(p.payment.amount, p.match.startsAt, now);
+  const platformCommission = calculateCommission(split.retained);
+  return {
+    ok: true,
+    releasesSlot: true,
+    refund: { ...split, platformCommission, venueAmount: split.retained - platformCommission },
+  };
+}
+
+/**
+ * HU-09: el jugador cancela su cupo. Todo ocurre con el partido bloqueado: una
+ * segunda cancelación simultánea espera, relee el cupo ya cancelado y recibe 409,
+ * así nunca se reembolsa dos veces. Si Transbank falla, la transacción se revierte.
+ */
+export function cancelParticipation(
+  participationId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<{ status: 'CANCELLED'; refund: CancellationRefund | null }> {
+  return participationRepository.inApprovalTransaction(async (tx) => {
+    const p = await paymentRepository.findForCancellation(participationId);
+    if (!p) throw notFound('PARTICIPATION_NOT_FOUND', 'La postulación no existe');
+    const match = await tx.lockMatch(p.matchId);
+    const current = await tx.findParticipation(participationId);
+
+    const decision = decideCancellation({ ...p, status: current?.status ?? p.status }, userId, now);
+    if (!decision.ok) throw decision.error;
+
+    const { refund } = decision;
+    if (refund && p.payment) {
+      if (refund.refunded > 0 && p.payment.token) await webpayRepository.refund(p.payment.token, refund.refunded);
+      await tx.markPayment(p.payment.id, {
+        status: refund.retained > 0 ? 'RETAINED' : 'REFUNDED',
+        retained: refund.retained,
+        commission: refund.platformCommission,
+      });
+    }
+    if (decision.releasesSlot && match) await releaseLockedSlot(tx, participationId, match);
+    else await tx.markParticipation(participationId, 'CANCELLED');
+    return { status: 'CANCELLED' as const, refund };
   });
 }
 

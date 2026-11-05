@@ -9,7 +9,12 @@ import { paymentRepository } from '../repositories/payment.repository.js';
 import type { CreateMatchInput } from '../schemas/match.schema.js';
 import { notFound, unprocessable } from '../utils/errors.js';
 import { toNumberOrNull } from '../utils/db-errors.js';
-import { calculateAmountDue, calculateCommission } from './payment.service.js';
+import {
+  calculateAmountDue,
+  calculateCommission,
+  calculateRefund,
+  type RefundBreakdown,
+} from './payment.service.js';
 
 /**
  * Publicación (HU-03, KAN-9), detalle y "Mis partidos".
@@ -53,7 +58,9 @@ export interface MatchDetail extends MatchSummary {
     participationId: string | null;
     status: string | null;
     /** Último intento de pago del jugador (HU-08): el comprobante si quedó AUTHORIZED. */
-    payment: { status: string; amount: number; buyOrder: string; authorizedAt: string | null } | null;
+    payment: { status: string; amount: number; retained: number; buyOrder: string; authorizedAt: string | null } | null;
+    /** Si el cupo está pagado: qué se devolvería al cancelar ahora (HU-09). */
+    refundIfCancelled: RefundBreakdown | null;
   };
   participants: ParticipantView[];
 }
@@ -134,9 +141,12 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
       payment: payment && {
         status: payment.status,
         amount: payment.amount,
+        retained: payment.retained,
         buyOrder: payment.buyOrder,
         authorizedAt: payment.authorizedAt?.toISOString() ?? null,
       },
+      refundIfCancelled:
+        mine?.status === 'PAID' && payment ? calculateRefund(payment.amount, new Date(summary.startsAt)) : null,
     },
     participants: visible.map((p) => ({
       participationId: p.id,

@@ -4,6 +4,7 @@ import {
   calculateAmountDue,
   calculateCommission,
   calculateRefund,
+  decideCancellation,
   decideCheckout,
   decideRelease,
   isApproved,
@@ -118,5 +119,49 @@ describe('decideRelease (HU-08)', () => {
     expect(decideRelease({ filledSlots: 4, status: 'FULL' })).toEqual({ filledSlots: 3, status: 'OPEN' });
     expect(decideRelease({ filledSlots: 2, status: 'OPEN' })).toEqual({ filledSlots: 1, status: 'OPEN' });
     expect(decideRelease({ filledSlots: 0, status: 'OPEN' }).filledSlots).toBe(0);
+  });
+});
+
+describe('decideCancellation (HU-09)', () => {
+  const now = new Date('2026-11-05T12:00:00Z');
+  const enHoras = (h: number) => new Date(now.getTime() + h * 3_600_000);
+  const pagado = (startsAt: Date) => ({
+    userId: 'u1',
+    status: 'PAID',
+    match: { startsAt },
+    payment: { status: 'AUTHORIZED', amount: 6600 },
+  });
+  const code = (d: ReturnType<typeof decideCancellation>) => (d.ok ? null : d.error.code);
+
+  it('U-64 · nadie cancela el cupo de otro (403)', () => {
+    const d = decideCancellation(pagado(enHoras(48)), 'intruso', now);
+    expect(d.ok ? null : d.error.statusCode).toBe(403);
+  });
+
+  it('U-65 · no se cancela dos veces ni un partido que ya empezó', () => {
+    expect(code(decideCancellation({ ...pagado(enHoras(48)), status: 'CANCELLED' }, 'u1', now))).toBe('NOT_CANCELLABLE');
+    expect(code(decideCancellation(pagado(now), 'u1', now))).toBe('MATCH_STARTED');
+  });
+
+  it('U-66 · una postulación pendiente no ocupaba cupo; una aprobada sin pagar lo libera sin reembolso', () => {
+    const base = { userId: 'u1', match: { startsAt: enHoras(48) }, payment: null };
+    expect(decideCancellation({ ...base, status: 'PENDING' }, 'u1', now)).toEqual({ ok: true, releasesSlot: false, refund: null });
+    expect(decideCancellation({ ...base, status: 'APPROVED' }, 'u1', now)).toEqual({ ok: true, releasesSlot: true, refund: null });
+  });
+
+  it('U-67 · cancelar con 12 h o más devuelve el 100 % y no retiene nada', () => {
+    const d = decideCancellation(pagado(enHoras(12)), 'u1', now);
+    expect(d.ok && d.refund).toMatchObject({ refunded: 6600, retained: 0, platformCommission: 0, venueAmount: 0 });
+  });
+
+  it('U-68 · a menos de 12 h se retiene el 50 %: el recinto recibe lo retenido menos la comisión de Kancha', () => {
+    const d = decideCancellation(pagado(enHoras(11.99)), 'u1', now);
+    expect(d.ok && d.refund).toEqual({
+      refunded: 3300,
+      retained: 3300,
+      withinRetentionWindow: true,
+      platformCommission: 330,
+      venueAmount: 2970,
+    });
   });
 });

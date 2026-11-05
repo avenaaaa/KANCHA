@@ -34,7 +34,7 @@ export const openapi = {
     { name: 'Cuentas', description: 'HU-01 · KAN-7' },
     { name: 'Partidos', description: 'HU-03 · KAN-9 · HU-04 · KAN-10' },
     { name: 'Postulaciones', description: 'HU-05 · KAN-11' },
-    { name: 'Pagos', description: 'HU-08 · KAN-14 · Transbank Webpay Plus, ambiente de Integración' },
+    { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -159,8 +159,19 @@ export const openapi = {
                     properties: {
                       status: { type: 'string', enum: ['INITIATED', 'AUTHORIZED', 'FAILED', 'REFUNDED', 'RETAINED'] },
                       amount: { type: 'integer' },
+                      retained: { type: 'integer', description: 'Retenido al cancelar a menos de 12 h (HU-09)' },
                       buyOrder: { type: 'string' },
                       authorizedAt: { type: 'string', format: 'date-time', nullable: true },
+                    },
+                  },
+                  refundIfCancelled: {
+                    type: 'object',
+                    nullable: true,
+                    description: 'Solo con el cupo pagado: qué se devolvería al cancelar ahora (HU-09)',
+                    properties: {
+                      refunded: { type: 'integer' },
+                      retained: { type: 'integer' },
+                      withinRetentionWindow: { type: 'boolean' },
                     },
                   },
                 },
@@ -302,6 +313,34 @@ export const openapi = {
           200: { description: 'Postulación aprobada. El partido pasa a FULL si era el último cupo' },
           403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede aprobar postulaciones' }),
           409: error({ code: 'MATCH_FULL', message: 'El partido ya no tiene cupos disponibles' }),
+        },
+      },
+    },
+    '/participations/{id}': {
+      delete: {
+        tags: ['Pagos'],
+        summary: 'Cancelar mi cupo, con retención por deserción (HU-09)',
+        description:
+          'Pendiente: se retira la postulación. Aprobado sin pagar: se libera el cupo. Pagado: con 12 h o más se ' +
+          'reembolsa el 100 %; a menos de 12 h se retiene el 50 % y el recinto recibe lo retenido menos la comisión ' +
+          'de Kancha. El reembolso pasa por Transbank dentro de la transacción con bloqueo de fila.',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Cupo cancelado',
+            content: {
+              'application/json': {
+                example: {
+                  participationId: '3f8a…',
+                  status: 'CANCELLED',
+                  refund: { refunded: 3300, retained: 3300, withinRetentionWindow: true, platformCommission: 330, venueAmount: 2970 },
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo puedes cancelar tu propio cupo' }),
+          409: error({ code: 'NOT_CANCELLABLE', message: 'Este cupo ya está cancelado' }),
+          502: error({ code: 'PAYMENT_GATEWAY_ERROR', message: 'Transbank no respondió. Intenta de nuevo en unos minutos.' }),
         },
       },
     },

@@ -46,6 +46,21 @@ export const paymentRepository = {
     });
   },
 
+  /** Participación con su partido y su pago, para decidir una cancelación (HU-09). */
+  findForCancellation(participationId: string) {
+    return prisma.participation.findUnique({
+      where: { id: participationId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        matchId: true,
+        match: { select: { startsAt: true } },
+        payment: { select: { id: true, status: true, amount: true, token: true } },
+      },
+    });
+  },
+
   findById(id: string): Promise<Payment | null> {
     return prisma.payment.findUnique({ where: { id } });
   },

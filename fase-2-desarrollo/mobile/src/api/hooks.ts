@@ -98,6 +98,21 @@ export function useStartPayment(matchId: string) {
   });
 }
 
+/** HU-09: cancelar mi cupo. Si estaba pagado, la respuesta trae el reembolso y la retención. */
+export function useCancelParticipation(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (participationId: string) =>
+      api<{ status: string; refund: { refunded: number; retained: number } | null }>(`/participations/${participationId}`, {
+        method: 'DELETE',
+      }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
 export function useApproveParticipation(matchId: string) {
   const qc = useQueryClient();
   return useMutation({

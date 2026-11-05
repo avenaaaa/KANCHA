@@ -57,7 +57,9 @@ export interface MatchDetail extends MatchSummary {
     participationId: string | null;
     status: ParticipationStatus | null;
     /** Último intento de pago (HU-08). Con status AUTHORIZED es el comprobante. */
-    payment: { status: string; amount: number; buyOrder: string; authorizedAt: string | null } | null;
+    payment: { status: string; amount: number; retained: number; buyOrder: string; authorizedAt: string | null } | null;
+    /** Si el cupo está pagado: qué se devolvería al cancelar ahora (HU-09). */
+    refundIfCancelled: { refunded: number; retained: number; withinRetentionWindow: boolean } | null;
   };
   participants: Participant[];
 }

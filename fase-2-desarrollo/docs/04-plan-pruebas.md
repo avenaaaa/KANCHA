@@ -64,9 +64,9 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Dato | Valor |
 |---|---|
 | Fecha | 5 de noviembre de 2026 |
-| Archivos de prueba del backend | 10 (6 unitarios y 4 de integración) |
-| Casos del backend | 107 ejecutados · 107 pasan · 0 fallan (68 unitarias, 39 de integración) |
-| Cobertura de `services/` y `utils/` | 97,61 % de líneas · 87,71 % de ramas · 100 % de funciones |
+| Archivos de prueba del backend | 11 (6 unitarios y 5 de integración) |
+| Casos del backend | 119 ejecutados · 119 pasan · 0 fallan (73 unitarias, 46 de integración) |
+| Cobertura de `services/` y `utils/` | 97,88 % de líneas · 89,37 % de ramas · 100 % de funciones |
 | Casos de la app (Jest + React Native Testing Library) | 13 ejecutados · 13 pasan |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
@@ -117,6 +117,7 @@ Casos agregados en el Sprint 7:
 | U-57 a U-61 | `payment.service` · `decideCheckout` | Paga la cuota más el 10 % de servicio; 403 con el cupo de otro; 409 sin aprobar, ya pagado, partido iniciado o gratis | HU-08 |
 | U-62 | `payment.service` · `isApproved` | Solo `response_code` 0 con estado `AUTHORIZED` es un pago aprobado | HU-08 |
 | U-63 | `payment.service` · `decideRelease` | Liberar un cupo reabre el partido lleno y nunca baja de cero | HU-08 |
+| U-64 a U-68 | `payment.service` · `decideCancellation` | 403 con el cupo de otro; no se cancela dos veces ni un partido iniciado; pendiente sin cupo; con 12 h el 100 %; a menos de 12 h retiene el 50 % y el recinto recibe lo retenido menos la comisión | HU-09 |
 
 ### 4.3 Pruebas de la app
 
@@ -174,8 +175,8 @@ exista.
 | CN-23 | HU-08 | Límite | Arriendo 30.000 en 7 cupos | Cuota de 4.286 (hacia arriba) | Cubierto (U-12) |
 | CN-24 | HU-08 | Límite | Arriendo 0 | Cuota de 0 | Cubierto (U-13) |
 | CN-25 | HU-08 | Límite | Cupos = 0 | Error | Cubierto (U-14) |
-| CN-26 | HU-09 | Límite | Cancelar a 12 h 00 min | Reembolso del 100 % | Cubierto (U-18) |
-| CN-27 | HU-09 | Límite | Cancelar a 11 h 59 min | Retiene el 50 % | Cubierto (U-19) |
+| CN-26 | HU-09 | Límite | Cancelar a 12 h 00 min | Reembolso del 100 % | Cubierto (U-18, U-67 e integración) |
+| CN-27 | HU-09 | Límite | Cancelar a 11 h 59 min | Retiene el 50 % | Cubierto (U-19, U-68 e integración) |
 | CN-28 | HU-09 | Equivalencia | Monto impar (4.287) | Retenido + reembolsado = pagado | Cubierto (U-20) |
 | CN-29 | HU-08 | Equivalencia | Pago rechazado en Webpay | El cupo se libera | Cubierto (integración) |
 
@@ -195,7 +196,7 @@ se prueba en su camino feliz y en su error principal.
 | I-05 | API + transacción | Aprobar el último cupo en paralelo no sobrevende (HU-05) | 6 | **Pasa** |
 | I-06 | API + Transbank | `init` crea la transacción y `commit` la confirma con tarjeta de prueba (HU-08) | 7 | **Pasa** (Transbank simulado en `payments.int.test.ts`) · verificado a mano en Integración con la VISA de prueba (`evidencias/sprint-07/`) |
 | I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | **Pasa** · también el pago anulado y el último cupo que vuelve a `OPEN` |
-| I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | Diseñado |
+| I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | **Pasa** (`cancellations.int.test.ts`): también dos cancelaciones simultáneas reembolsan una sola vez y un fallo de Transbank no cambia nada · reembolso real verificado en Integración (`evidencias/sprint-07/`) |
 | I-09 | API + PostgreSQL | Una reseña recalcula `honorScore` del calificado (HU-06, HU-07) | 8 | Diseñado |
 | I-10 | API + Expo Push | Liberar un cupo dispara la notificación (HU-10) | 9 | Diseñado |
 | I-11 | Docker Compose | `docker compose up --build` deja los tres contenedores sanos | 5 | Verificación manual en cada release |
@@ -230,7 +231,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 |---|---|---|---|---|
 | S-01 | Autenticación rota | Llamar un endpoint protegido sin token, con token alterado y con token vencido | 401 en los tres casos | **Verificado** (`auth.int.test.ts`) |
 | S-02 | Acceso a objetos ajenos | Aprobar una postulación de un partido que organiza otro usuario | 403 | **Verificado** (`participations.int.test.ts`, U-45) |
-| S-03 | Acceso a objetos ajenos | Pagar o cancelar la participación de otro jugador | 403 | **Verificado** el pago (`payments.int.test.ts`, U-58) · la cancelación llega con HU-09 |
+| S-03 | Acceso a objetos ajenos | Pagar o cancelar la participación de otro jugador | 403 | **Verificado** (`payments.int.test.ts`, `cancellations.int.test.ts`, U-58, U-64) |
 | S-04 | Inyección | Enviar `'; DROP TABLE "Match"; --` en `sport`, `lat` y `lng` | 422, la tabla sigue intacta | **Verificado** en `sport` (`matches.int.test.ts`, U-33) · las consultas usan parámetros de `$queryRaw` |
 | S-05 | Validación de entrada | Enviar tipos erróneos y campos extra en cada `POST` | 422 con el formato único de error | **Verificado** en registro y publicación (CN-03, CN-06, U-29) |
 | S-06 | Exposición de datos | Revisar que ninguna respuesta incluya `passwordHash` | El campo nunca sale | **Verificado** (U-47 y `auth.int.test.ts`) |
@@ -256,7 +257,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-06 | Calificar compañeros | U-07 a U-10 | CN-13 a CN-17 | I-09 | S-05 |
 | HU-07 | Cálculo de honor | U-01 a U-06 | CN-18 a CN-21 | I-09 | — |
 | HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07 | S-03, S-08, S-13 |
-| HU-09 | Retención por deserción | U-17 a U-20 | CN-26 a CN-28 | I-08 | S-03 |
+| HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68 | CN-26 a CN-28 | I-08 | S-03 |
 | HU-10 | Notificación de cupo | — | — | I-10 | — |
 
 ---

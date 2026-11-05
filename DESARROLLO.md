@@ -401,7 +401,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
-| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; aplica retención si faltan < 12 h |
+| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; si estaba pagado reembolsa por Transbank y retiene el 50 % si faltan < 12 h (al recinto, menos la comisión) · **implementado** |
 | POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
 | GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
 | GET · POST | `/payments/return` | HU-08 | — | Vuelta de Transbank: confirma (`commit`) una sola vez y muestra el comprobante · **implementado** |
