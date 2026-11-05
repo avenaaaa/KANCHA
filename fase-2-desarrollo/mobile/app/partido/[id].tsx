@@ -6,7 +6,8 @@ import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
 import { formatCLP, formatTime, formatDay, slotsCta } from '@/lib/format';
-import { useApproveParticipation, useJoinMatch, useMatch } from '@/api/hooks';
+import { useApproveParticipation, useCancelParticipation, useJoinMatch, useMatch, useStartPayment } from '@/api/hooks';
+import { confirmAction } from '@/lib/confirm';
 import { errorMessage } from '@/api/client';
 import type { MatchDetail, Participant } from '@/api/types';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -19,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
 
-/** Detalle del partido, postulación (HU-05) y aprobación por el organizador. */
+/** Detalle del partido, postulación (HU-05), aprobación por el organizador y pago (HU-08). */
 export default function MatchScreen() {
   return (
     <RequireAuth>
@@ -35,6 +36,13 @@ function MatchDetailView() {
   const { data: m, isLoading, isError, error, refetch } = useMatch(id);
   const join = useJoinMatch(id);
   const approve = useApproveParticipation(id);
+  const pay = useStartPayment(id);
+  const cancel = useCancelParticipation(id);
+
+  async function onCancel() {
+    if (!m?.viewer.participationId) return;
+    if (await confirmAction('Cancelar mi cupo', cancelMessage(m), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
+  }
 
   if (isLoading || !m) {
     return (
@@ -67,7 +75,7 @@ function MatchDetailView() {
   return (
     <View style={[s.screen, { paddingTop: insets.top }]}>
       <ScreenHeader />
-      <ScrollView contentContainerStyle={[s.body, { paddingBottom: 140 + insets.bottom }]}>
+      <ScrollView contentContainerStyle={[s.body, { paddingBottom: 220 + insets.bottom }]}>
         <View style={s.hero}>
           <SportBadge sport={m.sport} size={56} />
           <View style={{ flex: 1, gap: 6 }}>
@@ -142,7 +150,16 @@ function MatchDetailView() {
 
       <View style={[s.ctaBar, { paddingBottom: insets.bottom + spacing.md }]}>
         <View style={{ width: '100%', maxWidth: 720 }}>
-          <JoinCta m={m} onJoin={() => join.mutate()} joining={join.isPending} error={join.isError ? errorMessage(join.error) : null} />
+          <JoinCta
+            m={m}
+            onJoin={() => join.mutate()}
+            joining={join.isPending}
+            onPay={() => m.viewer.participationId && pay.mutate(m.viewer.participationId)}
+            paying={pay.isPending}
+            onCancel={() => void onCancel()}
+            cancelling={cancel.isPending}
+            error={[join, pay, cancel].map((x) => (x.isError ? errorMessage(x.error) : null)).find(Boolean) ?? null}
+          />
         </View>
       </View>
     </View>
@@ -176,23 +193,112 @@ function PersonRow({ p, children }: { p: Participant; children?: React.ReactNode
   );
 }
 
+/** Texto de la confirmación de HU-09. El reparto lo calcula la API (viewer.refundIfCancelled). */
+function cancelMessage(m: MatchDetail): string {
+  const r = m.viewer.refundIfCancelled;
+  if (r) {
+    return r.withinRetentionWindow
+      ? `Faltan menos de 12 horas: te devolvemos ${formatCLP(r.refunded)} y se retienen ${formatCLP(r.retained)} para el recinto.`
+      : `Faltan más de 12 horas: te devolvemos tus ${formatCLP(r.refunded)} completos.`;
+  }
+  return m.viewer.status === 'APPROVED' ? 'Tu cupo quedará libre para otro jugador.' : 'Retirarás tu postulación.';
+}
+
+/** Lo que quedó tras cancelar un cupo pagado (HU-09). */
+function cancelledText(payment: NonNullable<MatchDetail['viewer']['payment']>): string {
+  return payment.retained > 0
+    ? `Cancelaste tu cupo. Te devolvimos ${formatCLP(payment.amount - payment.retained)} y se retuvieron ${formatCLP(payment.retained)} por cancelar a menos de 12 horas.`
+    : `Cancelaste tu cupo y te devolvimos ${formatCLP(payment.amount)}.`;
+}
+
 /**
  * El CTA "Falta 1" (DESIGN.md §4.3) cambia según el estado del jugador:
- * postular → pendiente → confirmado. Con el partido lleno queda deshabilitado (HU-05).
+ * postular → pendiente → confirmado → pagado (HU-05, HU-08), y en cualquiera de
+ * ellos puede cancelar antes del partido (HU-09). Con el partido lleno queda deshabilitado.
  */
-function JoinCta({ m, onJoin, joining, error }: { m: MatchDetail; onJoin: () => void; joining: boolean; error: string | null }) {
+function JoinCta({
+  m,
+  onJoin,
+  joining,
+  onPay,
+  paying,
+  onCancel,
+  cancelling,
+  error,
+}: {
+  m: MatchDetail;
+  onJoin: () => void;
+  joining: boolean;
+  onPay: () => void;
+  paying: boolean;
+  onCancel: () => void;
+  cancelling: boolean;
+  error: string | null;
+}) {
+  const { status, payment } = m.viewer;
+  const started = new Date(m.startsAt).getTime() <= Date.now();
+  const cancelButton = started ? null : (
+    <Button label="Cancelar mi cupo" variant="secondary" onPress={onCancel} loading={cancelling} />
+  );
+  const errorText = error ? <Text style={s.error}>{error}</Text> : null;
+
   if (m.viewer.isOrganizer) {
     return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;
   }
-  if (m.viewer.status === 'PENDING') {
-    return <StatusLine tone="warning" text="Postulación enviada. Te confirmamos cuando el organizador la apruebe." />;
+  if (status === 'PENDING') {
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine tone="warning" text="Postulación enviada. Te confirmamos cuando el organizador la apruebe." />
+        {errorText}
+        {cancelButton}
+      </View>
+    );
   }
-  if (m.viewer.status === 'APPROVED' || m.viewer.status === 'PAID') {
-    return <StatusLine tone="success" text="Estás confirmado. Nos vemos en la cancha." />;
+  if (status === 'PAID') {
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine tone="success" text="Confirmado y pagado. Nos vemos en la cancha." />
+        {payment ? (
+          <Text style={s.caption}>
+            Pagaste {formatCLP(payment.amount)} · Orden de compra {payment.buyOrder}
+          </Text>
+        ) : null}
+        {errorText}
+        {cancelButton}
+      </View>
+    );
+  }
+  if (status === 'APPROVED') {
+    const free = m.pricePerPlayer === 0;
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine
+          tone={free ? 'success' : 'warning'}
+          text={free ? 'Estás confirmado. Nos vemos en la cancha.' : 'Confirmado. Paga tu parte para asegurar el cupo.'}
+        />
+        {errorText}
+        {free ? null : (
+          <Button
+            label={`Pagar mi parte · ${formatCLP(m.pricePerPlayer + m.serviceFee)}`}
+            onPress={onPay}
+            loading={paying}
+            forward
+            accessibilityHint="Abre Webpay de Transbank para pagar con tarjeta"
+          />
+        )}
+        {cancelButton}
+      </View>
+    );
   }
   return (
     <View style={{ gap: spacing.sm }}>
-      {error ? <Text style={s.error}>{error}</Text> : null}
+      {status === 'CANCELLED' && payment?.status === 'FAILED' ? (
+        <StatusLine tone="muted" text="Tu pago no se completó y el cupo quedó libre. Si aún hay lugar, puedes postular de nuevo." />
+      ) : null}
+      {status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED') ? (
+        <StatusLine tone="muted" text={cancelledText(payment)} />
+      ) : null}
+      {errorText}
       <Button
         label={m.slotsLeft > 0 ? slotsCta(m.slotsLeft) : 'Partido completo'}
         onPress={onJoin}

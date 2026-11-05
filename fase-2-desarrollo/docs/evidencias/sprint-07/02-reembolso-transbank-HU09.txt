@@ -1,0 +1,25 @@
+HU-09 (KAN-15) · Cancelación de un cupo pagado con reembolso real en Transbank (ambiente de Integración)
+Fecha: 5 de noviembre de 2026
+
+1. Pago previo (HU-08): Básquet 5x5 · Liga amateur, $3.520 (cuota $3.200 + $320 de servicio),
+   VISA de prueba •••• 6623, código de autorización 1213 (ver 01-comprobante-webpay-HU08.jpg).
+
+2. El jugador cancela con más de 12 horas de anticipación:
+   DELETE /api/v1/participations/3588495c-bbda-42cc-86b7-0c93a6c65146
+
+   Respuesta de la API:
+   {
+     "participationId": "3588495c-bbda-42cc-86b7-0c93a6c65146",
+     "status": "CANCELLED",
+     "refund": { "refunded": 3520, "retained": 0, "withinRetentionWindow": false,
+                 "platformCommission": 0, "venueAmount": 0 }
+   }
+
+3. Base de datos tras la cancelación:
+   Payment: REFUNDED | retained 0 | commission 0 · Participation: CANCELLED · el cupo se liberó
+
+4. Estado en Transbank (WebpayPlus.Transaction.status):
+   REVERSED | monto 3520 | autorización 1213
+   (reembolso total el mismo día contable: Transbank anula la transacción)
+
+La retención del 50 % a menos de 12 h (CN-27, I-08) se prueba en cancellations.int.test.ts.

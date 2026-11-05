@@ -34,6 +34,7 @@ export const openapi = {
     { name: 'Cuentas', description: 'HU-01 · KAN-7' },
     { name: 'Partidos', description: 'HU-03 · KAN-9 · HU-04 · KAN-10' },
     { name: 'Postulaciones', description: 'HU-05 · KAN-11' },
+    { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -150,7 +151,29 @@ export const openapi = {
                 properties: {
                   isOrganizer: { type: 'boolean' },
                   participationId: { type: 'string', nullable: true },
-                  status: { type: 'string', nullable: true },
+                  status: { type: 'string', nullable: true, description: 'Incluye CANCELLED si el jugador perdió el cupo' },
+                  payment: {
+                    type: 'object',
+                    nullable: true,
+                    description: 'Último intento de pago (HU-08). Con status AUTHORIZED es el comprobante',
+                    properties: {
+                      status: { type: 'string', enum: ['INITIATED', 'AUTHORIZED', 'FAILED', 'REFUNDED', 'RETAINED'] },
+                      amount: { type: 'integer' },
+                      retained: { type: 'integer', description: 'Retenido al cancelar a menos de 12 h (HU-09)' },
+                      buyOrder: { type: 'string' },
+                      authorizedAt: { type: 'string', format: 'date-time', nullable: true },
+                    },
+                  },
+                  refundIfCancelled: {
+                    type: 'object',
+                    nullable: true,
+                    description: 'Solo con el cupo pagado: qué se devolvería al cancelar ahora (HU-09)',
+                    properties: {
+                      refunded: { type: 'integer' },
+                      retained: { type: 'integer' },
+                      withinRetentionWindow: { type: 'boolean' },
+                    },
+                  },
                 },
               },
               participants: { type: 'array', items: { type: 'object' } },
@@ -272,6 +295,7 @@ export const openapi = {
       post: {
         tags: ['Postulaciones'],
         summary: 'Postular a un partido (HU-05). Queda en PENDING',
+        description: 'Quien perdió su cupo (pago fallido) puede volver a postular: se reactiva su postulación.',
         parameters: [idParam],
         responses: {
           201: { description: 'Postulación registrada como pendiente' },
@@ -289,6 +313,90 @@ export const openapi = {
           200: { description: 'Postulación aprobada. El partido pasa a FULL si era el último cupo' },
           403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede aprobar postulaciones' }),
           409: error({ code: 'MATCH_FULL', message: 'El partido ya no tiene cupos disponibles' }),
+        },
+      },
+    },
+    '/participations/{id}': {
+      delete: {
+        tags: ['Pagos'],
+        summary: 'Cancelar mi cupo, con retención por deserción (HU-09)',
+        description:
+          'Pendiente: se retira la postulación. Aprobado sin pagar: se libera el cupo. Pagado: con 12 h o más se ' +
+          'reembolsa el 100 %; a menos de 12 h se retiene el 50 % y el recinto recibe lo retenido menos la comisión ' +
+          'de Kancha. El reembolso pasa por Transbank dentro de la transacción con bloqueo de fila.',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Cupo cancelado',
+            content: {
+              'application/json': {
+                example: {
+                  participationId: '3f8a…',
+                  status: 'CANCELLED',
+                  refund: { refunded: 3300, retained: 3300, withinRetentionWindow: true, platformCommission: 330, venueAmount: 2970 },
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo puedes cancelar tu propio cupo' }),
+          409: error({ code: 'NOT_CANCELLABLE', message: 'Este cupo ya está cancelado' }),
+          502: error({ code: 'PAYMENT_GATEWAY_ERROR', message: 'Transbank no respondió. Intenta de nuevo en unos minutos.' }),
+        },
+      },
+    },
+    '/payments/{participationId}/init': {
+      post: {
+        tags: ['Pagos'],
+        summary: 'Iniciar el pago de mi cupo (HU-08)',
+        description:
+          'Crea la transacción en Webpay por la cuota más el 10 % de servicio. La app abre luego ' +
+          '`checkoutPath` en el navegador. Sin TBK_RETURN_URL, Transbank vuelve a la dirección por la que llegó la app.',
+        parameters: [{ name: 'participationId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          201: {
+            description: 'Pago iniciado',
+            content: {
+              'application/json': {
+                example: { paymentId: '3f8a…', amount: 6600, commission: 600, checkoutPath: '/payments/3f8a…/webpay' },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo puedes pagar tu propio cupo' }),
+          409: error({ code: 'NOT_APPROVED', message: 'El organizador aún no confirma tu cupo' }),
+          502: error({ code: 'PAYMENT_GATEWAY_ERROR', message: 'Transbank no respondió. Intenta de nuevo en unos minutos.' }),
+        },
+      },
+    },
+    '/payments/{id}/webpay': {
+      get: {
+        tags: ['Pagos'],
+        security: [],
+        summary: 'Página que lleva al jugador a Webpay (HTML)',
+        description: 'Envía token_ws por POST al formulario de Transbank. La CSP solo permite ese destino.',
+        parameters: [idParam],
+        responses: {
+          200: { description: 'Página de redirección', content: { 'text/html': {} } },
+          404: error({ code: 'PAYMENT_NOT_FOUND', message: 'Este pago ya no está disponible' }),
+        },
+      },
+    },
+    '/payments/return': {
+      get: {
+        tags: ['Pagos'],
+        security: [],
+        summary: 'Vuelta desde Webpay y comprobante (HTML)',
+        description:
+          'token_ws: se confirma el pago (commit) una sola vez. TBK_TOKEN (anulado) o solo TBK_ORDEN_COMPRA ' +
+          '(tiempo agotado): el pago queda FAILED y el cupo se libera. Transbank también puede volver por POST.',
+        parameters: [
+          { name: 'token_ws', in: 'query', schema: { type: 'string' } },
+          { name: 'TBK_TOKEN', in: 'query', schema: { type: 'string' } },
+          { name: 'TBK_ORDEN_COMPRA', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Comprobante: pago aprobado o no completado', content: { 'text/html': {} } },
+          404: error({ code: 'PAYMENT_NOT_FOUND', message: 'No encontramos este pago' }),
+          422: error({ code: 'VALIDATION_ERROR', message: 'Falta el token de Webpay' }),
         },
       },
     },

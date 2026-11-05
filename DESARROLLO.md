@@ -401,9 +401,10 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
-| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; aplica retención si faltan < 12 h |
-| POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay, devuelve `url` + `token` |
-| PUT | `/payments/commit` | HU-08 | — | Callback de Transbank con `token_ws` |
+| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; si estaba pagado reembolsa por Transbank y retiene el 50 % si faltan < 12 h (al recinto, menos la comisión) · **implementado** |
+| POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
+| GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
+| GET · POST | `/payments/return` | HU-08 | — | Vuelta de Transbank: confirma (`commit`) una sola vez y muestra el comprobante · **implementado** |
 | POST | `/matches/:id/ratings` | HU-06 | ✔ | Califica puntualidad y conducta (1–5). 409 si pasaron 48 h |
 | GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar |
 | GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck |
@@ -704,20 +705,25 @@ y déjalas anotadas en `fase-2-desarrollo/docs/credenciales-prueba.md` para tene
 ### Flujo (HU-08)
 
 ```
-1. POST /payments/:participationId/init
-   → payment.service crea buyOrder único, llama a Webpay.create(...)
-   → responde { url, token }
-2. La app abre esa URL en expo-web-browser (móvil) o redirige (web)
+1. POST /payments/:participationId/init   (cuota congelada + 10 % de servicio)
+   → payment.service crea buyOrder único y llama a Webpay.create(...)
+   → Payment = INITIATED · responde { paymentId, amount, checkoutPath }
+2. La app abre `checkoutPath` (/payments/:id/webpay): expo-web-browser en el celular,
+   otra pestaña en la web. Esa página envía token_ws a Transbank por POST
 3. El usuario paga con la tarjeta de prueba en el formulario de Transbank
-4. Transbank redirige al returnUrl → PUT /payments/commit con token_ws
-5. payment.service llama a Webpay.commit(token)
-   → si responseCode === 0: Payment = AUTHORIZED, Participation = PAID
-   → si no: Payment = FAILED, se libera el cupo
+4. Transbank vuelve a /payments/return (GET o POST) con token_ws
+5. payment.service llama a Webpay.commit(token) una sola vez
+   → si responseCode === 0: Payment = AUTHORIZED, Participation = PAID, comprobante
+   → si no, o si anuló (TBK_TOKEN) o se agotó el tiempo: Payment = FAILED,
+     se libera el cupo (con bloqueo de fila) y el jugador puede volver a postular
 ```
 
-**Regla:** el `returnUrl` debe ser una URL alcanzable por el navegador de Transbank. En local usa
-`http://localhost:3000/api/v1/payments/return`; en la nube, la URL pública de Render.
-Escribe esta URL en una variable de entorno, nunca hardcodeada.
+**Regla:** la vuelta debe ser alcanzable por el navegador del jugador. Si `TBK_RETURN_URL` no está
+definida, la API la arma con la misma dirección por la que llegó la app (`localhost` en el PC, la IP
+de la red local en el celular). En la nube se define con la URL pública de Render.
+
+**Prueba manual (5-nov-2026):** pago aprobado en Integración con la VISA de prueba; el comprobante
+está en `fase-2-desarrollo/docs/evidencias/sprint-07/`.
 
 ---
 
@@ -795,7 +801,8 @@ API_BASE_URL=http://localhost:3000
 TBK_ENV=integration
 TBK_COMMERCE_CODE=
 TBK_API_KEY=
-TBK_RETURN_URL=http://localhost:3000/api/v1/payments/return
+# Opcional: vacía, Transbank vuelve a la dirección por la que llegó la app (PC o celular).
+TBK_RETURN_URL=
 
 # Negocio
 PLATFORM_COMMISSION_RATE=0.10
