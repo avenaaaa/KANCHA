@@ -5,6 +5,7 @@ import {
   type NearbyMatchRow,
 } from '../repositories/match.repository.js';
 import { participationRepository } from '../repositories/participation.repository.js';
+import { paymentRepository } from '../repositories/payment.repository.js';
 import type { CreateMatchInput } from '../schemas/match.schema.js';
 import { notFound, unprocessable } from '../utils/errors.js';
 import { toNumberOrNull } from '../utils/db-errors.js';
@@ -47,7 +48,13 @@ export interface ParticipantView {
 export interface MatchDetail extends MatchSummary {
   /** Comisión de Kancha (10 %), que se cobra encima de la cuota del jugador. */
   serviceFee: number;
-  viewer: { isOrganizer: boolean; participationId: string | null; status: string | null };
+  viewer: {
+    isOrganizer: boolean;
+    participationId: string | null;
+    status: string | null;
+    /** Último intento de pago del jugador (HU-08): el comprobante si quedó AUTHORIZED. */
+    payment: { status: string; amount: number; buyOrder: string; authorizedAt: string | null } | null;
+  };
   participants: ParticipantView[];
 }
 
@@ -110,7 +117,9 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
   const summary = toMatchSummary(row);
   const isOrganizer = row.organizerId === viewerId;
   const all = await participationRepository.findByMatch(id);
-  const mine = all.find((p) => p.user.id === viewerId) ?? null;
+  // Se busca aparte porque `all` omite las canceladas, y el jugador debe saber que perdió el cupo.
+  const mine = await participationRepository.findOne(id, viewerId);
+  const payment = mine ? await paymentRepository.findByParticipation(mine.id) : null;
 
   // Las postulaciones pendientes solo las ve el organizador (y cada jugador la suya).
   const visible = all.filter((p) => isOrganizer || p.status !== 'PENDING' || p.user.id === viewerId);
@@ -118,7 +127,17 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
   return {
     ...summary,
     serviceFee: calculateCommission(summary.pricePerPlayer),
-    viewer: { isOrganizer, participationId: mine?.id ?? null, status: mine?.status ?? null },
+    viewer: {
+      isOrganizer,
+      participationId: mine?.id ?? null,
+      status: mine?.status ?? null,
+      payment: payment && {
+        status: payment.status,
+        amount: payment.amount,
+        buyOrder: payment.buyOrder,
+        authorizedAt: payment.authorizedAt?.toISOString() ?? null,
+      },
+    },
     participants: visible.map((p) => ({
       participationId: p.id,
       status: p.status,

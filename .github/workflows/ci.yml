@@ -40,6 +40,8 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run lint
       - run: npm run build
+      # Carga la app compilada en Node real: detecta dependencias que no cargan como ESM (las pruebas no lo ven).
+      - run: node --input-type=module -e "await import('./dist/app.js')"
       - run: npm test
 
   mobile:

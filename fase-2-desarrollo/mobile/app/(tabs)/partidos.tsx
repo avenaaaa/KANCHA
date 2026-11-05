@@ -83,12 +83,21 @@ function Footer({ m }: { m: MyMatch }) {
       </View>
     );
   }
-  const confirmed = m.myStatus === 'APPROVED' || m.myStatus === 'PAID';
+  const toPay = m.myStatus === 'APPROVED' && m.pricePerPlayer > 0;
+  const confirmed = (m.myStatus === 'APPROVED' && !toPay) || m.myStatus === 'PAID';
   const color = confirmed ? colors.success : colors.warning;
+  const label =
+    m.myStatus === 'PAID'
+      ? 'Confirmado y pagado'
+      : toPay
+        ? 'Confirmado · falta pagar tu parte'
+        : confirmed
+          ? 'Confirmado'
+          : 'Esperando al organizador';
   return (
     <View style={s.footer}>
-      <Icon name={confirmed ? 'check' : 'clock'} size={16} color={color} strokeWidth={2} />
-      <Text style={[s.footerText, { color }]}>{confirmed ? 'Confirmado' : 'Esperando al organizador'}</Text>
+      <Icon name={confirmed ? 'check' : toPay ? 'wallet' : 'clock'} size={16} color={color} strokeWidth={2} />
+      <Text style={[s.footerText, { color }]}>{label}</Text>
     </View>
   );
 }

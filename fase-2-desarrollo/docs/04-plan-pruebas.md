@@ -63,10 +63,10 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 16 de octubre de 2026 |
-| Archivos de prueba del backend | 9 (6 unitarios y 3 de integración) |
-| Casos del backend | 90 ejecutados · 90 pasan · 0 fallan (61 unitarias, 29 de integración) |
-| Cobertura de `services/` y `utils/` | 97,39 % de líneas · 88,61 % de ramas · 100 % de funciones |
+| Fecha | 5 de noviembre de 2026 |
+| Archivos de prueba del backend | 10 (6 unitarios y 4 de integración) |
+| Casos del backend | 107 ejecutados · 107 pasan · 0 fallan (68 unitarias, 39 de integración) |
+| Cobertura de `services/` y `utils/` | 97,61 % de líneas · 87,71 % de ramas · 100 % de funciones |
 | Casos de la app (Jest + React Native Testing Library) | 13 ejecutados · 13 pasan |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
@@ -109,6 +109,14 @@ Casos agregados en el Sprint 6:
 | U-42 a U-46 | `matching.service` · `decideApproval` | Suma de cupo, paso a `FULL`, último cupo ya tomado, aprobación ajena (403), doble aprobación | HU-05 |
 | U-47 a U-54 | `auth.service` y `registerSchema` | El hash nunca sale, honor `null`, correo solo en el perfil propio, JWT, contraseña de 7 y de 8 caracteres | HU-01 |
 | U-55, U-56 | `utils/errors.ts` | Cada constructor devuelve su código HTTP (cierra DEF-01) | — |
+
+Casos agregados en el Sprint 7:
+
+| IDs | Módulo | Qué prueban | HU |
+|---|---|---|---|
+| U-57 a U-61 | `payment.service` · `decideCheckout` | Paga la cuota más el 10 % de servicio; 403 con el cupo de otro; 409 sin aprobar, ya pagado, partido iniciado o gratis | HU-08 |
+| U-62 | `payment.service` · `isApproved` | Solo `response_code` 0 con estado `AUTHORIZED` es un pago aprobado | HU-08 |
+| U-63 | `payment.service` · `decideRelease` | Liberar un cupo reabre el partido lleno y nunca baja de cero | HU-08 |
 
 ### 4.3 Pruebas de la app
 
@@ -169,7 +177,7 @@ exista.
 | CN-26 | HU-09 | Límite | Cancelar a 12 h 00 min | Reembolso del 100 % | Cubierto (U-18) |
 | CN-27 | HU-09 | Límite | Cancelar a 11 h 59 min | Retiene el 50 % | Cubierto (U-19) |
 | CN-28 | HU-09 | Equivalencia | Monto impar (4.287) | Retenido + reembolsado = pagado | Cubierto (U-20) |
-| CN-29 | HU-08 | Equivalencia | Pago rechazado en Webpay | El cupo se libera | Diseñado |
+| CN-29 | HU-08 | Equivalencia | Pago rechazado en Webpay | El cupo se libera | Cubierto (integración) |
 
 ---
 
@@ -185,8 +193,8 @@ se prueba en su camino feliz y en su error principal.
 | I-03 | API + PostGIS | `POST /matches` guarda la ubicación como `geography` (HU-03) | 5 | **Pasa** |
 | I-04 | API + PostGIS | `GET /matches/nearby` usa `ST_DWithin` y ordena por distancia (HU-04) | 6 | **Pasa** |
 | I-05 | API + transacción | Aprobar el último cupo en paralelo no sobrevende (HU-05) | 6 | **Pasa** |
-| I-06 | API + Transbank | `init` crea la transacción y `commit` la confirma con tarjeta de prueba (HU-08) | 7 | Diseñado |
-| I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | Diseñado |
+| I-06 | API + Transbank | `init` crea la transacción y `commit` la confirma con tarjeta de prueba (HU-08) | 7 | **Pasa** (Transbank simulado en `payments.int.test.ts`) · verificado a mano en Integración con la VISA de prueba (`evidencias/sprint-07/`) |
+| I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | **Pasa** · también el pago anulado y el último cupo que vuelve a `OPEN` |
 | I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | Diseñado |
 | I-09 | API + PostgreSQL | Una reseña recalcula `honorScore` del calificado (HU-06, HU-07) | 8 | Diseñado |
 | I-10 | API + Expo Push | Liberar un cupo dispara la notificación (HU-10) | 9 | Diseñado |
@@ -222,16 +230,17 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 |---|---|---|---|---|
 | S-01 | Autenticación rota | Llamar un endpoint protegido sin token, con token alterado y con token vencido | 401 en los tres casos | **Verificado** (`auth.int.test.ts`) |
 | S-02 | Acceso a objetos ajenos | Aprobar una postulación de un partido que organiza otro usuario | 403 | **Verificado** (`participations.int.test.ts`, U-45) |
-| S-03 | Acceso a objetos ajenos | Pagar o cancelar la participación de otro jugador | 403 | Diseñado |
+| S-03 | Acceso a objetos ajenos | Pagar o cancelar la participación de otro jugador | 403 | **Verificado** el pago (`payments.int.test.ts`, U-58) · la cancelación llega con HU-09 |
 | S-04 | Inyección | Enviar `'; DROP TABLE "Match"; --` en `sport`, `lat` y `lng` | 422, la tabla sigue intacta | **Verificado** en `sport` (`matches.int.test.ts`, U-33) · las consultas usan parámetros de `$queryRaw` |
 | S-05 | Validación de entrada | Enviar tipos erróneos y campos extra en cada `POST` | 422 con el formato único de error | **Verificado** en registro y publicación (CN-03, CN-06, U-29) |
 | S-06 | Exposición de datos | Revisar que ninguna respuesta incluya `passwordHash` | El campo nunca sale | **Verificado** (U-47 y `auth.int.test.ts`) |
 | S-07 | Almacenamiento de credenciales | Revisar la tabla `User` tras un registro | Solo hash bcrypt con costo 12 | **Verificado** (`auth.int.test.ts`; las pruebas usan costo 4 para ir rápido) |
-| S-08 | Manipulación del pago | Llamar a `commit` con un `token_ws` inventado o repetido | Rechazado, sin cambios en `Payment` | Diseñado |
+| S-08 | Manipulación del pago | Llamar a `commit` con un `token_ws` inventado o repetido | Rechazado, sin cambios en `Payment` | **Verificado** (`payments.int.test.ts`): el inventado da 404 y el repetido no vuelve a confirmar |
 | S-09 | Configuración insegura | Revisar cabeceras HTTP de la API | Cabeceras de `helmet` presentes | **Verificado** (`auth.int.test.ts`) |
 | S-10 | Secretos en el repositorio | Buscar claves en el historial de Git | Ningún secreto · `.env` ignorado | Verificado: `.gitignore` excluye `.env` |
 | S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | Diseñado |
 | S-12 | Abuso de recursos | Ráfaga de intentos de login | Límite de peticiones activo (429) | Diseñado · el limitador aún no está implementado |
+| S-13 | Redirección abierta | La página que lleva a Webpay solo puede enviar el formulario a Transbank | CSP `form-action` limitada a Transbank y token sin JWT | **Verificado** (`payments.int.test.ts`) |
 
 ---
 
@@ -246,7 +255,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-05 | Postularme a un partido | — | CN-11, CN-12 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10 | CN-13 a CN-17 | I-09 | S-05 |
 | HU-07 | Cálculo de honor | U-01 a U-06 | CN-18 a CN-21 | I-09 | — |
-| HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22 | CN-22 a CN-25, CN-29 | I-06, I-07 | S-03, S-08 |
+| HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07 | S-03, S-08, S-13 |
 | HU-09 | Retención por deserción | U-17 a U-20 | CN-26 a CN-28 | I-08 | S-03 |
 | HU-10 | Notificación de cupo | — | — | I-10 | — |
 

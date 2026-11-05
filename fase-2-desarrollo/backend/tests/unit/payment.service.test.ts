@@ -4,6 +4,9 @@ import {
   calculateAmountDue,
   calculateCommission,
   calculateRefund,
+  decideCheckout,
+  decideRelease,
+  isApproved,
 } from '../../src/services/payment.service.js';
 
 describe('calculateAmountDue', () => {
@@ -71,5 +74,49 @@ describe('buildBuyOrder', () => {
   it('genera órdenes distintas para participaciones distintas', () => {
     const now = new Date();
     expect(buildBuyOrder('aaaaaa-1', now)).not.toBe(buildBuyOrder('bbbbbb-2', now));
+  });
+});
+
+describe('decideCheckout (HU-08)', () => {
+  const now = new Date('2026-11-05T12:00:00Z');
+  const cupo = { userId: 'u1', status: 'APPROVED', amountDue: 6000, match: { startsAt: new Date('2026-11-06T20:00:00Z') } };
+  const code = (d: ReturnType<typeof decideCheckout>) => (d.ok ? null : d.error.code);
+
+  it('U-57 · el jugador confirmado paga su cuota más el 10 % de servicio', () => {
+    expect(decideCheckout(cupo, 'u1', now)).toEqual({ ok: true, amount: 6600, commission: 600 });
+  });
+
+  it('U-58 · nadie paga el cupo de otro (403)', () => {
+    const d = decideCheckout(cupo, 'intruso', now);
+    expect(d.ok ? null : d.error.statusCode).toBe(403);
+  });
+
+  it('U-59 · sin aprobar no se paga; pagado no se cobra dos veces', () => {
+    expect(code(decideCheckout({ ...cupo, status: 'PENDING' }, 'u1', now))).toBe('NOT_APPROVED');
+    expect(code(decideCheckout({ ...cupo, status: 'PAID' }, 'u1', now))).toBe('ALREADY_PAID');
+  });
+
+  it('U-60 · un partido que ya empezó no se paga', () => {
+    expect(code(decideCheckout({ ...cupo, match: { startsAt: now } }, 'u1', now))).toBe('MATCH_STARTED');
+  });
+
+  it('U-61 · un partido gratis no pasa por Webpay', () => {
+    expect(code(decideCheckout({ ...cupo, amountDue: 0 }, 'u1', now))).toBe('NOTHING_TO_PAY');
+  });
+});
+
+describe('isApproved (HU-08)', () => {
+  it('U-62 · solo response_code 0 con estado AUTHORIZED es un pago aprobado', () => {
+    expect(isApproved({ status: 'AUTHORIZED', responseCode: 0 })).toBe(true);
+    expect(isApproved({ status: 'FAILED', responseCode: -1 })).toBe(false);
+    expect(isApproved({ status: 'AUTHORIZED', responseCode: -1 })).toBe(false);
+  });
+});
+
+describe('decideRelease (HU-08)', () => {
+  it('U-63 · liberar un cupo reabre el partido lleno y nunca baja de cero', () => {
+    expect(decideRelease({ filledSlots: 4, status: 'FULL' })).toEqual({ filledSlots: 3, status: 'OPEN' });
+    expect(decideRelease({ filledSlots: 2, status: 'OPEN' })).toEqual({ filledSlots: 1, status: 'OPEN' });
+    expect(decideRelease({ filledSlots: 0, status: 'OPEN' }).filledSlots).toBe(0);
   });
 });

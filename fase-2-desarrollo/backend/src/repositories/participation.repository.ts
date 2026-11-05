@@ -1,4 +1,4 @@
-import type { Participation, PartStatus, Prisma, Sport } from '@prisma/client';
+import type { MatchStatus, Participation, PartStatus, PayStatus, Prisma, Sport } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 
 export interface ParticipantRow {
@@ -26,14 +26,17 @@ export interface LockedMatch {
 }
 
 /**
- * Operaciones disponibles dentro de una transacción de aprobación.
- * La decisión (¿se puede aprobar?) la toma matching.service; aquí solo hay SQL.
+ * Operaciones disponibles dentro de una transacción que mueve cupos: aprobar
+ * (HU-05) o liberar por pago fallido (HU-08). La decisión la toma
+ * matching.service; aquí solo hay SQL.
  */
 export interface ApprovalTx {
   findParticipation(id: string): Promise<Participation | null>;
   lockMatch(matchId: string): Promise<LockedMatch | null>;
   markApproved(participationId: string, amountDue: number): Promise<Participation>;
-  updateSlots(matchId: string, filledSlots: number, status: 'OPEN' | 'FULL'): Promise<void>;
+  markParticipation(participationId: string, status: PartStatus): Promise<void>;
+  markPayment(paymentId: string, status: PayStatus): Promise<void>;
+  updateSlots(matchId: string, filledSlots: number, status: MatchStatus): Promise<void>;
 }
 
 function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
@@ -58,6 +61,14 @@ function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
         data: { status: 'APPROVED', amountDue },
       }),
 
+    async markParticipation(participationId, status) {
+      await tx.participation.update({ where: { id: participationId }, data: { status } });
+    },
+
+    async markPayment(paymentId, status) {
+      await tx.payment.update({ where: { id: paymentId }, data: { status } });
+    },
+
     async updateSlots(matchId, filledSlots, status) {
       await tx.match.update({ where: { id: matchId }, data: { filledSlots, status } });
     },
@@ -72,6 +83,14 @@ export const participationRepository = {
 
   findOne(matchId: string, userId: string): Promise<Participation | null> {
     return prisma.participation.findUnique({ where: { matchId_userId: { matchId, userId } } });
+  },
+
+  /** Volver a postular tras perder el cupo reutiliza la fila: UNIQUE (matchId, userId) no admite otra. */
+  reopen(participationId: string): Promise<Participation> {
+    return prisma.participation.update({
+      where: { id: participationId },
+      data: { status: 'PENDING', amountDue: 0, joinedAt: new Date() },
+    });
   },
 
   findByMatch(matchId: string): Promise<ParticipantRow[]> {

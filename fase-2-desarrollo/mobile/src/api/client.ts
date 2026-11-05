@@ -7,7 +7,7 @@ import Constants from 'expo-constants';
  * la app (en el celular, "localhost" sería el propio teléfono).
  */
 const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
-const BASE_URL =
+export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost ?? 'localhost'}:3000/api/v1`;
 
 export interface ApiError {
