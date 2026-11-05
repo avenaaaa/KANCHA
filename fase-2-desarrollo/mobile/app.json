@@ -7,10 +7,6 @@
     "scheme": "kancha",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#1A1A1A",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#1A1A1A"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cl.kancha.app"

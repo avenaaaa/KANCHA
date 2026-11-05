@@ -28,6 +28,15 @@ levanta los tres contenedores, espera a que la API responda y abre la app en el 
 | http://localhost:3000/api/docs | Documentación de la API (Swagger UI) |
 | http://localhost:3000/api/v1/health | Estado de la API y la base de datos |
 
+### Ver la app en el celular (iPhone o Android)
+
+1. Con la API levantada (`docker compose up -d db api`), instala **Expo Go** desde App Store o Google Play.
+2. Conecta el celular a la misma red que el PC y, en `fase-2-desarrollo/mobile`, ejecuta `npx expo start --lan`.
+3. Escanea el código QR: con la cámara en iPhone, con Expo Go en Android.
+
+La app se conecta sola a la API del PC que la sirve. Si Windows pregunta por el firewall de Node.js,
+permite las redes privadas.
+
 ### Cuentas de demostración
 
 La base arranca con datos de La Florida: 8 jugadores y 12 partidos con cupo (4 de fútbol, 4 de pádel
