@@ -1,8 +1,11 @@
 /** Piloto del MVP: La Florida, Región Metropolitana (CLAUDE.md §1). */
 export const LA_FLORIDA = { lat: -33.5228, lng: -70.5983 } as const;
 
-/** Más allá de esta distancia la app asume que el usuario está fuera del piloto. */
-export const PILOT_RADIUS_M = 25_000;
+/** Más allá de esta distancia la app asume que el usuario está fuera del piloto (la comuna mide unos 70 km²). */
+export const PILOT_RADIUS_M = 6_000;
+
+/** Una posición menos precisa que esto viene de la red o la IP (un PC sin GPS) y no sirve para "cerca de ti". */
+export const MAX_ACCURACY_M = 1_000;
 
 export const RADIUS_OPTIONS = [2_000, 5_000, 10_000] as const;
 export type RadiusOption = (typeof RADIUS_OPTIONS)[number];
