@@ -1,5 +1,5 @@
 import { env } from '../config/env.js';
-import { ratingRepository } from '../repositories/rating.repository.js';
+import { ratingRepository, type AttendanceRow, type RatingTx } from '../repositories/rating.repository.js';
 import { AppError, conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
 import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 
@@ -153,17 +153,64 @@ export async function rateTeammate(
     return await ratingRepository.inRatingTransaction(async (tx) => {
       await tx.lockUser(input.ratedId);
       await tx.insertRating({ matchId, raterId, ...input });
-      const honor = calculateHonor(
-        await tx.lastRatings(input.ratedId, env.HONOR_SAMPLE_SIZE),
-        await tx.attendance(input.ratedId),
-      );
-      await tx.updateHonor(input.ratedId, honor);
-      return honor;
+      return recalculate(tx, input.ratedId);
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw conflict('ALREADY_RATED', 'Ya calificaste a este jugador en este partido');
     throw err;
   }
+}
+
+/** HU-07: recalcula y guarda el honor dentro de la transacción, con la fila del usuario ya bloqueada. */
+async function recalculate(tx: RatingTx, userId: string): Promise<HonorBreakdown> {
+  const honor = calculateHonor(await tx.lastRatings(userId, env.HONOR_SAMPLE_SIZE), await tx.attendance(userId));
+  await tx.updateHonor(userId, honor);
+  return honor;
+}
+
+export type AttendanceBlock = 'NOT_ORGANIZER' | 'NOT_CONFIRMED' | 'MATCH_NOT_FINISHED' | 'ALREADY_CLOSED';
+
+/**
+ * KAN-30: solo el organizador cierra la asistencia, una vez por confirmado y
+ * cuando el partido ya terminó.
+ */
+export function checkCanCloseAttendance(p: AttendanceRow, actorId: string, now: Date = new Date()): AttendanceBlock | null {
+  if (p.match.organizerId !== actorId) return 'NOT_ORGANIZER';
+  if (p.attended !== null) return 'ALREADY_CLOSED';
+  if (p.status !== 'APPROVED' && p.status !== 'PAID') return 'NOT_CONFIRMED';
+  if (ratingWindow(p.match.startsAt, p.match.durationMin, now) === 'NOT_FINISHED') return 'MATCH_NOT_FINISHED';
+  return null;
+}
+
+const ATTENDANCE_ERRORS: Record<AttendanceBlock, () => AppError> = {
+  NOT_ORGANIZER: () => forbidden('Solo el organizador registra la asistencia'),
+  NOT_CONFIRMED: () => conflict('NOT_CONFIRMED', 'Ese jugador no tenía el cupo confirmado'),
+  MATCH_NOT_FINISHED: () => conflict('MATCH_NOT_FINISHED', 'Podrás registrar la asistencia cuando termine el partido'),
+  ALREADY_CLOSED: () => conflict('ATTENDANCE_ALREADY_SET', 'La asistencia de este jugador ya está registrada'),
+};
+
+/**
+ * KAN-30: "asistió" suma un partido jugado; "no se presentó" deja la participación
+ * en NO_SHOW. En ambos casos cambia la tasa de asistencia, así que el honor se recalcula.
+ */
+export async function recordAttendance(
+  participationId: string,
+  actorId: string,
+  attended: boolean,
+  now: Date = new Date(),
+): Promise<{ participationId: string; attended: boolean; honor: HonorBreakdown }> {
+  const p = await ratingRepository.findForAttendance(participationId);
+  if (!p) throw notFound('PARTICIPATION_NOT_FOUND', 'La participación no existe');
+  const block = checkCanCloseAttendance(p, actorId, now);
+  if (block) throw ATTENDANCE_ERRORS[block]();
+
+  const honor = await ratingRepository.inRatingTransaction(async (tx) => {
+    await tx.lockUser(p.userId);
+    if (!(await tx.closeAttendance(participationId, attended))) throw ATTENDANCE_ERRORS.ALREADY_CLOSED();
+    if (attended) await tx.addMatchPlayed(p.userId);
+    return recalculate(tx, p.userId);
+  });
+  return { participationId, attended, honor };
 }
 
 /** HU-06: compañeros que el jugador aún no califica en este partido. */

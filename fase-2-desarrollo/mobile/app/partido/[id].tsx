@@ -6,7 +6,14 @@ import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
 import { formatCLP, formatTime, formatDay, slotsCta } from '@/lib/format';
-import { useApproveParticipation, useCancelParticipation, useJoinMatch, useMatch, useStartPayment } from '@/api/hooks';
+import {
+  useApproveParticipation,
+  useCancelParticipation,
+  useJoinMatch,
+  useMatch,
+  useRecordAttendance,
+  useStartPayment,
+} from '@/api/hooks';
 import { confirmAction } from '@/lib/confirm';
 import { errorMessage } from '@/api/client';
 import type { MatchDetail, Participant } from '@/api/types';
@@ -38,6 +45,7 @@ function MatchDetailView() {
   const approve = useApproveParticipation(id);
   const pay = useStartPayment(id);
   const cancel = useCancelParticipation(id);
+  const attendance = useRecordAttendance(id);
 
   async function onCancel() {
     if (!m?.viewer.participationId) return;
@@ -68,7 +76,9 @@ function MatchDetailView() {
   }
 
   const start = new Date(m.startsAt);
-  const confirmed = m.participants.filter((p) => p.status === 'APPROVED' || p.status === 'PAID');
+  const confirmed = m.participants.filter((p) => p.status === 'APPROVED' || p.status === 'PAID' || p.status === 'NO_SHOW');
+  // KAN-30: terminado el partido, el organizador cierra la asistencia de cada confirmado.
+  const closeAttendance = m.viewer.isOrganizer && m.ratingWindow !== 'NOT_FINISHED';
   const pending = m.participants.filter((p) => p.status === 'PENDING');
   const narrow = width < 640;
 
@@ -139,9 +149,33 @@ function MatchDetailView() {
           <Text style={s.sectionLabel}>
             {confirmed.length === 0 ? 'Aún no hay confirmados por Kancha' : `Confirmados por Kancha (${confirmed.length})`}
           </Text>
+          {closeAttendance && confirmed.some((p) => p.attended === null) && (
+            <Text style={s.caption}>El partido terminó: marca quién asistió. Suma partidos jugados y cuenta en el honor.</Text>
+          )}
           {confirmed.map((p) => (
-            <PersonRow key={p.participationId} p={p} />
+            <PersonRow key={p.participationId} p={p}>
+              {p.status === 'NO_SHOW' ? (
+                <Text style={s.caption}>No se presentó</Text>
+              ) : closeAttendance && p.attended === null ? (
+                <View style={s.attendance}>
+                  <Button
+                    label="Asistió"
+                    onPress={() => attendance.mutate({ participationId: p.participationId, attended: true })}
+                    loading={attendance.isPending && attendance.variables?.participationId === p.participationId && attendance.variables.attended}
+                    style={s.approveBtn}
+                  />
+                  <Button
+                    label="No vino"
+                    variant="secondary"
+                    onPress={() => attendance.mutate({ participationId: p.participationId, attended: false })}
+                    loading={attendance.isPending && attendance.variables?.participationId === p.participationId && !attendance.variables.attended}
+                    style={s.approveBtn}
+                  />
+                </View>
+              ) : undefined}
+            </PersonRow>
           ))}
+          {attendance.isError && <Text style={s.error}>{errorMessage(attendance.error)}</Text>}
           <Text style={s.caption}>
             Los otros {Math.max(0, m.filledSlots - confirmed.length)} cupos ocupados son jugadores que el organizador ya tenía.
           </Text>
@@ -378,6 +412,7 @@ const s = StyleSheet.create({
   personRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md - 4, minHeight: 48 },
   personName: { fontFamily: fonts.medium, fontSize: 15, color: colors.text, flexShrink: 1 },
   approveBtn: { minHeight: 40, paddingHorizontal: spacing.md },
+  attendance: { flexDirection: 'row', gap: spacing.sm },
   error: { ...type.caption, fontSize: 13, color: colors.error },
   ctaBar: {
     position: 'absolute',

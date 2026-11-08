@@ -5,6 +5,7 @@ export interface ParticipantRow {
   id: string;
   status: PartStatus;
   joinedAt: Date;
+  attended: boolean | null;
   user: {
     id: string;
     name: string;
@@ -95,12 +96,13 @@ export const participationRepository = {
 
   findByMatch(matchId: string): Promise<ParticipantRow[]> {
     return prisma.participation.findMany({
-      where: { matchId, status: { in: ['PENDING', 'APPROVED', 'PAID'] } },
+      where: { matchId, status: { in: ['PENDING', 'APPROVED', 'PAID', 'NO_SHOW'] } },
       orderBy: { joinedAt: 'asc' },
       select: {
         id: true,
         status: true,
         joinedAt: true,
+        attended: true,
         user: {
           select: { id: true, name: true, favoriteSport: true, honorScore: true, matchesPlayed: true },
         },

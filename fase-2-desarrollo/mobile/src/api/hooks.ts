@@ -120,6 +120,19 @@ export function useCancelParticipation(matchId: string) {
   });
 }
 
+/** KAN-30: el organizador marca "asistió" o "no se presentó" al terminar el partido. */
+export function useRecordAttendance(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { participationId: string; attended: boolean }) =>
+      api<{ attended: boolean }>(`/participations/${v.participationId}/attendance`, {
+        method: 'PATCH',
+        body: JSON.stringify({ attended: v.attended }),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.match(matchId) }),
+  });
+}
+
 export function useApproveParticipation(matchId: string) {
   const qc = useQueryClient();
   return useMutation({
