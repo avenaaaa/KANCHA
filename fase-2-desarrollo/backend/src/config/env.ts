@@ -18,7 +18,8 @@ const schema = z.object({
   TBK_ENV: z.enum(['integration', 'production']).default('integration'),
   TBK_COMMERCE_CODE: z.string().optional(),
   TBK_API_KEY: z.string().optional(),
-  TBK_RETURN_URL: z.string().url().default('http://localhost:3000/api/v1/payments/return'),
+  /** Opcional: sin ella, Transbank vuelve a la misma dirección por la que la app llegó a la API (PC, red local o nube). */
+  TBK_RETURN_URL: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
 
   PLATFORM_COMMISSION_RATE: z.coerce.number().min(0).max(1).default(0.1),
   RETENTION_WINDOW_HOURS: z.coerce.number().positive().default(12),

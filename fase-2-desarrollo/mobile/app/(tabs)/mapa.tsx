@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import {
   FlatList,
   Pressable,
@@ -80,7 +80,7 @@ export default function MapScreen() {
   );
 
   const carouselRef = useRef<FlatList<MatchSummary>>(null);
-  const listRef = useRef<ScrollView>(null);
+  const listRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const rowY = useRef(new Map<string, number>());
 
   // Al tocar un pin, la carta correspondiente aparece en el carrusel o el panel.
@@ -110,7 +110,9 @@ export default function MapScreen() {
       ? 'Estás fuera de La Florida, la comuna del piloto. Te mostramos sus partidos.'
       : source === 'denied'
         ? 'Sin acceso a tu ubicación. Te mostramos los partidos de La Florida.'
-        : null;
+        : source === 'imprecise'
+          ? 'No pudimos ubicarte con precisión. Te mostramos los partidos de La Florida.'
+          : null;
 
   const secondaryChips = (
     <>

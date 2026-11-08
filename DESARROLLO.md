@@ -31,9 +31,9 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 
 | Componente | Tecnología | Versión | Costo |
 |---|---|---|---|
-| Framework | Expo SDK | 52 (React Native 0.76, React 18.3) | Libre |
-| Lenguaje | TypeScript | 5.x — `strict: true` | Libre |
-| Navegación | Expo Router (file-based) | v4 | Libre |
+| Framework | Expo SDK | 58 (React Native 0.88, React 19.3) | Libre |
+| Lenguaje | TypeScript | 6.0 — `strict: true` | Libre |
+| Navegación | Expo Router (file-based) | 58 (versión alineada al SDK) | Libre |
 | Estado global | Zustand | 5.x | Libre |
 | Data fetching / caché | TanStack Query | 5.x | Libre |
 | Formularios + validación | React Hook Form + Zod | — | Libre |
@@ -43,11 +43,11 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 | Geolocalización | `expo-location` | — | Libre |
 | Notificaciones push | `expo-notifications` + Expo Push API | — | Libre |
 | Tipografías | Anton + Roboto vía `@expo-google-fonts` | — | Libre |
-| Testing | Jest (`jest-expo`) + React Native Testing Library | — | Libre |
+| Testing | Jest 30 (`jest-expo`) + React Native Testing Library 14 | — | Libre |
 
-> **Versiones reales del scaffolding (Sprint 4).** Estas son las versiones instaladas y verificadas en
-> `package.json`. La v1.1 de este documento declaraba Expo SDK 57, React 19.2 y Zod 4, pero el código
-> se generó con SDK 52 y Zod 3. Subir a SDK 57 es una tarea aparte, con su propio issue en Jira.
+> **Versiones verificadas (Sprint 7, KAN-29).** La app se generó con Expo SDK 52 y el 5 de noviembre
+> de 2026 subió a SDK 58: la Expo Go de App Store y Google Play solo abre el SDK más reciente, y la
+> defensa necesita mostrarla en iPhone y en Android. El backend sigue con Zod 3.
 
 **Por qué Expo y no Flutter ni web pura:** Expo entrega las tres cosas que el proyecto necesita al mismo tiempo
 — app nativa instalable, versión web proyectable y demo instantánea por QR sin publicar en Google Play.
@@ -93,7 +93,7 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        CLIENTES (Expo SDK 52)                   │
+│                        CLIENTES (Expo SDK 58)                   │
 │                                                                 │
 │   📱 Android / iOS              🖥️  Web (react-native-web)      │
 │   (Expo Go · QR)                (build estático · demo comisión) │
@@ -313,8 +313,8 @@ model Rating {
   matchId     String
   raterId     String
   ratedId     String
-  punctuality Int      // 1..5
-  conduct     Int      // 1..5
+  punctuality Int      // 1..5 · CHECK en la migración 20261108170000
+  conduct     Int      // 1..5 · CHECK en la migración 20261108170000
   createdAt   DateTime @default(now())
 
   match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
@@ -401,12 +401,13 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
-| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; aplica retención si faltan < 12 h |
-| POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay, devuelve `url` + `token` |
-| PUT | `/payments/commit` | HU-08 | — | Callback de Transbank con `token_ws` |
-| POST | `/matches/:id/ratings` | HU-06 | ✔ | Califica puntualidad y conducta (1–5). 409 si pasaron 48 h |
-| GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar |
-| GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck |
+| DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; si estaba pagado reembolsa por Transbank y retiene el 50 % si faltan < 12 h (al recinto, menos la comisión) · **implementado** |
+| POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
+| GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
+| GET · POST | `/payments/return` | HU-08 | — | Vuelta de Transbank: confirma (`commit`) una sola vez y muestra el comprobante · **implementado** |
+| POST | `/matches/:id/ratings` | HU-06, HU-07 | ✔ | Califica puntualidad y conducta (1–5) y devuelve el honor recalculado del compañero. 409 si pasaron 48 h o si ya lo calificó · **implementado** |
+| GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar y hasta cuándo · **implementado** |
+| GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck · **implementado** |
 
 El contrato navegable está en `http://localhost:3000/api/docs` (Swagger UI) y en `/api/docs.json`.
 Su fuente es `backend/src/docs/openapi.ts`: cada endpoint nuevo se documenta ahí en el mismo commit.
@@ -704,20 +705,25 @@ y déjalas anotadas en `fase-2-desarrollo/docs/credenciales-prueba.md` para tene
 ### Flujo (HU-08)
 
 ```
-1. POST /payments/:participationId/init
-   → payment.service crea buyOrder único, llama a Webpay.create(...)
-   → responde { url, token }
-2. La app abre esa URL en expo-web-browser (móvil) o redirige (web)
+1. POST /payments/:participationId/init   (cuota congelada + 10 % de servicio)
+   → payment.service crea buyOrder único y llama a Webpay.create(...)
+   → Payment = INITIATED · responde { paymentId, amount, checkoutPath }
+2. La app abre `checkoutPath` (/payments/:id/webpay): expo-web-browser en el celular,
+   otra pestaña en la web. Esa página envía token_ws a Transbank por POST
 3. El usuario paga con la tarjeta de prueba en el formulario de Transbank
-4. Transbank redirige al returnUrl → PUT /payments/commit con token_ws
-5. payment.service llama a Webpay.commit(token)
-   → si responseCode === 0: Payment = AUTHORIZED, Participation = PAID
-   → si no: Payment = FAILED, se libera el cupo
+4. Transbank vuelve a /payments/return (GET o POST) con token_ws
+5. payment.service llama a Webpay.commit(token) una sola vez
+   → si responseCode === 0: Payment = AUTHORIZED, Participation = PAID, comprobante
+   → si no, o si anuló (TBK_TOKEN) o se agotó el tiempo: Payment = FAILED,
+     se libera el cupo (con bloqueo de fila) y el jugador puede volver a postular
 ```
 
-**Regla:** el `returnUrl` debe ser una URL alcanzable por el navegador de Transbank. En local usa
-`http://localhost:3000/api/v1/payments/return`; en la nube, la URL pública de Render.
-Escribe esta URL en una variable de entorno, nunca hardcodeada.
+**Regla:** la vuelta debe ser alcanzable por el navegador del jugador. Si `TBK_RETURN_URL` no está
+definida, la API la arma con la misma dirección por la que llegó la app (`localhost` en el PC, la IP
+de la red local en el celular). En la nube se define con la URL pública de Render.
+
+**Prueba manual (5-nov-2026):** pago aprobado en Integración con la VISA de prueba; el comprobante
+está en `fase-2-desarrollo/docs/evidencias/sprint-07/`.
 
 ---
 
@@ -795,7 +801,8 @@ API_BASE_URL=http://localhost:3000
 TBK_ENV=integration
 TBK_COMMERCE_CODE=
 TBK_API_KEY=
-TBK_RETURN_URL=http://localhost:3000/api/v1/payments/return
+# Opcional: vacía, Transbank vuelve a la dirección por la que llegó la app (PC o celular).
+TBK_RETURN_URL=
 
 # Negocio
 PLATFORM_COMMISSION_RATE=0.10

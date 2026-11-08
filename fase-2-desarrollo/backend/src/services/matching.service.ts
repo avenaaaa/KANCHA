@@ -107,8 +107,11 @@ export async function join(matchId: string, userId: string, now: Date = new Date
   try {
     return await participationRepository.create(matchId, userId);
   } catch (err) {
-    if (isUniqueViolation(err)) throw conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
-    throw err;
+    if (!isUniqueViolation(err)) throw err;
+    // Quien perdió su cupo (pago fallido o cancelación) puede volver a postular.
+    const previous = await participationRepository.findOne(matchId, userId);
+    if (previous?.status === 'CANCELLED') return participationRepository.reopen(previous.id);
+    throw conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
   }
 }
 

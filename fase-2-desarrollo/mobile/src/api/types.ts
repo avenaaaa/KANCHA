@@ -50,9 +50,21 @@ export interface Participant {
   user: { id: string; name: string; favoriteSport: SportKey; honorScore: number | null; matchesPlayed: number };
 }
 
+/** Ventana para calificar (HU-06): abre al terminar el partido y dura 48 h. */
+export type RatingWindow = 'NOT_FINISHED' | 'OPEN' | 'CLOSED';
+
 export interface MatchDetail extends MatchSummary {
   serviceFee: number;
-  viewer: { isOrganizer: boolean; participationId: string | null; status: ParticipationStatus | null };
+  ratingWindow: RatingWindow;
+  viewer: {
+    isOrganizer: boolean;
+    participationId: string | null;
+    status: ParticipationStatus | null;
+    /** Último intento de pago (HU-08). Con status AUTHORIZED es el comprobante. */
+    payment: { status: string; amount: number; retained: number; buyOrder: string; authorizedAt: string | null } | null;
+    /** Si el cupo está pagado: qué se devolvería al cancelar ahora (HU-09). */
+    refundIfCancelled: { refunded: number; retained: number; withinRetentionWindow: boolean } | null;
+  };
   participants: Participant[];
 }
 
@@ -60,6 +72,14 @@ export interface MyMatch extends MatchSummary {
   role: 'ORGANIZER' | 'PLAYER';
   myStatus: ParticipationStatus | null;
   pendingCount: number;
+  ratingWindow: RatingWindow;
+}
+
+/** GET /matches/:id/ratings/pending (HU-06). */
+export interface PendingRatings {
+  window: RatingWindow;
+  closesAt: string;
+  pending: { userId: string; name: string; honorScore: number | null }[];
 }
 
 export interface NewMatch {

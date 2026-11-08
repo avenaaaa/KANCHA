@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateHonor, isRatingWindowOpen } from '../../src/services/honor.service.js';
+import { calculateHonor, checkCanRate, isRatingWindowOpen, ratingWindow } from '../../src/services/honor.service.js';
 
 describe('calculateHonor', () => {
   it('devuelve null y no 0 cuando el usuario no tiene ninguna señal (HU-01, HU-02)', () => {
@@ -59,5 +59,31 @@ describe('isRatingWindowOpen', () => {
 
   it('se cierra pasadas las 48 h (HU-06)', () => {
     expect(isRatingWindowOpen(inicio, duracion, new Date('2026-10-03T21:01:00Z'))).toBe(false);
+  });
+});
+
+describe('ratingWindow (HU-06)', () => {
+  const inicio = new Date('2026-11-01T20:00:00Z'); // termina a las 21:00 con 60 min
+  const a = (iso: string) => ratingWindow(inicio, 60, new Date(iso));
+
+  it('U-69 · aún no termina, abierta hasta las 48 h exactas y cerrada después', () => {
+    expect(a('2026-11-01T20:59:00Z')).toBe('NOT_FINISHED');
+    expect(a('2026-11-01T21:00:00Z')).toBe('OPEN');
+    expect(a('2026-11-03T21:00:00Z')).toBe('OPEN');
+    expect(a('2026-11-03T21:01:00Z')).toBe('CLOSED');
+  });
+});
+
+describe('checkCanRate (HU-06)', () => {
+  const roster = new Set(['org', 'a', 'b']);
+
+  it('U-70 · solo califica quien jugó, nunca a sí mismo ni a alguien que no jugó, y con la ventana abierta', () => {
+    expect(checkCanRate(roster, 'a', 'b', 'OPEN')).toBeNull();
+    expect(checkCanRate(roster, 'org', 'a', 'OPEN')).toBeNull();
+    expect(checkCanRate(roster, 'intruso', 'a', 'OPEN')).toBe('NOT_IN_MATCH');
+    expect(checkCanRate(roster, 'a', 'a', 'OPEN')).toBe('SELF_RATING');
+    expect(checkCanRate(roster, 'a', 'intruso', 'OPEN')).toBe('RATED_NOT_IN_MATCH');
+    expect(checkCanRate(roster, 'a', 'b', 'NOT_FINISHED')).toBe('MATCH_NOT_FINISHED');
+    expect(checkCanRate(roster, 'a', 'b', 'CLOSED')).toBe('RATING_WINDOW_CLOSED');
   });
 });

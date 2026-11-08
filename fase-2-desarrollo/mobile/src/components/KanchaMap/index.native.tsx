@@ -81,7 +81,7 @@ export default function KanchaMap({
       initialRegion={regionFor(center.lat, center.lng, zoom)}
       customMapStyle={DARK_GOOGLE_STYLE}
       userInterfaceStyle="dark"
-      showsPointsOfInterest={false}
+      showsPointsOfInterests={false}
       toolbarEnabled={false}
       rotateEnabled={false}
       pitchEnabled={false}

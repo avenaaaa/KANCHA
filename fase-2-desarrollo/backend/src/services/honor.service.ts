@@ -1,4 +1,7 @@
 import { env } from '../config/env.js';
+import { ratingRepository } from '../repositories/rating.repository.js';
+import { AppError, conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
+import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 
 /**
  * Sistema de Honor (HU-06, HU-07).
@@ -73,16 +76,109 @@ export function calculateHonor(
   return { attendanceRate, punctualityRate, fairPlayRate, honorScore };
 }
 
+export type RatingWindow = 'NOT_FINISHED' | 'OPEN' | 'CLOSED';
+
 /**
- * Ventana de calificación (HU-06): 48 h desde que TERMINA el partido.
+ * Ventana de calificación (HU-06): abre cuando TERMINA el partido y dura 48 h.
  * Pasado el plazo el partido se archiva y deja de admitir reseñas.
  */
-export function isRatingWindowOpen(
-  startsAt: Date,
-  durationMin: number,
+export function ratingWindow(startsAt: Date, durationMin: number, now: Date = new Date()): RatingWindow {
+  const endsAt = new Date(startsAt).getTime() + durationMin * 60_000;
+  if (now.getTime() < endsAt) return 'NOT_FINISHED';
+  return now.getTime() <= endsAt + env.RATING_WINDOW_HOURS * 3_600_000 ? 'OPEN' : 'CLOSED';
+}
+
+export function isRatingWindowOpen(startsAt: Date, durationMin: number, now: Date = new Date()): boolean {
+  return ratingWindow(startsAt, durationMin, now) === 'OPEN';
+}
+
+export type RatingBlock =
+  | 'NOT_IN_MATCH'
+  | 'SELF_RATING'
+  | 'RATED_NOT_IN_MATCH'
+  | 'MATCH_NOT_FINISHED'
+  | 'RATING_WINDOW_CLOSED';
+
+/**
+ * HU-06: ¿puede `raterId` calificar a `ratedId`? Ambos deben haber jugado el
+ * partido (organizador o participación confirmada) y la ventana debe estar abierta.
+ */
+export function checkCanRate(
+  roster: ReadonlySet<string>,
+  raterId: string,
+  ratedId: string,
+  window: RatingWindow,
+): RatingBlock | null {
+  if (!roster.has(raterId)) return 'NOT_IN_MATCH';
+  if (raterId === ratedId) return 'SELF_RATING';
+  if (!roster.has(ratedId)) return 'RATED_NOT_IN_MATCH';
+  if (window === 'NOT_FINISHED') return 'MATCH_NOT_FINISHED';
+  if (window === 'CLOSED') return 'RATING_WINDOW_CLOSED';
+  return null;
+}
+
+const RATING_ERRORS: Record<RatingBlock, () => AppError> = {
+  NOT_IN_MATCH: () => forbidden('Solo los jugadores del partido pueden calificar'),
+  SELF_RATING: () => unprocessable('SELF_RATING', 'No puedes calificarte a ti mismo'),
+  RATED_NOT_IN_MATCH: () => unprocessable('RATED_NOT_IN_MATCH', 'Ese jugador no jugó este partido'),
+  MATCH_NOT_FINISHED: () => conflict('MATCH_NOT_FINISHED', 'Podrás calificar cuando termine el partido'),
+  RATING_WINDOW_CLOSED: () => conflict('RATING_WINDOW_CLOSED', 'Pasaron las 48 h para calificar este partido'),
+};
+
+/** Carga el partido y, si venció la ventana, lo archiva (HU-06: "el partido se archiva sin calificación"). */
+async function loadRoster(matchId: string, now: Date) {
+  const roster = await ratingRepository.findRoster(matchId);
+  if (!roster) throw notFound('MATCH_NOT_FOUND', 'El partido no existe');
+  const window = ratingWindow(roster.startsAt, roster.durationMin, now);
+  if (window === 'CLOSED' && roster.status !== 'ARCHIVED') await ratingRepository.archive(matchId);
+  return { roster, window, memberIds: new Set(roster.members.map((m) => m.id)) };
+}
+
+/**
+ * HU-06 + HU-07: guarda la reseña y recalcula el honor del calificado en la misma
+ * transacción, con su fila bloqueada para que dos reseñas simultáneas no se pisen.
+ * La doble calificación la impide UNIQUE (matchId, raterId, ratedId) en la base.
+ */
+export async function rateTeammate(
+  matchId: string,
+  raterId: string,
+  input: { ratedId: string; punctuality: number; conduct: number },
   now: Date = new Date(),
-): boolean {
-  const endsAt = startsAt.getTime() + durationMin * 60_000;
-  if (now.getTime() < endsAt) return false; // el partido aún no termina
-  return now.getTime() <= endsAt + env.RATING_WINDOW_HOURS * 3_600_000;
+): Promise<HonorBreakdown> {
+  const { window, memberIds } = await loadRoster(matchId, now);
+  const block = checkCanRate(memberIds, raterId, input.ratedId, window);
+  if (block) throw RATING_ERRORS[block]();
+
+  try {
+    return await ratingRepository.inRatingTransaction(async (tx) => {
+      await tx.lockUser(input.ratedId);
+      await tx.insertRating({ matchId, raterId, ...input });
+      const honor = calculateHonor(
+        await tx.lastRatings(input.ratedId, env.HONOR_SAMPLE_SIZE),
+        await tx.attendance(input.ratedId),
+      );
+      await tx.updateHonor(input.ratedId, honor);
+      return honor;
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw conflict('ALREADY_RATED', 'Ya calificaste a este jugador en este partido');
+    throw err;
+  }
+}
+
+/** HU-06: compañeros que el jugador aún no califica en este partido. */
+export async function pendingRatings(matchId: string, raterId: string, now: Date = new Date()) {
+  const { roster, window, memberIds } = await loadRoster(matchId, now);
+  if (!memberIds.has(raterId)) throw RATING_ERRORS.NOT_IN_MATCH();
+  const done = new Set(await ratingRepository.ratedBy(matchId, raterId));
+  const closesAt = new Date(
+    new Date(roster.startsAt).getTime() + roster.durationMin * 60_000 + env.RATING_WINDOW_HOURS * 3_600_000,
+  );
+  return {
+    window,
+    closesAt: closesAt.toISOString(),
+    pending: roster.members
+      .filter((m) => m.id !== raterId && !done.has(m.id))
+      .map((m) => ({ userId: m.id, name: m.name, honorScore: toNumberOrNull(m.honorScore) })),
+  };
 }
