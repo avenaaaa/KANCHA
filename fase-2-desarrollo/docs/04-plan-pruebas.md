@@ -31,7 +31,7 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 8-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` y `mobile/src/__tests__/` | **75 del backend y 17 de la app, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` y `mobile/src/__tests__/` | **75 del backend y 19 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 29 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **56 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas |
@@ -67,7 +67,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Archivos de prueba del backend | 12 (6 unitarios y 6 de integración) |
 | Casos del backend | 131 ejecutados · 131 pasan · 0 fallan (75 unitarias, 56 de integración) |
 | Cobertura de `services/` y `utils/` | 97,96 % de líneas · 90,61 % de ramas · 100 % de funciones |
-| Casos de la app (Jest + React Native Testing Library) | 17 ejecutados · 17 pasan (incluye M-14 a M-16 de DEF-05 y M-17 de HU-06) |
+| Casos de la app (Jest + React Native Testing Library) | 19 ejecutados · 19 pasan (incluye M-14 a M-16 de DEF-05, M-17 de HU-06 y M-18, M-19 de HU-02) |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -137,6 +137,7 @@ Casos agregados en el Sprint 8:
 | M-12, M-13 | `MatchCard` | Muestra cupos, cuota, lugar y distancia; tocarla abre el partido | Pasa |
 | M-14 a M-16 | `useOrigin` · `resolveOrigin` | Posición precisa en la comuna se usa tal cual; posición de red con km de error y posición fuera de la comuna buscan en La Florida (DEF-05) | Pasa |
 | M-17 | `RatingPicker` | Ofrece notas de 1 a 5, marca la elegida y avisa al tocar otra (HU-06) | Pasa |
+| M-18, M-19 | `PlayerCard` | Sin reseñas dice "Sin calificaciones aún" y nunca muestra el correo; con reseñas muestra honor, partidos jugados y las tres métricas (HU-02) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -260,7 +261,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU | Historia | Unitarias | Caja negra | Integración | Seguridad |
 |---|---|---|---|---|---|
 | HU-01 | Registro de agente libre | U-01 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12 |
-| HU-02 | Carta de jugador | U-01, M-07, M-08 | CN-18 | I-09 | S-06 |
+| HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
 | HU-03 | Publicar partido | U-23 a U-30 | CN-04 a CN-06 | I-03 | S-05 |
 | HU-04 | Buscar partidos cercanos | M-14 a M-16 | CN-07 a CN-10 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46 | CN-11, CN-12 | I-05 | S-02 |

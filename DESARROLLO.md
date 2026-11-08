@@ -394,7 +394,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | POST | `/auth/login` | HU-01 | — | Devuelve el JWT de acceso (7 días) · **implementado**. El refresh token está pendiente |
 | GET | `/users/me` | HU-01, HU-02 | ✔ | Perfil propio completo · **implementado** |
 | GET | `/users/me/matches` | HU-05 | ✔ | Partidos que organizo o a los que postulé, con mi estado y las postulaciones por revisar · **implementado** |
-| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública · versión básica implementada |
+| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública: honor, partidos jugados y métricas, sin correo · **implementado** (pantalla `/jugador/[id]` en la app) |
 | PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push |
 | POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=` · **implementado** |

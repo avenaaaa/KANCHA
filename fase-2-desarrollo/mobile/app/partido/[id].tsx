@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
@@ -108,11 +108,11 @@ function MatchDetailView() {
 
         <View style={s.block}>
           <Text style={s.sectionLabel}>Organiza</Text>
-          <View style={s.personRow}>
+          <PlayerLink userId={m.organizer.id} name={m.organizer.name}>
             <Avatar name={m.organizer.name} />
             <Text style={s.personName}>{m.organizer.name}</Text>
             <HonorBadge score={m.organizer.honorScore} />
-          </View>
+          </PlayerLink>
         </View>
 
         {m.viewer.isOrganizer && (
@@ -178,17 +178,34 @@ function Fact({ icon, title, text }: { icon: 'clock' | 'pin' | 'wallet'; title: 
   );
 }
 
+/** Fila que abre la carta pública del jugador (HU-02). */
+function PlayerLink({ userId, name, fill = false, children }: { userId: string; name: string; fill?: boolean; children: React.ReactNode }) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/jugador/${userId}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver la carta de ${name}`}
+      style={({ pressed }) => [s.personRow, fill && { flex: 1 }, pressed && { opacity: 0.85 }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 function PersonRow({ p, children }: { p: Participant; children?: React.ReactNode }) {
   return (
     <View style={s.personRow}>
-      <Avatar name={p.user.name} />
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={s.personName}>{p.user.name}</Text>
-        <Text style={s.caption}>
-          {p.user.matchesPlayed === 1 ? '1 partido jugado' : `${p.user.matchesPlayed} partidos jugados`}
-        </Text>
-      </View>
-      {children ?? <HonorBadge score={p.user.honorScore} />}
+      <PlayerLink userId={p.user.id} name={p.user.name} fill>
+        <Avatar name={p.user.name} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={s.personName}>{p.user.name}</Text>
+          <Text style={s.caption}>
+            {p.user.matchesPlayed === 1 ? '1 partido jugado' : `${p.user.matchesPlayed} partidos jugados`}
+          </Text>
+        </View>
+        {children ? null : <HonorBadge score={p.user.honorScore} />}
+      </PlayerLink>
+      {children}
     </View>
   );
 }
