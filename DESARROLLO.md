@@ -313,8 +313,8 @@ model Rating {
   matchId     String
   raterId     String
   ratedId     String
-  punctuality Int      // 1..5
-  conduct     Int      // 1..5
+  punctuality Int      // 1..5 · CHECK en la migración 20261108170000
+  conduct     Int      // 1..5 · CHECK en la migración 20261108170000
   createdAt   DateTime @default(now())
 
   match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
@@ -405,9 +405,9 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
 | GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
 | GET · POST | `/payments/return` | HU-08 | — | Vuelta de Transbank: confirma (`commit`) una sola vez y muestra el comprobante · **implementado** |
-| POST | `/matches/:id/ratings` | HU-06 | ✔ | Califica puntualidad y conducta (1–5). 409 si pasaron 48 h |
-| GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar |
-| GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck |
+| POST | `/matches/:id/ratings` | HU-06, HU-07 | ✔ | Califica puntualidad y conducta (1–5) y devuelve el honor recalculado del compañero. 409 si pasaron 48 h o si ya lo calificó · **implementado** |
+| GET | `/matches/:id/ratings/pending` | HU-06 | ✔ | A quién falta calificar y hasta cuándo · **implementado** |
+| GET | `/health` | — | — | `{ status, db, version }` para Docker healthcheck · **implementado** |
 
 El contrato navegable está en `http://localhost:3000/api/docs` (Swagger UI) y en `/api/docs.json`.
 Su fuente es `backend/src/docs/openapi.ts`: cada endpoint nuevo se documenta ahí en el mismo commit.

@@ -20,6 +20,10 @@ export default function MyMatchesScreen() {
   const upcoming = (data?.matches ?? []).filter((m) => new Date(m.startsAt).getTime() > now - m.durationMin * 60_000);
   const organizing = upcoming.filter((m) => m.role === 'ORGANIZER');
   const playing = upcoming.filter((m) => m.role === 'PLAYER');
+  // HU-06: partidos jugados con la ventana de 48 h abierta.
+  const toRate = (data?.matches ?? []).filter(
+    (m) => m.ratingWindow === 'OPEN' && (m.role === 'ORGANIZER' || m.myStatus === 'APPROVED' || m.myStatus === 'PAID'),
+  );
 
   return (
     <ScrollView
@@ -40,7 +44,7 @@ export default function MyMatchesScreen() {
           <Text style={s.emptyText}>{errorMessage(error)}</Text>
           <Button label="Reintentar" variant="secondary" onPress={() => void refetch()} />
         </View>
-      ) : upcoming.length === 0 ? (
+      ) : upcoming.length === 0 && toRate.length === 0 ? (
         <View style={s.empty}>
           <Text style={s.emptyTitle}>Todavía no tienes partidos</Text>
           <Text style={s.emptyText}>Busca uno con cupo en el mapa o publica el tuyo si te falta gente.</Text>
@@ -51,6 +55,7 @@ export default function MyMatchesScreen() {
         </View>
       ) : (
         <>
+          <Section title="Califica a tus compañeros" matches={toRate} rate />
           <Section title="Organizas" matches={organizing} />
           <Section title="Juegas" matches={playing} />
         </>
@@ -59,14 +64,28 @@ export default function MyMatchesScreen() {
   );
 }
 
-function Section({ title, matches }: { title: string; matches: MyMatch[] }) {
+function Section({ title, matches, rate = false }: { title: string; matches: MyMatch[]; rate?: boolean }) {
   if (matches.length === 0) return null;
   return (
     <View style={{ gap: spacing.sm + 4 }}>
       <Text style={s.h2}>{title}</Text>
       {matches.map((m) => (
-        <MatchCard key={m.id} match={m} onPress={() => router.push(`/partido/${m.id}`)} footer={<Footer m={m} />} />
+        <MatchCard
+          key={m.id}
+          match={m}
+          onPress={() => router.push(rate ? `/calificar/${m.id}` : `/partido/${m.id}`)}
+          footer={rate ? <RateFooter /> : <Footer m={m} />}
+        />
       ))}
+    </View>
+  );
+}
+
+function RateFooter() {
+  return (
+    <View style={s.footer}>
+      <Text style={[s.footerText, { color: colors.accent }]}>Tienes 48 horas para calificar</Text>
+      <Icon name="forward" size={14} color={colors.accent} strokeWidth={2.4} />
     </View>
   );
 }

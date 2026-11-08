@@ -9,6 +9,7 @@ import { paymentRepository } from '../repositories/payment.repository.js';
 import type { CreateMatchInput } from '../schemas/match.schema.js';
 import { notFound, unprocessable } from '../utils/errors.js';
 import { toNumberOrNull } from '../utils/db-errors.js';
+import { ratingWindow, type RatingWindow } from './honor.service.js';
 import {
   calculateAmountDue,
   calculateCommission,
@@ -53,6 +54,8 @@ export interface ParticipantView {
 export interface MatchDetail extends MatchSummary {
   /** Comisión de Kancha (10 %), que se cobra encima de la cuota del jugador. */
   serviceFee: number;
+  /** Ventana de 48 h para calificar tras el partido (HU-06). */
+  ratingWindow: RatingWindow;
   viewer: {
     isOrganizer: boolean;
     participationId: string | null;
@@ -69,6 +72,7 @@ export interface MyMatch extends MatchSummary {
   role: 'ORGANIZER' | 'PLAYER';
   myStatus: string | null;
   pendingCount: number;
+  ratingWindow: RatingWindow;
 }
 
 /** HU-03: "GIVEN que el horario ingresado ya pasó WHEN intento publicar THEN se rechaza". */
@@ -134,6 +138,7 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
   return {
     ...summary,
     serviceFee: calculateCommission(summary.pricePerPlayer),
+    ratingWindow: ratingWindow(new Date(summary.startsAt), summary.durationMin),
     viewer: {
       isOrganizer,
       participationId: mine?.id ?? null,
@@ -169,5 +174,6 @@ export async function listForUser(userId: string): Promise<MyMatch[]> {
     role: r.organizerId === userId ? 'ORGANIZER' : 'PLAYER',
     myStatus: r.myStatus,
     pendingCount: r.organizerId === userId ? Number(r.pendingCount) : 0,
+    ratingWindow: ratingWindow(new Date(r.startsAt), Number(r.durationMin)),
   }));
 }

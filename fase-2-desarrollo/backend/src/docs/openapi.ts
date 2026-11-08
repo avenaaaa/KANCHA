@@ -35,6 +35,7 @@ export const openapi = {
     { name: 'Partidos', description: 'HU-03 · KAN-9 · HU-04 · KAN-10' },
     { name: 'Postulaciones', description: 'HU-05 · KAN-11' },
     { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
+    { name: 'Calificaciones', description: 'HU-06 · KAN-12 · HU-07 · KAN-13 · Sistema de Honor' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -139,6 +140,11 @@ export const openapi = {
           },
         },
       },
+      RatingWindow: {
+        type: 'string',
+        enum: ['NOT_FINISHED', 'OPEN', 'CLOSED'],
+        description: 'Ventana para calificar (HU-06): abre al terminar el partido y dura 48 h',
+      },
       MatchDetail: {
         allOf: [
           { $ref: '#/components/schemas/MatchSummary' },
@@ -146,6 +152,7 @@ export const openapi = {
             type: 'object',
             properties: {
               serviceFee: { type: 'integer', description: 'Comisión de Kancha (10 %) sobre la cuota' },
+              ratingWindow: { $ref: '#/components/schemas/RatingWindow' },
               viewer: {
                 type: 'object',
                 properties: {
@@ -300,6 +307,73 @@ export const openapi = {
         responses: {
           201: { description: 'Postulación registrada como pendiente' },
           409: error({ code: 'ALREADY_JOINED', message: 'Ya postulaste a este partido' }),
+        },
+      },
+    },
+    '/matches/{id}/ratings': {
+      post: {
+        tags: ['Calificaciones'],
+        summary: 'Calificar a un compañero del partido (HU-06) y recalcular su honor (HU-07)',
+        description:
+          'Solo entre jugadores del partido (organizador o cupo aprobado/pagado), una vez por compañero ' +
+          '(UNIQUE matchId, raterId, ratedId) y dentro de las 48 h tras el término. Notas de 1 a 5, validadas ' +
+          'con Zod y con CHECK en la base. El honor se recalcula en la misma transacción, con la fila del ' +
+          'calificado bloqueada. Vencido el plazo el partido se archiva.',
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['ratedId', 'punctuality', 'conduct'],
+                properties: {
+                  ratedId: { type: 'string', format: 'uuid' },
+                  punctuality: { type: 'integer', minimum: 1, maximum: 5 },
+                  conduct: { type: 'integer', minimum: 1, maximum: 5 },
+                },
+              },
+              example: { ratedId: '3f8a…', punctuality: 5, conduct: 4 },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Reseña guardada con el honor ya recalculado del calificado',
+            content: {
+              'application/json': {
+                example: {
+                  ratedId: '3f8a…',
+                  honor: { attendanceRate: null, punctualityRate: 100, fairPlayRate: 75, honorScore: 8.8 },
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo los jugadores del partido pueden calificar' }),
+          409: error({ code: 'ALREADY_RATED', message: 'Ya calificaste a este jugador en este partido' }),
+          422: error({ code: 'SELF_RATING', message: 'No puedes calificarte a ti mismo' }),
+        },
+      },
+    },
+    '/matches/{id}/ratings/pending': {
+      get: {
+        tags: ['Calificaciones'],
+        summary: 'Compañeros que aún no califico en este partido (HU-06)',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Estado de la ventana y pendientes',
+            content: {
+              'application/json': {
+                example: {
+                  window: 'OPEN',
+                  closesAt: '2026-11-10T22:30:00.000Z',
+                  pending: [{ userId: '3f8a…', name: 'Valentina Rojas', honorScore: null }],
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo los jugadores del partido pueden calificar' }),
         },
       },
     },

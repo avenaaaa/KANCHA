@@ -1,0 +1,22 @@
+
+
+ RUN  v2.1.9 C:/Users/guerr/Desktop/KANCHA/fase-2-desarrollo/backend
+
+ ✓ tests/integration/payments.int.test.ts (10 tests) 511ms
+ ✓ tests/unit/payment.service.test.ts (24 tests) 9ms
+ ✓ tests/integration/cancellations.int.test.ts (7 tests) 510ms
+ ✓ tests/integration/ratings.int.test.ts (10 tests) 875ms
+ ✓ tests/integration/participations.int.test.ts (8 tests) 362ms
+ ✓ tests/integration/matches.int.test.ts (12 tests) 185ms
+ ✓ tests/integration/auth.int.test.ts (9 tests) 117ms
+ ✓ tests/unit/match.service.test.ts (14 tests) 10ms
+ ✓ tests/unit/honor.service.test.ts (12 tests) 4ms
+ ✓ tests/unit/matching.service.test.ts (10 tests) 4ms
+ ✓ tests/unit/auth.service.test.ts (8 tests) 9ms
+ ✓ tests/unit/errors.test.ts (7 tests) 3ms
+
+ Test Files  12 passed (12)
+      Tests  131 passed (131)
+   Start at  14:28:15
+   Duration  8.69s (transform 298ms, setup 0ms, collect 3.46s, tests 2.60s, environment 2ms, prepare 932ms)
+

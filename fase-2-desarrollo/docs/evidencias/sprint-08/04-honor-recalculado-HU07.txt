@@ -1,0 +1,15 @@
+Evidencia HU-06 + HU-07 · 8 de noviembre de 2026 · docker compose (base kancha)
+
+Recorrido: Lukas (lukas@kancha.cl) abre "Mis partidos" → "Califica a tus compañeros" →
+"Pádel · Dobles de esta tarde" (terminó hace ~3 h) → califica a Camila con puntualidad 5 y conducta 4.
+
+Antes: Camila Rojas · honorScore 8.7
+Después (misma transacción que guarda la reseña):
+
+ punctuality | conduct |     name     | honorScore | punctualityRate | fairPlayRate
+-------------+---------+--------------+------------+-----------------+--------------
+           5 |       4 | Camila Rojas |        8.8 |           70.83 |        91.67
+
+Restricciones en la base (DEF-02 cerrado):
+  Rating_punctuality_check  CHECK (punctuality BETWEEN 1 AND 5)
+  Rating_conduct_check      CHECK (conduct BETWEEN 1 AND 5)

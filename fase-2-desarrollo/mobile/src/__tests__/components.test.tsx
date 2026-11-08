@@ -4,6 +4,7 @@ import { HonorBadge } from '@/components/HonorBadge';
 import { SlotBar } from '@/components/SlotBar';
 import { SportFilter } from '@/components/SportFilter';
 import { MatchCard } from '@/components/MatchCard';
+import { RatingPicker } from '@/components/RatingPicker';
 import type { MatchSummary } from '@/api/types';
 
 const partido: MatchSummary = {
@@ -79,5 +80,16 @@ describe('MatchCard (DESIGN.md §4.2)', () => {
     await render(<MatchCard match={partido} onPress={onPress} />);
     await fireEvent.press(screen.getByText('Pádel dobles · Falta uno'));
     expect(onPress).toHaveBeenCalled();
+  });
+});
+
+describe('RatingPicker (HU-06)', () => {
+  it('M-17 · ofrece notas de 1 a 5, marca la elegida y avisa al tocar otra', async () => {
+    const onChange = jest.fn();
+    await render(<RatingPicker label="Puntualidad" value={4} onChange={onChange} />);
+    expect(screen.getAllByRole('button')).toHaveLength(5);
+    expect(screen.getByRole('button', { name: '4' }).props.accessibilityState).toMatchObject({ selected: true });
+    await fireEvent.press(screen.getByText('2'));
+    expect(onChange).toHaveBeenCalledWith(2);
   });
 });

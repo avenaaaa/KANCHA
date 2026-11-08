@@ -194,6 +194,28 @@ async function main() {
     });
   }
 
+  // HU-06: un partido que terminó hace 3 horas, con la ventana de 48 h abierta y sin
+  // reseñas, para calificar en vivo en la demo. Como el seed corre en cada arranque,
+  // la ventana siempre está abierta el día de la defensa.
+  const [reciente] = await prisma.$queryRaw<{ id: string }[]>`
+    INSERT INTO "Match"
+      ("id","organizerId","title","sport","level","venueName","address","location",
+       "startsAt","durationMin","totalSlots","filledSlots","totalCost","status","createdAt","updatedAt")
+    VALUES
+      (gen_random_uuid(), ${usuarios[1]!.id}, 'Pádel · Dobles de esta tarde',
+       ${Sport.PADEL}::"Sport", ${SkillLevel.MEDIO}::"SkillLevel",
+       'Pádel Bellavista', 'Av. Bellavista, La Florida',
+       ST_SetSRID(ST_MakePoint(${CENTRO.lng}, ${CENTRO.lat}), 4326)::geography,
+       ${enHoras(-4.5)}, 90, 4, 4, 24000, ${MatchStatus.FINISHED}::"MatchStatus", NOW(), NOW())
+    RETURNING "id";
+  `;
+  for (const u of [usuarios[0]!, usuarios[3]!, usuarios[6]!]) {
+    await prisma.participation.create({
+      data: { matchId: reciente!.id, userId: u.id, status: PartStatus.PAID, amountDue: 6000 },
+    });
+  }
+  console.log('   1 partido recién terminado, listo para calificar (Camila, Lukas, Valentina e Ignacio)');
+
   console.log('✅ Seed completo. Todas las cuentas usan la contraseña: kancha2026');
   console.log('   Dos usuarios quedan sin reseñas a propósito, para ver "Sin calificaciones aún".');
 }
