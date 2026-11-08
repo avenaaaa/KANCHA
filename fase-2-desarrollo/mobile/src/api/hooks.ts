@@ -25,6 +25,11 @@ export function useMe(enabled = true) {
   return useQuery({ queryKey: keys.me, queryFn: () => api<User>('/users/me'), enabled });
 }
 
+/** HU-02: carta pública de un jugador. La API omite el correo si no es el propio. */
+export function usePlayer(id: string) {
+  return useQuery({ queryKey: keys.user(id), queryFn: () => api<User>(`/users/${id}`) });
+}
+
 export interface NearbyParams {
   lat: number;
   lng: number;
