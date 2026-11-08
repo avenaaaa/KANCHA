@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
 
-/** Detalle del partido, postulación (HU-05), aprobación por el organizador y pago (HU-08). */
+/** Detalle del partido, postulación (HU-05), aprobación por el organizador, pago (HU-08) y calificación (HU-06). */
 export default function MatchScreen() {
   return (
     <RequireAuth>
@@ -241,6 +241,21 @@ function JoinCta({
     <Button label="Cancelar mi cupo" variant="secondary" onPress={onCancel} loading={cancelling} />
   );
   const errorText = error ? <Text style={s.error}>{error}</Text> : null;
+
+  // HU-06: terminado el partido, quienes jugaron tienen 48 h para calificarse.
+  if (m.ratingWindow !== 'NOT_FINISHED') {
+    const played = m.viewer.isOrganizer || status === 'APPROVED' || status === 'PAID';
+    if (!played) return <StatusLine tone="muted" text="Este partido ya se jugó." />;
+    if (m.ratingWindow === 'CLOSED') {
+      return <StatusLine tone="muted" text="Partido jugado. Se cerró el plazo de 48 horas para calificar." />;
+    }
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <StatusLine tone="success" text="Partido jugado. Tienes 48 horas para calificar a tus compañeros." />
+        <Button label="Calificar a mis compañeros" onPress={() => router.push(`/calificar/${m.id}`)} forward />
+      </View>
+    );
+  }
 
   if (m.viewer.isOrganizer) {
     return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;

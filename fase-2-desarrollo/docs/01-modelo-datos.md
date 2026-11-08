@@ -89,7 +89,7 @@ erDiagram
         uuid     id PK
         uuid     participationId FK "UNIQUE - relacion 1 a 1"
         int      amount
-        int      commission "10 por ciento de amount"
+        int      commission "10 por ciento de la cuota"
         int      retained
         enum     status
         string   buyOrder UK
@@ -161,8 +161,8 @@ erDiagram
 | `matchId` | UUID | No | FK → Match, ON DELETE CASCADE | Contexto de la reseña |
 | `raterId` | UUID | No | FK → User | Quien califica |
 | `ratedId` | UUID | No | FK → User | Quien es calificado |
-| `punctuality` | INT | No | 1 ≤ x ≤ 5 | Puntualidad percibida |
-| `conduct` | INT | No | 1 ≤ x ≤ 5 | Conducta / juego limpio |
+| `punctuality` | INT | No | CHECK 1 ≤ x ≤ 5 | Puntualidad percibida |
+| `conduct` | INT | No | CHECK 1 ≤ x ≤ 5 | Conducta / juego limpio |
 | `createdAt` | TIMESTAMP | No | default now() | Debe caer dentro de las 48 h posteriores |
 | — | — | — | **UNIQUE (matchId, raterId, ratedId)** | Impide la doble calificación |
 
@@ -172,8 +172,8 @@ erDiagram
 |---|---|---|---|---|
 | `id` | UUID | No | PK | Identificador |
 | `participationId` | UUID | No | FK → Participation, UNIQUE | Relación 1:1 con la participación |
-| `amount` | INT | No | CLP | Monto cobrado al jugador |
-| `commission` | INT | No | 10% de amount | Ingreso de la plataforma |
+| `amount` | INT | No | CLP | Monto cobrado al jugador: cuota (`amountDue`) más comisión |
+| `commission` | INT | No | 10 % de `amountDue` | Ingreso de la plataforma, cobrado encima de la cuota |
 | `retained` | INT | No | default 0 | Monto retenido por deserción tardía |
 | `status` | ENUM | No | INITIATED \| AUTHORIZED \| FAILED \| REFUNDED \| RETAINED | Estado de la transacción |
 | `buyOrder` | VARCHAR | No | UNIQUE | Orden de compra enviada a Transbank |

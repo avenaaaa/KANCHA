@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
-import type { MatchDetail, MatchSummary, MyMatch, NewMatch, Session, User } from './types';
+import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
 import type { SportKey } from '@/theme/sports';
 
 /** Hooks de datos. Las pantallas nunca llaman a fetch directamente. */
@@ -11,6 +11,8 @@ export const keys = {
   nearby: (p: NearbyParams) => ['matches', 'nearby', p] as const,
   match: (id: string) => ['matches', id] as const,
   mine: ['matches', 'mine'] as const,
+  user: (id: string) => ['users', id] as const,
+  pending: (matchId: string) => ['matches', matchId, 'ratings', 'pending'] as const,
 };
 
 export const login = (body: { email: string; password: string }) =>
@@ -123,6 +125,31 @@ export function useApproveParticipation(matchId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.match(matchId) });
       void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
+/** HU-06: compañeros que aún no califico en este partido. */
+export function usePendingRatings(matchId: string) {
+  return useQuery({
+    queryKey: keys.pending(matchId),
+    queryFn: () => api<PendingRatings>(`/matches/${matchId}/ratings/pending`),
+  });
+}
+
+/** HU-06 + HU-07: califica a un compañero. La respuesta trae su honor ya recalculado. */
+export function useRateTeammate(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { ratedId: string; punctuality: number; conduct: number }) =>
+      api<{ ratedId: string; honor: { honorScore: number | null } }>(`/matches/${matchId}/ratings`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSettled: (_data, _err, body) => {
+      void qc.invalidateQueries({ queryKey: keys.pending(matchId) });
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: keys.user(body.ratedId) });
     },
   });
 }
