@@ -9,33 +9,30 @@ sequenceDiagram
 
     J->>APP: Toca "Pagar mi parte"
     APP->>API: POST /payments/:participationId/init
-    API->>PAY: initPayment(participationId)
-    PAY->>DB: lee Participation (status APPROVED)
-    DB-->>PAY: amountDue = ceil(totalCost / totalSlots)
-    PAY->>PAY: genera buyOrder único · comisión = 10%
-    PAY->>DB: crea Payment status=INITIATED
+    API->>PAY: startPayment(participationId, userId)
+    PAY->>DB: lee Participation (status APPROVED) y el partido
+    PAY->>PAY: decideCheckout · amount = amountDue + 10 % de servicio
     PAY->>TBK: Webpay.create(buyOrder, sessionId, amount, returnUrl)
     TBK-->>PAY: { url, token }
-    PAY-->>API: { url, token }
+    PAY->>DB: crea Payment status=INITIATED
+    PAY-->>API: { paymentId, amount, checkoutPath }
     API-->>APP: 201 Created
-    APP->>J: abre el formulario de Transbank
+    APP->>API: abre checkoutPath (/payments/:id/webpay)
+    API-->>APP: página que envía token_ws a Transbank por POST
 
-    J->>TBK: ingresa tarjeta de prueba y confirma
-    TBK->>API: redirige a returnUrl con token_ws
-    API->>PAY: commitPayment(token_ws)
-    PAY->>TBK: Webpay.commit(token)
-    TBK-->>PAY: { responseCode, authorizationCode }
+    J->>TBK: ingresa la tarjeta de prueba y confirma
+    TBK->>API: vuelve a /payments/return con token_ws (GET o POST)
+    API->>PAY: finishPayment(token_ws)
+    PAY->>TBK: Webpay.commit(token), una sola vez
+    TBK-->>PAY: { status, responseCode, authorizationCode }
 
-    alt responseCode == 0 (aprobado)
-        PAY->>DB: BEGIN TRANSACTION
-        PAY->>DB: Payment.status = AUTHORIZED
-        PAY->>DB: Participation.status = PAID
-        PAY->>DB: COMMIT
-        PAY-->>APP: cupo "Confirmado y pagado"
-        APP-->>J: comprobante en pantalla
-    else Pago rechazado
-        PAY->>DB: Payment.status = FAILED
-        PAY->>DB: libera el cupo (Participation vuelve a APPROVED)
-        PAY-->>APP: error con opción de reintentar
-        APP-->>J: "El pago no se completó. Intenta de nuevo"
+    alt status AUTHORIZED y responseCode 0
+        PAY->>DB: BEGIN · Payment = AUTHORIZED · Participation = PAID · COMMIT
+        PAY-->>API: comprobante
+        API-->>J: "Confirmado y pagado"
+    else Rechazado, anulado (TBK_TOKEN) o tiempo agotado
+        PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido
+        PAY->>DB: Payment = FAILED · Participation = CANCELLED · libera el cupo (FULL → OPEN) · COMMIT
+        PAY-->>API: pago no completado
+        API-->>J: "Tu pago no se completó y el cupo quedó libre"
     end

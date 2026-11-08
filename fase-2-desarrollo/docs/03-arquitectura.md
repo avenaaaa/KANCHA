@@ -2,7 +2,7 @@
 
 > Fase 2 · Evidencia de las competencias **C3** y **C4**
 > Cubre el ítem de la pauta *Diagrama de Arquitectura (Diagrama de Despliegue – Diagrama de Componentes)*.
-> Corte del documento: 4 de octubre de 2026 (Sprint 5).
+> Corte del documento: 8 de noviembre de 2026 (Sprint 7).
 
 Kancha es una aplicación cliente-servidor en tres niveles: una app Expo (un solo código para
 Android, iOS y web), una API REST en capas sobre Node.js y Express, y una base PostgreSQL con
@@ -23,20 +23,20 @@ Versión interactiva: [`diagramas/arquitectura/componentes.html`](diagramas/arqu
 
 ### 1.1 Responsabilidad de cada componente
 
-| Componente | Responsabilidad | Ubicación | Estado al 16-oct |
+| Componente | Responsabilidad | Ubicación | Estado al 8-nov |
 |---|---|---|---|
-| **Pantallas** | Navegación y vistas con Expo Router | `mobile/app/` | Entrada, registro, mapa, detalle del partido, publicar, mis partidos y perfil (HU-01, HU-03, HU-04, HU-05) |
+| **Pantallas** | Navegación y vistas con Expo Router | `mobile/app/` | Entrada, registro, mapa, detalle del partido con pago y cancelación, publicar, mis partidos, calificar compañeros, carta de jugador y perfil (HU-01 a HU-09 y KAN-30) |
 | **Cliente API** | Único punto de la app que habla con el backend: agrega el JWT y unifica los errores | `mobile/src/api/client.ts` | Implementado |
 | **KanchaMap** | Un mismo componente de mapa con implementación nativa y web | `mobile/src/components/KanchaMap/` | Implementado: MapLibre GL en web, react-native-maps en móvil |
-| **Rutas `/api/v1`** | Declaran los endpoints y encadenan `auth` y `validate` antes del controlador | `backend/src/routes/`, `backend/src/middlewares/` | `/health`, `auth`, `users`, `matches` y `participations` implementados |
-| **Controladores** | Traducen HTTP a llamadas de servicio y de vuelta. Sin lógica de negocio | `backend/src/controllers/` | Implementados para HU-01, HU-03, HU-04 y HU-05 |
+| **Rutas `/api/v1`** | Declaran los endpoints y encadenan `auth` y `validate` antes del controlador | `backend/src/routes/`, `backend/src/middlewares/` | `/health`, `auth`, `users`, `matches`, `participations`, `payments` y `ratings` implementados |
+| **Controladores** | Traducen HTTP a llamadas de servicio y de vuelta. Sin lógica de negocio | `backend/src/controllers/` | Implementados para HU-01 a HU-09 y KAN-30 |
 | **matching.service** | Búsqueda por radio, aprobación de postulaciones y conteo de cupos sin sobreventa | `backend/src/services/matching.service.ts` | Implementado · `ST_DWithin` y aprobación con `SELECT … FOR UPDATE` · 10 pruebas unitarias y 8 de integración |
-| **honor.service** | Cálculo de reputación 0–10 y ventana de 48 h para calificar | `backend/src/services/honor.service.ts` | Implementado · 10 pruebas unitarias |
+| **honor.service** | Cálculo de reputación 0–10, ventana de 48 h, calificaciones y asistencia, con el honor recalculado en una transacción con bloqueo de fila | `backend/src/services/honor.service.ts` | Implementado (HU-06, HU-07, KAN-30) · 13 pruebas unitarias y 16 de integración |
 | **auth.service** | Registro, inicio de sesión, JWT y la forma pública del usuario (nunca expone el hash) | `backend/src/services/auth.service.ts` | Implementado (HU-01) · 8 pruebas unitarias y 9 de integración |
 | **match.service** | Publicación de partidos, detalle con participantes y "Mis partidos" | `backend/src/services/match.service.ts` | Implementado (HU-03) · 14 pruebas unitarias y 12 de integración |
-| **payment.service** | Cuota individual, comisión, retención por deserción y orden de compra Webpay | `backend/src/services/payment.service.ts` | Implementado · 12 pruebas unitarias |
-| **Repositorios** | Único acceso a datos: Prisma y `$queryRaw` para las consultas PostGIS | `backend/src/repositories/` | `user`, `match` y `participation` implementados |
-| **PostgreSQL + PostGIS** | Persistencia relacional y búsqueda geoespacial | `backend/prisma/` | Esquema, dos migraciones y datos de demo listos |
+| **payment.service** | Cuota individual, comisión, pago con Webpay Plus (crear, confirmar y reembolsar) y retención por deserción | `backend/src/services/payment.service.ts` | Implementado (HU-08, HU-09) · 24 pruebas unitarias y 17 de integración |
+| **Repositorios** | Único acceso a datos: Prisma y `$queryRaw` para las consultas PostGIS | `backend/src/repositories/` | `user`, `match`, `participation`, `payment`, `rating` y `webpay` (el SDK de Transbank) implementados |
+| **PostgreSQL + PostGIS** | Persistencia relacional y búsqueda geoespacial | `backend/prisma/` | Esquema, cuatro migraciones (incluidas las restricciones `CHECK` y la asistencia) y datos de demo |
 
 ### 1.2 Reglas de dependencia
 
@@ -50,8 +50,8 @@ Versión interactiva: [`diagramas/arquitectura/componentes.html`](diagramas/arqu
 
 | Servicio | Para qué | Quién lo llama |
 |---|---|---|
-| Transbank Webpay Plus (Integración) | Pago fraccionado del arriendo, sin dinero real | `payment.service` |
-| Expo Push API | Aviso de cupo liberado (HU-10) | `matching.service` |
+| Transbank Webpay Plus (Integración) | Pago fraccionado del arriendo y reembolsos, sin dinero real | `payment.service`, a través de `webpay.repository` |
+| Expo Push API | Aviso de cupo liberado (HU-10) | Fuera de alcance: HU-10 salió del MVP el 8 de noviembre. El diagrama de componentes la conserva como servicio previsto |
 | OpenFreeMap | Tiles del mapa oscuro, sin clave de API | `KanchaMap` |
 
 ---
@@ -79,10 +79,11 @@ Al terminar de levantar:
 |---|---|
 | `http://localhost:8080` | La app Kancha en su versión web |
 | `http://localhost:3000/api/v1/health` | Estado de la API y de la base de datos |
+| `http://localhost:3000/api/docs` | Contrato de la API en Swagger UI |
 
 ### 2.2 Nodos de la demo en la nube
 
-Es el respaldo de la defensa y se monta en la Fase 3.
+Es el respaldo de la defensa. Se monta en el Sprint 8 (Fase 3); al 8 de noviembre aún no está desplegada.
 
 | Nodo | Servicio | Contenido |
 |---|---|---|
@@ -121,4 +122,4 @@ Si cambia la arquitectura, se edita el JSON, se regenera el HTML y se reemplaza 
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 5, octubre 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 5, octubre 2026 · actualizado el 8 de noviembre de 2026*

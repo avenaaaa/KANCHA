@@ -72,6 +72,7 @@ erDiagram
         uuid     userId FK
         enum     status
         int      amountDue "CLP entero"
+        boolean  attended "null = sin cerrar"
         datetime joinedAt
     }
 
@@ -115,10 +116,10 @@ erDiagram
 | `favoriteSport` | ENUM | No | FUTBOL \| PADEL \| BASQUETBOL | Define el feed y las notificaciones |
 | `matchesPlayed` | INT | No | default 0, ≥ 0 | Partidos asistidos. Se muestra en la carta de jugador |
 | `honorScore` | DECIMAL(3,1) | **Sí** | 0.0–10.0 | NULL = "Sin calificaciones aún". Único número de reputación |
-| `attendanceRate` | DECIMAL(5,2) | Sí | 0–100 | Calculado: PAID / (PAID + NO_SHOW) |
+| `attendanceRate` | DECIMAL(5,2) | Sí | 0–100 | Calculado: asistidos / (asistidos + no presentados), según `Participation.attended` |
 | `punctualityRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.punctuality` |
 | `fairPlayRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.conduct` |
-| `expoPushToken` | VARCHAR | Sí | — | Token de Expo Push para HU-10 |
+| `expoPushToken` | VARCHAR | Sí | — | Token de Expo Push para HU-10. Sin uso desde que HU-10 salió del alcance el 8-nov; se conserva para no migrar dos veces si vuelve |
 | `createdAt` | TIMESTAMP | No | default now() | Alta de la cuenta |
 
 ### 3.2 `Match` — partidos publicados
@@ -150,6 +151,7 @@ erDiagram
 | `userId` | UUID | No | FK → User | Postulante |
 | `status` | ENUM | No | PENDING \| APPROVED \| PAID \| CANCELLED \| NO_SHOW | Estado de la postulación |
 | `amountDue` | INT | No | ceil(totalCost/totalSlots) | Monto individual congelado al aprobar |
+| `attended` | BOOLEAN | Sí | se cierra una sola vez | Asistencia que registra el organizador al terminar el partido: `null` sin cerrar, `true` asistió (suma `matchesPlayed`), `false` no se presentó (`status = NO_SHOW`). KAN-30 |
 | `joinedAt` | TIMESTAMP | No | default now() | Momento de la postulación |
 | — | — | — | **UNIQUE (matchId, userId)** | Impide postularse dos veces al mismo partido |
 
@@ -249,7 +251,7 @@ justifican más abajo.
 |---|---|---|---|
 | `User` | `id` | `email` | `id` → todos los atributos |
 | `Match` | `id` | — | `id` → todos los atributos |
-| `Participation` | `id` | `(matchId, userId)` | `id` → todos · `(matchId, userId)` → `status`, `amountDue`, `joinedAt` |
+| `Participation` | `id` | `(matchId, userId)` | `id` → todos · `(matchId, userId)` → `status`, `amountDue`, `attended`, `joinedAt` |
 | `Rating` | `id` | `(matchId, raterId, ratedId)` | `id` → todos · `(matchId, raterId, ratedId)` → `punctuality`, `conduct`, `createdAt` |
 | `Payment` | `id` | `participationId`, `buyOrder` | `id` → todos los atributos |
 
@@ -289,6 +291,8 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) | Definición del modelo, fuente de verdad |
 | [`migrations/20260927193802_init/migration.sql`](../backend/prisma/migrations/20260927193802_init/migration.sql) | Extensión PostGIS, tipos ENUM, las cinco tablas, índices y claves foráneas |
 | [`migrations/20260927193816_indice_gist_ubicacion/migration.sql`](../backend/prisma/migrations/20260927193816_indice_gist_ubicacion/migration.sql) | Índice espacial GIST sobre `Match.location` |
+| [`migrations/20261108170000_rating_notas_check/migration.sql`](../backend/prisma/migrations/20261108170000_rating_notas_check/migration.sql) | `CHECK` 1 a 5 en `Rating.punctuality` y `Rating.conduct` (cierra DEF-02) |
+| [`migrations/20261108200000_participation_asistencia/migration.sql`](../backend/prisma/migrations/20261108200000_participation_asistencia/migration.sql) | Columna `Participation.attended` para registrar la asistencia (KAN-30) |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el
@@ -296,4 +300,4 @@ ORM actualiza en cada modificación.
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 4 de octubre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 8 de noviembre de 2026*

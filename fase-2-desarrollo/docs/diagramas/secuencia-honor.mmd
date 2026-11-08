@@ -6,34 +6,34 @@ sequenceDiagram
     participant HON as honor.service
     participant DB as PostgreSQL
 
-    Note over J,DB: El partido terminó. Se abre una ventana de 48 h
+    Note over J,DB: El partido terminó (startsAt + durationMin). Se abre una ventana de 48 h
 
     J->>APP: Abre "Calificar compañeros"
     APP->>API: GET /matches/:id/ratings/pending
-    API-->>APP: lista de asistentes aún no calificados
+    API-->>APP: compañeros aún no calificados y hasta cuándo
     J->>APP: puntúa puntualidad y conducta (1–5)
-    APP->>API: POST /matches/:id/ratings
+    APP->>API: POST /matches/:id/ratings (Zod: notas enteras 1–5)
 
-    API->>HON: submitRating(...)
-    HON->>DB: verifica ventana de 48 h
+    API->>HON: rateTeammate(matchId, raterId, input)
+    HON->>DB: roster del partido (organizador + cupos APPROVED/PAID)
+    HON->>HON: ratingWindow + checkCanRate
 
     alt Pasaron más de 48 h
-        HON-->>API: 409 · partido archivado
-        API-->>APP: "La ventana de calificación ya cerró"
+        HON->>DB: Match.status = ARCHIVED
+        HON-->>API: 409 RATING_WINDOW_CLOSED
+    else No jugó, se califica a sí mismo o califica a quien no jugó
+        HON-->>API: 403 / 422
     else Dentro de la ventana
-        HON->>DB: INSERT Rating (UNIQUE matchId+raterId+ratedId)
-        alt Ya había calificado a ese jugador
+        HON->>DB: BEGIN · SELECT … FOR UPDATE del calificado
+        HON->>DB: INSERT Rating (UNIQUE matchId+raterId+ratedId, CHECK 1–5)
+        alt Ya lo había calificado
             DB-->>HON: violación de restricción única
-            HON-->>API: 409 · doble calificación
+            HON-->>API: 409 ALREADY_RATED
         else Primera calificación
-            DB-->>HON: OK
-            HON->>DB: lee las últimas 20 reseñas del calificado
-            HON->>HON: punctualityRate y fairPlayRate
-            HON->>DB: lee historial PAID / NO_SHOW
-            HON->>HON: attendanceRate
-            HON->>HON: honorScore = agregado, 1 decimal
-            HON->>DB: UPDATE User
-            HON-->>API: 201 · honor actualizado
-            API-->>APP: badge naranja se actualiza en vivo
+            HON->>DB: últimas 20 reseñas y asistencia registrada (attended)
+            HON->>HON: calculateHonor · honorScore 0–10 con 1 decimal
+            HON->>DB: UPDATE User · COMMIT
+            HON-->>API: 201 · honor recalculado
+            API-->>APP: el compañero sale de la lista de pendientes
         end
     end

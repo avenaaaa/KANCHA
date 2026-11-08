@@ -28,12 +28,13 @@ flowchart LR
         UC8["UC8 · Cancelar con retención<br/>HU-09"]
         UC9["UC9 · Calificar compañeros<br/>HU-06"]
         UC10["UC10 · Recalcular puntaje de honor<br/>HU-07"]
-        UC11["UC11 · Recibir notificación de cupo<br/>HU-10"]
+        UC11["UC11 · Recibir notificación de cupo<br/>HU-10 · fuera del MVP"]
         UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
+        UC13["UC13 · Registrar asistencia<br/>KAN-30"]
     end
 
     AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
-    OR --> UC1 & UC3 & UC6 & UC9
+    OR --> UC1 & UC3 & UC6 & UC9 & UC13
     AD --> UC12
 
     UC7 -.-> TBK
@@ -42,13 +43,17 @@ flowchart LR
     UC4 -.-> MAP
     UC11 -.-> PUSH
     UC3 -.->|"trigger"| UC11
+    UC13 -.->|"include"| UC10
 
+    style UC11 stroke-dasharray: 5 5
     style UC12 stroke-dasharray: 5 5
     style KANCHA fill:#1A1A1A,color:#FFFFFF
 ```
 
-**Lectura:** los casos de uso con línea continua forman el MVP comprometido (HU-01 a HU-10).
-UC12 aparece punteado porque HU-11 está marcada `Won't have this phase` y vive en el backlog.
+**Lectura:** los casos de uso con línea continua forman el MVP entregado (HU-01 a HU-09, más el
+registro de asistencia de KAN-30, que también recalcula el honor). UC11 y UC12 aparecen punteados:
+HU-10 salió del alcance el 8 de noviembre de 2026 y HU-11 está marcada `Won't have this phase`; ambas
+viven en el backlog.
 Las flechas punteadas hacia la derecha marcan la dependencia de sistemas externos.
 
 ---
@@ -69,6 +74,7 @@ sequenceDiagram
     U->>APP: Abre la pestaña Mapa
     APP->>APP: expo-location solicita permiso
     APP-->>U: Permiso concedido
+    APP->>APP: resolveOrigin · precisión peor que 1 km o a más de 6 km del centro → La Florida (DEF-05)
     APP->>API: GET /matches/nearby?lat&lng&radius=5000&sport
     API->>API: middleware auth valida JWT
     API->>API: middleware validate (Zod) valida query
@@ -105,35 +111,32 @@ sequenceDiagram
 
     J->>APP: Toca "Pagar mi parte"
     APP->>API: POST /payments/:participationId/init
-    API->>PAY: initPayment(participationId)
-    PAY->>DB: lee Participation (status APPROVED)
-    DB-->>PAY: amountDue = ceil(totalCost / totalSlots)
-    PAY->>PAY: genera buyOrder único · comisión = 10%
-    PAY->>DB: crea Payment status=INITIATED
+    API->>PAY: startPayment(participationId, userId)
+    PAY->>DB: lee Participation (status APPROVED) y el partido
+    PAY->>PAY: decideCheckout · amount = amountDue + 10 % de servicio
     PAY->>TBK: Webpay.create(buyOrder, sessionId, amount, returnUrl)
     TBK-->>PAY: { url, token }
-    PAY-->>API: { url, token }
+    PAY->>DB: crea Payment status=INITIATED
+    PAY-->>API: { paymentId, amount, checkoutPath }
     API-->>APP: 201 Created
-    APP->>J: abre el formulario de Transbank
+    APP->>API: abre checkoutPath (/payments/:id/webpay)
+    API-->>APP: página que envía token_ws a Transbank por POST
 
-    J->>TBK: ingresa tarjeta de prueba y confirma
-    TBK->>API: redirige a returnUrl con token_ws
-    API->>PAY: commitPayment(token_ws)
-    PAY->>TBK: Webpay.commit(token)
-    TBK-->>PAY: { responseCode, authorizationCode }
+    J->>TBK: ingresa la tarjeta de prueba y confirma
+    TBK->>API: vuelve a /payments/return con token_ws (GET o POST)
+    API->>PAY: finishPayment(token_ws)
+    PAY->>TBK: Webpay.commit(token), una sola vez
+    TBK-->>PAY: { status, responseCode, authorizationCode }
 
-    alt responseCode == 0 (aprobado)
-        PAY->>DB: BEGIN TRANSACTION
-        PAY->>DB: Payment.status = AUTHORIZED
-        PAY->>DB: Participation.status = PAID
-        PAY->>DB: COMMIT
-        PAY-->>APP: cupo "Confirmado y pagado"
-        APP-->>J: comprobante en pantalla
-    else Pago rechazado
-        PAY->>DB: Payment.status = FAILED
-        PAY->>DB: libera el cupo (Participation vuelve a APPROVED)
-        PAY-->>APP: error con opción de reintentar
-        APP-->>J: "El pago no se completó. Intenta de nuevo"
+    alt status AUTHORIZED y responseCode 0
+        PAY->>DB: BEGIN · Payment = AUTHORIZED · Participation = PAID · COMMIT
+        PAY-->>API: comprobante
+        API-->>J: "Confirmado y pagado"
+    else Rechazado, anulado (TBK_TOKEN) o tiempo agotado
+        PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido
+        PAY->>DB: Payment = FAILED · Participation = CANCELLED · libera el cupo (FULL → OPEN) · COMMIT
+        PAY-->>API: pago no completado
+        API-->>J: "Tu pago no se completó y el cupo quedó libre"
     end
 ```
 
@@ -150,35 +153,35 @@ sequenceDiagram
     participant HON as honor.service
     participant DB as PostgreSQL
 
-    Note over J,DB: El partido terminó. Se abre una ventana de 48 h
+    Note over J,DB: El partido terminó (startsAt + durationMin). Se abre una ventana de 48 h
 
     J->>APP: Abre "Calificar compañeros"
     APP->>API: GET /matches/:id/ratings/pending
-    API-->>APP: lista de asistentes aún no calificados
+    API-->>APP: compañeros aún no calificados y hasta cuándo
     J->>APP: puntúa puntualidad y conducta (1–5)
-    APP->>API: POST /matches/:id/ratings
+    APP->>API: POST /matches/:id/ratings (Zod: notas enteras 1–5)
 
-    API->>HON: submitRating(...)
-    HON->>DB: verifica ventana de 48 h
+    API->>HON: rateTeammate(matchId, raterId, input)
+    HON->>DB: roster del partido (organizador + cupos APPROVED/PAID)
+    HON->>HON: ratingWindow + checkCanRate
 
     alt Pasaron más de 48 h
-        HON-->>API: 409 · partido archivado
-        API-->>APP: "La ventana de calificación ya cerró"
+        HON->>DB: Match.status = ARCHIVED
+        HON-->>API: 409 RATING_WINDOW_CLOSED
+    else No jugó, se califica a sí mismo o califica a quien no jugó
+        HON-->>API: 403 / 422
     else Dentro de la ventana
-        HON->>DB: INSERT Rating (UNIQUE matchId+raterId+ratedId)
-        alt Ya había calificado a ese jugador
+        HON->>DB: BEGIN · SELECT … FOR UPDATE del calificado
+        HON->>DB: INSERT Rating (UNIQUE matchId+raterId+ratedId, CHECK 1–5)
+        alt Ya lo había calificado
             DB-->>HON: violación de restricción única
-            HON-->>API: 409 · doble calificación
+            HON-->>API: 409 ALREADY_RATED
         else Primera calificación
-            DB-->>HON: OK
-            HON->>DB: lee las últimas 20 reseñas del calificado
-            HON->>HON: punctualityRate y fairPlayRate
-            HON->>DB: lee historial PAID / NO_SHOW
-            HON->>HON: attendanceRate
-            HON->>HON: honorScore = agregado, 1 decimal
-            HON->>DB: UPDATE User
-            HON-->>API: 201 · honor actualizado
-            API-->>APP: badge naranja se actualiza en vivo
+            HON->>DB: últimas 20 reseñas y asistencia registrada (attended)
+            HON->>HON: calculateHonor · honorScore 0–10 con 1 decimal
+            HON->>DB: UPDATE User · COMMIT
+            HON-->>API: 201 · honor recalculado
+            API-->>APP: el compañero sale de la lista de pendientes
         end
     end
 ```
@@ -259,6 +262,12 @@ stateDiagram-v2
     end note
 ```
 
+**Cómo se implementó:** `OPEN`, `FULL` y `ARCHIVED` se guardan en la base. `IN_PROGRESS` y
+`FINISHED` no se escriben: dependen solo de la hora, así que la API los calcula en cada consulta
+(`ratingWindow` devuelve `NOT_FINISHED`, `OPEN` o `CLOSED`) y no hace falta una tarea programada que
+cambie estados. `ARCHIVED` se guarda la primera vez que alguien intenta calificar o abre los
+pendientes después de las 48 h. La cancelación del partido por el organizador no entró en el MVP.
+
 ---
 
 ## 7. Diagrama de clases — Modelo de dominio
@@ -311,6 +320,7 @@ classDiagram
         +UUID userId
         +PartStatus status
         +Int amountDue
+        +Boolean attended
         +DateTime joinedAt
         +DateTime updatedAt
     }
@@ -417,7 +427,12 @@ classDiagram
     class HonorService {
         <<service>>
         +calculateHonor(ratings, attendance) HonorBreakdown
-        +isRatingWindowOpen(startsAt, durationMin, now) Boolean
+        +ratingWindow(startsAt, durationMin, now) RatingWindow
+        +checkCanRate(roster, raterId, ratedId, window) RatingBlock
+        +checkCanCloseAttendance(participation, actorId, now) AttendanceBlock
+        +rateTeammate(matchId, raterId, input) HonorBreakdown
+        +pendingRatings(matchId, raterId) PendingRatings
+        +recordAttendance(participationId, actorId, attended) HonorBreakdown
     }
 
     class PaymentService {
@@ -426,12 +441,36 @@ classDiagram
         +calculateCommission(amount, rate) Int
         +calculateRefund(amountPaid, startsAt, now) RefundBreakdown
         +buildBuyOrder(participationId, now) String
+        +decideCheckout(row, userId, now) Checkout
+        +decideCancellation(row, userId, now) Cancellation
+        +startPayment(participationId, userId) Checkout
+        +finishPayment(webpayReturn) PaymentResult
+        +cancelParticipation(participationId, userId) Cancellation
     }
 
     class MatchingService {
         <<service>>
-        +findNearby(lat, lng, radiusM, filters) Match[]
-        +approveParticipation(participationId) Participation
+        +checkCanJoin(match, userId, now) JoinBlock
+        +decideApproval(match, participation, actorId) ApprovalDecision
+        +findNearby(query) MatchSummary[]
+        +join(matchId, userId) Participation
+        +approve(participationId, actorId) Participation
+    }
+
+    class MatchService {
+        <<service>>
+        +assertFutureStart(startsAt, now) void
+        +publish(organizerId, input) MatchDetail
+        +getDetail(id, viewerId) MatchDetail
+        +listForUser(userId) MyMatch[]
+    }
+
+    class AuthService {
+        <<service>>
+        +register(input) AuthResult
+        +login(input) AuthResult
+        +getProfile(userId, isSelf) PublicUser
+        +toPublicUser(user, includeEmail) PublicUser
     }
 
     class HonorBreakdown {
@@ -440,18 +479,6 @@ classDiagram
         +Number punctualityRate
         +Number fairPlayRate
         +Number honorScore
-    }
-
-    class RatingSample {
-        <<value object>>
-        +Int punctuality
-        +Int conduct
-    }
-
-    class AttendanceSample {
-        <<value object>>
-        +Int attended
-        +Int noShow
     }
 
     class RefundBreakdown {
@@ -483,28 +510,33 @@ classDiagram
     class Rating
     class Payment
 
-    HonorService ..> RatingSample : recibe
-    HonorService ..> AttendanceSample : recibe
     HonorService ..> HonorBreakdown : devuelve
-    HonorService ..> Env : lee
     PaymentService ..> RefundBreakdown : devuelve
+    HonorService ..> Env : lee
     PaymentService ..> Env : lee
-
-    HonorService ..> Rating : promedia
-    HonorService ..> User : actualiza honorScore
-    PaymentService ..> Payment : crea y confirma
-    PaymentService ..> Participation : marca PAID
-    MatchingService ..> Match : busca por radio
-    MatchingService ..> Participation : aprueba y cuenta cupos
+    HonorService ..> AppError : lanza
+    PaymentService ..> AppError : lanza
     MatchingService ..> AppError : lanza
+
+    HonorService ..> Rating : guarda y promedia
+    HonorService ..> User : actualiza honor y matchesPlayed
+    HonorService ..> Participation : cierra asistencia
+    PaymentService ..> Payment : crea, confirma y reembolsa
+    PaymentService ..> Participation : marca PAID o CANCELLED
+    MatchingService ..> Match : busca por radio
+    MatchingService ..> Participation : crea y aprueba sin sobreventa
+    MatchService ..> Match : publica y detalla
+    AuthService ..> User : registra y autentica
+    MatchService ..> PaymentService : cuota y comisión
 ```
 
-**Lectura:** las operaciones de `HonorService` y `PaymentService` existen en el código y tienen 22
-pruebas unitarias. `MatchingService` y la persistencia de los resultados (flechas hacia `User`,
-`Rating`, `Payment`, `Participation` y `Match`) son diseño: se implementan junto con sus historias.
+**Lectura:** todas las operaciones existen en `backend/src/services/`, un archivo `*.service.ts` por
+servicio. Las que empiezan con `calculate`, `check`, `decide`, `build` o `assert` son funciones puras y
+se prueban sin base de datos (76 pruebas unitarias). Las demás orquestan el acceso a datos a través de
+`repositories/` y se prueban contra PostGIS real (62 pruebas de integración).
 `Env` reúne los parámetros de negocio configurables, para que cambiar la comisión o la ventana de
 retención no exija tocar código.
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 4 de octubre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 8 de noviembre de 2026*
