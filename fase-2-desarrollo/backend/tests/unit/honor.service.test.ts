@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateHonor, checkCanRate, isRatingWindowOpen, ratingWindow } from '../../src/services/honor.service.js';
+import { calculateHonor, checkCanCloseAttendance, checkCanRate, isRatingWindowOpen, ratingWindow } from '../../src/services/honor.service.js';
 
 describe('calculateHonor', () => {
   it('devuelve null y no 0 cuando el usuario no tiene ninguna señal (HU-01, HU-02)', () => {
@@ -85,5 +85,24 @@ describe('checkCanRate (HU-06)', () => {
     expect(checkCanRate(roster, 'a', 'intruso', 'OPEN')).toBe('RATED_NOT_IN_MATCH');
     expect(checkCanRate(roster, 'a', 'b', 'NOT_FINISHED')).toBe('MATCH_NOT_FINISHED');
     expect(checkCanRate(roster, 'a', 'b', 'CLOSED')).toBe('RATING_WINDOW_CLOSED');
+  });
+});
+
+describe('checkCanCloseAttendance (KAN-30)', () => {
+  const termino = new Date('2026-11-01T21:00:00Z');
+  const base = {
+    userId: 'a',
+    status: 'PAID',
+    attended: null,
+    match: { organizerId: 'org', startsAt: new Date('2026-11-01T20:00:00Z'), durationMin: 60 },
+  };
+
+  it('U-71 · solo el organizador, una vez por confirmado y con el partido terminado', () => {
+    expect(checkCanCloseAttendance(base, 'org', termino)).toBeNull();
+    expect(checkCanCloseAttendance({ ...base, status: 'APPROVED' }, 'org', termino)).toBeNull();
+    expect(checkCanCloseAttendance(base, 'a', termino)).toBe('NOT_ORGANIZER');
+    expect(checkCanCloseAttendance({ ...base, attended: true }, 'org', termino)).toBe('ALREADY_CLOSED');
+    expect(checkCanCloseAttendance({ ...base, status: 'PENDING' }, 'org', termino)).toBe('NOT_CONFIRMED');
+    expect(checkCanCloseAttendance(base, 'org', new Date('2026-11-01T20:59:00Z'))).toBe('MATCH_NOT_FINISHED');
   });
 });

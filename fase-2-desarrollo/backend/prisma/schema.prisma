@@ -119,6 +119,9 @@ model Participation {
   status  PartStatus @default(PENDING)
   /// ceil(totalCost / totalSlots), congelado al aprobar la participación.
   amountDue Int      @default(0)
+  /// Asistencia que cierra el organizador al terminar el partido (KAN-30):
+  /// null = sin cerrar · true = asistió (suma matchesPlayed) · false = no se presentó (NO_SHOW).
+  attended  Boolean?
   joinedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 

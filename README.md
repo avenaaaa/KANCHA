@@ -39,12 +39,14 @@ permite las redes privadas.
 
 ### Cuentas de demostración
 
-La base arranca con datos de La Florida: 8 jugadores y 12 partidos con cupo (4 de fútbol, 4 de pádel
-y 4 de básquetbol). Todas las cuentas usan la contraseña `kancha2026`.
+La base arranca con datos de La Florida: 8 jugadores, 12 partidos con cupo (4 de fútbol, 4 de pádel
+y 4 de básquetbol), un partido histórico con reseñas y un partido de pádel que terminó hace 3 horas,
+listo para registrar asistencia y calificar en vivo. Todas las cuentas usan la contraseña `kancha2026`.
 
 | Cuenta | Para qué sirve en la demo |
 |---|---|
-| `camila@kancha.cl` | Jugadora con honor alto; organiza partidos |
+| `camila@kancha.cl` | Jugadora con honor alto; organiza el pádel que acaba de terminar: marca quién asistió |
+| `lukas@kancha.cl` | Jugó ese pádel: califica a sus compañeros desde "Mis partidos" |
 | `diego@kancha.cl` | Organizador con honor bajo: puntualidad y juego limpio en rojo |
 | `ignacio@kancha.cl` | Jugador sin reseñas: muestra "Sin calificaciones aún" |
 
@@ -59,6 +61,14 @@ en que se levanta el sistema.
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte y horario |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe y quedar confirmado, sin sobreventa del último cupo |
+| HU-08 · Pagar | Pagar la parte del arriendo más un 10 % de servicio con Webpay Plus (Transbank, ambiente de Integración) y ver el comprobante |
+| HU-09 · Cancelar | Cancelar el cupo: con 12 h o más se devuelve el 100 %; con menos, se retiene el 50 % |
+| HU-06 · Calificar | Terminado el partido, calificar de 1 a 5 la puntualidad y la conducta de cada compañero, durante 48 h y una sola vez |
+| HU-07 · Honor | El puntaje de honor (0 a 10) se recalcula al instante con cada reseña y cada asistencia registrada |
+| HU-02 · Carta | Ver la carta de jugador de cualquier participante: honor, partidos jugados y métricas, sin su correo |
+| Asistencia | El organizador marca quién asistió y quién no se presentó; eso suma partidos jugados y cuenta en el honor |
+
+La notificación de cupo disponible (HU-10) quedó fuera del alcance del MVP el 8 de noviembre de 2026.
 
 ## Estructura del repositorio
 
@@ -67,8 +77,8 @@ Una carpeta por cada fase del Portafolio de Título.
 | Carpeta | Contenido | Estado |
 |---|---|---|
 | [`fase-1-definicion/`](fase-1-definicion/) | Definición del proyecto: documento consolidado, los diez documentos ágiles, Excel y diagramas | ✅ Entregada · agosto 2026 |
-| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | 🔄 En curso · Sprint 6 de 9 |
-| [`fase-3-implementacion/`](fase-3-implementacion/) | Últimas historias, despliegue, pruebas finales y cierre | ⏳ Sprints 8 y 9 · nov–dic 2026 |
+| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | 🔄 En curso · Sprint 7 de 9 · las 9 historias del MVP terminadas |
+| [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas de rendimiento, cierre de pruebas y defensa | ⏳ Sprints 8 y 9 · nov–dic 2026 |
 
 Cada fase se ordena igual: `entrega/` reúne lo que se presenta en la evaluación (guía de la asignatura,
 documentos individuales y presentación) y `docs/` reúne los documentos de la fase.

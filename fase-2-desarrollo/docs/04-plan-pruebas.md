@@ -13,7 +13,7 @@ reglas de honor y de pagos como funciones puras.
 
 ## 1. Objetivo y alcance
 
-**Objetivo.** Demostrar que las reglas de negocio del MVP (HU-01 a HU-10) se cumplen, que los
+**Objetivo.** Demostrar que las reglas de negocio del MVP (HU-01 a HU-09; HU-10 salió del alcance el 8 de noviembre) se cumplen, que los
 componentes se integran sin errores y que la aplicación resiste los abusos y la carga que puede
 recibir en una demo y en un piloto en La Florida.
 
@@ -31,11 +31,11 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 8-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` y `mobile/src/__tests__/` | **75 del backend y 19 de la app, todas pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 29 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **56 ejecutadas contra PostGIS real, todas pasan** |
-| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 12 controles verificados con pruebas, 2 diseñados |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 | `backend/tests/unit/` y `mobile/src/__tests__/` | **76 del backend y 19 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 32 casos, todos cubiertos |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **62 ejecutadas contra PostGIS real, todas pasan** |
+| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas · se ejecutan en el Sprint 8 |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 13 de 15 controles verificados, S-11 parcial y S-12 pendiente |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -64,9 +64,9 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Dato | Valor |
 |---|---|
 | Fecha | 8 de noviembre de 2026 |
-| Archivos de prueba del backend | 12 (6 unitarios y 6 de integración) |
-| Casos del backend | 131 ejecutados · 131 pasan · 0 fallan (75 unitarias, 56 de integración) |
-| Cobertura de `services/` y `utils/` | 97,96 % de líneas · 90,61 % de ramas · 100 % de funciones |
+| Archivos de prueba del backend | 13 (6 unitarios y 7 de integración) |
+| Casos del backend | 138 ejecutados · 138 pasan · 0 fallan (76 unitarias, 62 de integración) |
+| Cobertura de `services/` y `utils/` | 98,08 % de líneas · 90,77 % de ramas · 98,38 % de funciones |
 | Casos de la app (Jest + React Native Testing Library) | 19 ejecutados · 19 pasan (incluye M-14 a M-16 de DEF-05, M-17 de HU-06 y M-18, M-19 de HU-02) |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
@@ -119,12 +119,13 @@ Casos agregados en el Sprint 7:
 | U-63 | `payment.service` · `decideRelease` | Liberar un cupo reabre el partido lleno y nunca baja de cero | HU-08 |
 | U-64 a U-68 | `payment.service` · `decideCancellation` | 403 con el cupo de otro; no se cancela dos veces ni un partido iniciado; pendiente sin cupo; con 12 h el 100 %; a menos de 12 h retiene el 50 % y el recinto recibe lo retenido menos la comisión | HU-09 |
 
-Casos agregados en el Sprint 8:
+Casos agregados el 8 de noviembre (Sprint 7, con las historias adelantadas del Sprint 8):
 
 | IDs | Módulo | Qué prueban | HU |
 |---|---|---|---|
 | U-69 | `honor.service` · `ratingWindow` | `NOT_FINISHED` antes del término, `OPEN` desde el término hasta las 48 h exactas, `CLOSED` a las 48 h 01 min | HU-06 |
 | U-70 | `honor.service` · `checkCanRate` | Solo califica quien jugó (organizador o cupo confirmado), nunca a sí mismo ni a quien no jugó, y solo con la ventana abierta | HU-06 |
+| U-71 | `honor.service` · `checkCanCloseAttendance` | Solo el organizador cierra la asistencia, una vez por confirmado y con el partido terminado | KAN-30 |
 
 ### 4.3 Pruebas de la app
 
@@ -143,8 +144,8 @@ Casos agregados en el Sprint 8:
 
 | Módulo | Qué falta probar | Sprint |
 |---|---|---|
-| `payment.service.ts` | Ramas de montos negativos en comisión y reembolso | 7 |
-| `KanchaMap` | Pines y selección en web y en móvil | 7 |
+| `payment.service.ts` | Ramas de montos negativos en comisión y reembolso | 8 |
+| `KanchaMap` | Pines y selección en web y en móvil | 8 |
 
 ---
 
@@ -189,6 +190,9 @@ exista.
 | CN-27 | HU-09 | Límite | Cancelar a 11 h 59 min | Retiene el 50 % | Cubierto (U-19, U-68 e integración) |
 | CN-28 | HU-09 | Equivalencia | Monto impar (4.287) | Retenido + reembolsado = pagado | Cubierto (U-20) |
 | CN-29 | HU-08 | Equivalencia | Pago rechazado en Webpay | El cupo se libera | Cubierto (integración) |
+| CN-30 | KAN-30 | Equivalencia | Cerrar dos veces la asistencia del mismo jugador | 409 y un solo partido sumado | Cubierto (integración) |
+| CN-31 | KAN-30 | Equivalencia | Marcar "no se presentó" | `NO_SHOW`, asistencia 0 %, fuera de las calificaciones | Cubierto (integración) |
+| CN-32 | KAN-30 | Límite | Cerrar la asistencia antes de que termine el partido | 409 | Cubierto (U-71 e integración) |
 
 ---
 
@@ -207,8 +211,9 @@ se prueba en su camino feliz y en su error principal.
 | I-06 | API + Transbank | `init` crea la transacción y `commit` la confirma con tarjeta de prueba (HU-08) | 7 | **Pasa** (Transbank simulado en `payments.int.test.ts`) · verificado a mano en Integración con la VISA de prueba (`evidencias/sprint-07/`) |
 | I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | **Pasa** · también el pago anulado y el último cupo que vuelve a `OPEN` |
 | I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | **Pasa** (`cancellations.int.test.ts`): también dos cancelaciones simultáneas reembolsan una sola vez y un fallo de Transbank no cambia nada · reembolso real verificado en Integración (`evidencias/sprint-07/`) |
-| I-09 | API + PostgreSQL | Una reseña recalcula `honorScore` del calificado (HU-06, HU-07) | 8 | **Pasa** (`ratings.int.test.ts`): el honor se ve en la carta pública sin correo y dos reseñas simultáneas al mismo jugador no se pisan (fila bloqueada) · verificado a mano en `docker compose` (`evidencias/sprint-08/`) |
-| I-10 | API + Expo Push | Liberar un cupo dispara la notificación (HU-10) | 9 | Diseñado |
+| I-09 | API + PostgreSQL | Una reseña recalcula `honorScore` del calificado (HU-06, HU-07) | 7 | **Pasa** (`ratings.int.test.ts`): el honor se ve en la carta pública sin correo y dos reseñas simultáneas al mismo jugador no se pisan (fila bloqueada) · verificado a mano en `docker compose` (`evidencias/sprint-07/`) |
+| I-10 | API + Expo Push | Liberar un cupo dispara la notificación (HU-10) | — | Fuera de alcance: HU-10 salió del MVP el 8 de noviembre |
+| I-11 | API + PostgreSQL | El organizador cierra la asistencia: "asistió" suma un partido jugado y recalcula el honor (KAN-30) | 7 | **Pasa** (`attendance.int.test.ts`) · verificado a mano en `docker compose` (`evidencias/sprint-07/08-asistencia-KAN30.jpg`) |
 | I-11 | Docker Compose | `docker compose up --build` deja los tres contenedores sanos | 5 | Verificación manual en cada release |
 
 Los sprints siguen la planificación vigente del tablero Jira al 4 de octubre de 2026.
@@ -228,8 +233,8 @@ PostGIS en el modelo de datos.
 | R-04 | Registro y login (bcrypt costo 12) | 5 usuarios virtuales, 1 minuto | p95 bajo 800 ms | k6 |
 | R-05 | Arranque en frío del stack | `docker compose up --build` | API sana en menos de 60 s desde contenedores construidos | Docker |
 
-Los umbrales son metas del proyecto para una demo y un piloto comunal. Se ejecutan en los
-sprints 8 y 9, cuando existan los endpoints, y sus resultados se guardan en `docs/evidencias/`.
+Los umbrales son metas del proyecto para una demo y un piloto comunal. Los endpoints ya existen;
+las pruebas se ejecutan en el Sprint 8 y sus resultados se guardan en `docs/evidencias/`.
 
 ---
 
@@ -249,10 +254,11 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-08 | Manipulación del pago | Llamar a `commit` con un `token_ws` inventado o repetido | Rechazado, sin cambios en `Payment` | **Verificado** (`payments.int.test.ts`): el inventado da 404 y el repetido no vuelve a confirmar |
 | S-09 | Configuración insegura | Revisar cabeceras HTTP de la API | Cabeceras de `helmet` presentes | **Verificado** (`auth.int.test.ts`) |
 | S-10 | Secretos en el repositorio | Buscar claves en el historial de Git | Ningún secreto · `.env` ignorado | Verificado: `.gitignore` excluye `.env` |
-| S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | Diseñado |
+| S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | **Parcial** (8-nov): `npm audit fix` bajó el backend de 11 a 6 (1 crítica, 5 altas). Las 6 exigen versiones mayores y no están en el camino de una petición: `tar` solo corre al instalar `bcrypt`, `deepmerge-ts` en la CLI de Prisma y la de Zod necesita colecciones enormes (Express limita el cuerpo a 100 KB). La app tiene 1 crítica (`maplibre-gl`) y 2 altas que también exigen versiones mayores. Riesgo aceptado para la Fase 2; se revisa en el Sprint 8 |
 | S-12 | Abuso de recursos | Ráfaga de intentos de login | Límite de peticiones activo (429) | Diseñado · el limitador aún no está implementado |
 | S-13 | Redirección abierta | La página que lleva a Webpay solo puede enviar el formulario a Transbank | CSP `form-action` limitada a Transbank y token sin JWT | **Verificado** (`payments.int.test.ts`) |
 | S-14 | Acceso a objetos ajenos | Calificar un partido que no se jugó, calificarse a sí mismo o calificar a quien no jugó | 403, 422 y 422 | **Verificado** (`ratings.int.test.ts`, U-70) |
+| S-15 | Acceso a objetos ajenos | Un jugador intenta cerrar su propia asistencia o la de otro | 403 | **Verificado** (`attendance.int.test.ts`, U-71) |
 
 ---
 
@@ -266,10 +272,11 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-04 | Buscar partidos cercanos | M-14 a M-16 | CN-07 a CN-10 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46 | CN-11, CN-12 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10, U-69, U-70, M-17 | CN-13 a CN-17 | I-09 | S-05, S-14 |
-| HU-07 | Cálculo de honor | U-01 a U-06 | CN-18 a CN-21 | I-09 | — |
+| HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
 | HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07 | S-03, S-08, S-13 |
 | HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68 | CN-26 a CN-28 | I-08 | S-03 |
-| HU-10 | Notificación de cupo | — | — | I-10 | — |
+| HU-10 | Notificación de cupo | — | — | — | — · fuera de alcance desde el 8-nov |
+| KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 
 ---
 
@@ -299,6 +306,8 @@ sección 7 y los doce controles de seguridad de la sección 8.
 | DEF-03 | 4-oct-2026 | No existen pruebas de integración ni siquiera para `/health` | Baja | Cerrado el 16-oct: 29 pruebas de integración, incluida I-01 |
 | DEF-04 | 16-oct-2026 | Con PostgreSQL en una zona horaria distinta de UTC, la hora de un partido se guardaba y se comparaba con un desfase de 3 horas: las fechas viajaban a la base sin zona. Se detectó al probar con una base en hora de Chile | Alta | Cerrado el 16-oct: las fechas viajan como texto ISO con `Z`; lo cubre la prueba I-03b |
 | DEF-05 | 5-nov-2026 | En la demo en la sala, el mapa web no mostró partidos: el PC se ubicó por la red con kilómetros de error y, como el radio del piloto era de 25 km, la app buscó alrededor de ese punto equivocado. Hubo que fijar La Florida a mano en Chrome. Pasos: abrir `localhost:8080` en un PC sin GPS conectado por cable y permitir la ubicación (HU-04) | Alta | Cerrado el 5-nov: una posición con precisión peor que 1 km o a más de 6 km del centro usa La Florida y lo avisa en pantalla; lo cubren M-14 a M-16 |
+| DEF-06 | 8-nov-2026 | Análisis de cierre: nada incrementaba `matchesPlayed` ni registraba inasistencias, aunque la regla "Partidos jugados" de `CLAUDE.md` lo exige. Además la asistencia del honor contaba cualquier cupo pagado, incluso de partidos que aún no se juegan | Media | Cerrado el 8-nov con KAN-30: el organizador cierra la asistencia y la tasa se calcula con lo registrado; lo cubren U-71, I-11 y CN-30 a CN-32 |
+| DEF-07 | 8-nov-2026 | `npm run lint` en la app ejecuta `expo lint`, que intenta instalar ESLint y crear su configuración en vez de revisar el código. El CI no lo usa: la app se valida con `tsc` | Baja | Abierto · Sprint 8 |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.
@@ -312,4 +321,4 @@ Las capturas del CI en verde, los reportes de cobertura y los resultados de k6 s
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8, noviembre 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 7 · actualizado el 8 de noviembre de 2026*

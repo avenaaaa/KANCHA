@@ -12,3 +12,7 @@ export const createRatingSchema = z
   .strict();
 
 export type CreateRatingInput = z.infer<typeof createRatingSchema>;
+
+/** KAN-30: el organizador cierra la asistencia de un confirmado. */
+export const attendanceSchema = z.object({ attended: z.boolean() }).strict();
+export type AttendanceInput = z.infer<typeof attendanceSchema>;

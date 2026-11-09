@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.4 — 16 de octubre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.5 — 8 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -299,6 +299,7 @@ model Participation {
   userId    String
   status    PartStatus @default(PENDING)
   amountDue Int        // totalCost / totalSlots, calculado al confirmar
+  attended  Boolean?   // null sin cerrar · true asistió · false no se presentó (KAN-30)
   joinedAt  DateTime   @default(now())
 
   match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
@@ -395,12 +396,13 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/users/me` | HU-01, HU-02 | ✔ | Perfil propio completo · **implementado** |
 | GET | `/users/me/matches` | HU-05 | ✔ | Partidos que organizo o a los que postulé, con mi estado y las postulaciones por revisar · **implementado** |
 | GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública: honor, partidos jugados y métricas, sin correo · **implementado** (pantalla `/jugador/[id]` en la app) |
-| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push |
+| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **fuera de alcance**: HU-10 salió del MVP el 8 de noviembre |
 | POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=` · **implementado** |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
+| PATCH | `/participations/:id/attendance` | KAN-30 | ✔ org | Con el partido terminado, el organizador marca `{ attended }`: asistió suma `matchesPlayed`, no se presentó deja `NO_SHOW`. Una vez por jugador; recalcula el honor · **implementado** |
 | DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; si estaba pagado reembolsa por Transbank y retiene el 50 % si faltan < 12 h (al recinto, menos la comisión) · **implementado** |
 | POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
 | GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
@@ -433,12 +435,16 @@ honor.service.ts     honorScore = promedio ponderado de las últimas 20 califica
                      dos fuentes distintas, no todas de la reseña:
                        punctualityRate  ← promedio del campo punctuality de las reseñas recibidas
                        fairPlayRate     ← promedio del campo conduct de las reseñas recibidas
-                       attendanceRate   ← NO se califica: se calcula del historial de participaciones
-                                          = PAID / (PAID + NO_SHOW), en las participaciones cerradas
+                       attendanceRate   ← NO se califica: se calcula de la asistencia registrada
+                                          = asistió / (asistió + no se presentó), según
+                                            Participation.attended (KAN-30)
                      honorScore es el agregado de las tres en escala 0–10, y es el ÚNICO número de
                      reputación del producto: el badge naranja de la carta. El mockup de Fase 1
                      mostraba además un "rating 4.8" en escala 1–5; se elimina por redundante.
-                     matchesPlayed se incrementa al cerrar una participación como asistida.
+                     matchesPlayed se incrementa al cerrar una participación como asistida:
+                     lo hace el organizador con PATCH /participations/:id/attendance, una sola
+                     vez por jugador y con el partido terminado. El cierre es atómico
+                     (attended IS NULL) y recalcula el honor con la fila bloqueada. (KAN-30)
 
 payment.service.ts   amountDue   = ceil(totalCost / totalSlots)
                      commission  = round(amountDue * 0.10)
@@ -584,7 +590,7 @@ Sistema de Honor se vea funcionando desde el primer segundo.
 ```
 main       producción · protegida · solo por Pull Request · CI obligatorio en verde
 develop    integración de sprints
-feat/HU-04-mapa-geolocalizado      una rama por historia de usuario
+feat/KAN-10-mapa   una rama por historia, nombrada con su issue de Jira (CLAUDE.md §6)
 fix/...    correcciones
 ```
 
@@ -655,9 +661,9 @@ jobs:
 
 ### 7.5 GitHub Projects
 
-Tablero `Kancha MVP` con columnas `Backlog → Sprint actual → En progreso → En revisión → Terminado`.
-Un issue por HU, etiquetado con su épica (`E1`…`E10`) y su sprint. El tablero es la evidencia visual
-de Scrum para la competencia C2; mantenlo sincronizado con Jira, no lo dejes atrasado.
+No se usa. El tablero del proyecto es Jira (proyecto `KAN`, board 2), que es la fuente de verdad del
+estado de sprints e historias. Mantener un segundo tablero en GitHub duplicaría la información; cada
+commit y cada Pull Request referencian su issue de Jira, y eso enlaza el código con el tablero.
 
 ### 7.6 Releases
 
@@ -665,6 +671,13 @@ Al cierre de cada sprint, un tag y un release con notas:
 `v0.5.0 — Sprint 5: Registro y publicación de partidos (HU-01, HU-03)`.
 Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0` (27 de septiembre de
 2026), con el esqueleto del Sprint 3 y el ambiente del Sprint 4.
+
+| Tag | Contenido | Estado al 8-nov |
+|---|---|---|
+| `v0.3.0` | Esqueleto, ambiente, Docker y CI (sprints 3 y 4) | Publicado |
+| `v0.6.0` | Registro, publicación, mapa y postulación (HU-01, HU-03 a HU-05) | Pendiente: el incremento está en `main` desde el PR #4 |
+| `v0.7.0` | Pago, retención, calificación, honor, carta y asistencia (HU-02, HU-06 a HU-09, KAN-30) | Pendiente: se publica al llevar `develop` a `main` |
+| `v1.0.0` | MVP congelado para la defensa | Sprint 9 |
 
 ---
 
@@ -699,8 +712,8 @@ const tx = new WebpayPlus.Transaction(new Options(
 ```
 
 Las tarjetas y credenciales de prueba (VISA que siempre aprueba, RUT `11.111.111-1`, clave `123`)
-están en la documentación oficial de Transbank Developers. **Confírmalas al inicio del Sprint 7**
-y déjalas anotadas en `fase-2-desarrollo/docs/credenciales-prueba.md` para tenerlas a mano el día de la defensa.
+están en la documentación oficial de Transbank Developers. Se confirmaron en el Sprint 7 con el pago
+y el reembolso reales en Integración (`fase-2-desarrollo/docs/evidencias/sprint-07/`).
 
 ### Flujo (HU-08)
 
@@ -763,10 +776,10 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **3** | 01–14 sep | **Hecho.** Modelo ER, diagramas UML y esqueleto local: backend con `honor.service` y `payment.service` probados, app Expo, `docker-compose.yml` y `schema.prisma` |
 | **4** | 15–28 sep | **Hecho.** Ambiente de desarrollo, repositorio público en GitHub, migraciones e índice GIST, arranque en Docker corregido y CI activo (KAN-24). HU-01 y HU-03 no se iniciaron |
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
-| **6** | 13–26 oct | HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
-| **7** | 27 oct–09 nov | HU-08, HU-09. Integración con Transbank Integración sobre `payment.service`, retención por deserción |
-| **8** | 10–23 nov | HU-02, HU-06, HU-07. Carta de jugador, calificación y recálculo de honor sobre `honor.service`. Despliegue en Render + Supabase |
-| **9** | 24 nov–07 dic | HU-10 push. **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
+| **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
+| **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
+| **8** | 10–23 nov | Despliegue en Render + Supabase. Pruebas de rendimiento con k6 (R-01 a R-05). Límite de intentos de login (S-12). Revisión de dependencias con versiones mayores (S-11) y DEF-07. Prueba en iPhone y Android (KAN-29) |
+| **9** | 24 nov–07 dic | **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y
 > las historias se corrieron un sprint. El plan quedó sin holgura: los sprints 8 y 9 combinan desarrollo,
@@ -775,6 +788,11 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 >
 > **Replanificación del 16 de octubre de 2026.** El Sprint 5 cerró sin incremento por la carga laboral
 > de la práctica. HU-01 y HU-03 se sumaron al Sprint 6, que concentra el recorrido central de la demo.
+>
+> **Replanificación del 8 de noviembre de 2026.** HU-02, HU-06 y HU-07 se terminaron dentro del Sprint 7
+> y se movieron a ese sprint en Jira. HU-10 (*Could*) salió del alcance del MVP, como preveía el riesgo
+> de la §15: el MVP cierra con 9 historias y 47 puntos. El Sprint 8 queda para despliegue, rendimiento
+> y seguridad, y el Sprint 9 para el cierre de pruebas y la defensa.
 
 ---
 
@@ -827,7 +845,7 @@ Una Historia de Usuario está terminada solo cuando cumple **todo** esto:
 - [ ] Funciona en web **y** en móvil vía Expo Go
 - [ ] `docker compose up` sigue levantando todo sin intervención manual
 - [ ] CI en verde en el Pull Request
-- [ ] Rama mergeada a `develop` y el issue cerrado en GitHub Projects y Jira
+- [ ] Rama mergeada a `develop` y el issue cerrado en Jira
 - [ ] Captura o GIF guardado en `fase-2-desarrollo/docs/evidencias/`
 
 ---
@@ -849,7 +867,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 3. **Publicar (1 min)** — desde otra cuenta publicas un partido de pádel 4/4 con 1 cupo libre en La Florida
 4. **Descubrir (1 min)** — el pin aparece en el mapa oscuro; filtras por deporte; el radio de 5 km funciona
 5. **Unirse y pagar (1,5 min)** — postulas, el organizador aprueba, pagas tu parte con la tarjeta de prueba de Transbank, el cupo pasa a "Confirmado y pagado"
-6. **Honor (1 min)** — terminado el partido, calificas puntualidad y conducta; el puntaje del perfil se recalcula en vivo
+6. **Honor (1 min)** — en el partido de pádel que terminó hace 3 horas (viene en los datos de demo), el organizador marca quién asistió y cada jugador califica puntualidad y conducta; el puntaje de la carta se recalcula en vivo
 7. **Cierre técnico (30 s)** — muestras GitHub: CI en verde, los releases de cada sprint, cobertura de pruebas, y el `docker compose up` que ellos mismos pueden correr
 
 > Haz una copia de seguridad de la base de datos con el seed cargado (`pg_dump`) y guárdala en `fase-2-desarrollo/docs/`.
@@ -865,7 +883,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 | PostGIS no disponible en el hosting gratis elegido | Alto | Supabase y Neon lo soportan; verifícalo en Sprint 3, no en Sprint 8 |
 | El mapa nativo se comporta distinto al web | Medio | Interfaz `KanchaMap` común; probar en ambos desde el primer día del Sprint 6 |
 | Sprint 7 (pagos con Transbank) se desborda | Alto | Las funciones de cálculo ya existen y están probadas: el riesgo es la integración con Webpay, que se empieza el primer día del sprint |
-| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | HU-10 es *Could* y es la primera candidata a salir del alcance si el Sprint 8 no cierra |
+| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | Mitigado el 8-nov: HU-10 (*Could*) salió del alcance y las historias del Sprint 8 se terminaron en el Sprint 7 |
 | Trabajo en solitario, sin revisor de código | Medio | Pull Requests a ti mismo + CI obligatorio: la disciplina reemplaza al revisor |
 | Deuda de documentación al final | Alto | Cada release de sprint incluye su documentación; no la dejes para el Sprint 9 |
 

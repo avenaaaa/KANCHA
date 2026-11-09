@@ -390,6 +390,42 @@ export const openapi = {
         },
       },
     },
+    '/participations/{id}/attendance': {
+      patch: {
+        tags: ['Calificaciones'],
+        summary: 'El organizador registra la asistencia de un confirmado (KAN-30)',
+        description:
+          'Solo cuando el partido terminó y una sola vez por jugador. "Asistió" (true) suma un partido jugado; ' +
+          '"no se presentó" (false) deja la participación en NO_SHOW y la saca de las calificaciones. En ambos ' +
+          'casos el honor se recalcula en la misma transacción.',
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { type: 'object', required: ['attended'], properties: { attended: { type: 'boolean' } } },
+              example: { attended: true },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Asistencia registrada, con el honor ya recalculado',
+            content: {
+              'application/json': {
+                example: {
+                  participationId: '3f8a…',
+                  attended: true,
+                  honor: { attendanceRate: 100, punctualityRate: null, fairPlayRate: null, honorScore: 10 },
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo el organizador registra la asistencia' }),
+          409: error({ code: 'ATTENDANCE_ALREADY_SET', message: 'La asistencia de este jugador ya está registrada' }),
+        },
+      },
+    },
     '/participations/{id}': {
       delete: {
         tags: ['Pagos'],

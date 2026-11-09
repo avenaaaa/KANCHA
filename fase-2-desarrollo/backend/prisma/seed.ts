@@ -133,6 +133,7 @@ async function main() {
         userId: u.id,
         status: PartStatus.PAID,
         amountDue: 3000,
+        attended: true, // asistencia ya cerrada por el organizador (KAN-30)
       },
     });
   }
@@ -175,12 +176,8 @@ async function main() {
       orderBy: { createdAt: 'desc' },
       select: { punctuality: true, conduct: true },
     });
-    const attended = await prisma.participation.count({
-      where: { userId: u.id, status: PartStatus.PAID },
-    });
-    const noShow = await prisma.participation.count({
-      where: { userId: u.id, status: PartStatus.NO_SHOW },
-    });
+    const attended = await prisma.participation.count({ where: { userId: u.id, attended: true } });
+    const noShow = await prisma.participation.count({ where: { userId: u.id, attended: false } });
     const h = calculateHonor(ratings, { attended, noShow });
     await prisma.user.update({
       where: { id: u.id },

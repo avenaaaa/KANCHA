@@ -160,7 +160,7 @@ El Sistema de Honor es el "Perfil de Confianza" del jugador. Mide tres métricas
 
 > **Nota de origen de los datos.** Puntualidad y Juego Limpio provienen de la calificación mutua post-partido (HU-06: los campos `punctuality` y `conduct`). La Tasa de Asistencia **no se califica**: se calcula del historial de participaciones del jugador. Ver `DESARROLLO.md` §5.2. Cuando el jugador no tiene reseñas, las tres barras muestran "Sin calificaciones aún" en vez de cero.
 
-**Visualización en card de partido:** ícono de escudo con puntaje numérico del 1–10 en naranja.
+**Visualización en card de partido:** ícono de escudo con puntaje numérico del 0–10 en naranja (un usuario sin reseñas muestra "Sin calificaciones aún", nunca 0).
 
 ---
 

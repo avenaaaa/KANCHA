@@ -4,7 +4,12 @@ classDiagram
     class HonorService {
         <<service>>
         +calculateHonor(ratings, attendance) HonorBreakdown
-        +isRatingWindowOpen(startsAt, durationMin, now) Boolean
+        +ratingWindow(startsAt, durationMin, now) RatingWindow
+        +checkCanRate(roster, raterId, ratedId, window) RatingBlock
+        +checkCanCloseAttendance(participation, actorId, now) AttendanceBlock
+        +rateTeammate(matchId, raterId, input) HonorBreakdown
+        +pendingRatings(matchId, raterId) PendingRatings
+        +recordAttendance(participationId, actorId, attended) HonorBreakdown
     }
 
     class PaymentService {
@@ -13,12 +18,36 @@ classDiagram
         +calculateCommission(amount, rate) Int
         +calculateRefund(amountPaid, startsAt, now) RefundBreakdown
         +buildBuyOrder(participationId, now) String
+        +decideCheckout(row, userId, now) Checkout
+        +decideCancellation(row, userId, now) Cancellation
+        +startPayment(participationId, userId) Checkout
+        +finishPayment(webpayReturn) PaymentResult
+        +cancelParticipation(participationId, userId) Cancellation
     }
 
     class MatchingService {
         <<service>>
-        +findNearby(lat, lng, radiusM, filters) Match[]
-        +approveParticipation(participationId) Participation
+        +checkCanJoin(match, userId, now) JoinBlock
+        +decideApproval(match, participation, actorId) ApprovalDecision
+        +findNearby(query) MatchSummary[]
+        +join(matchId, userId) Participation
+        +approve(participationId, actorId) Participation
+    }
+
+    class MatchService {
+        <<service>>
+        +assertFutureStart(startsAt, now) void
+        +publish(organizerId, input) MatchDetail
+        +getDetail(id, viewerId) MatchDetail
+        +listForUser(userId) MyMatch[]
+    }
+
+    class AuthService {
+        <<service>>
+        +register(input) AuthResult
+        +login(input) AuthResult
+        +getProfile(userId, isSelf) PublicUser
+        +toPublicUser(user, includeEmail) PublicUser
     }
 
     class HonorBreakdown {
@@ -27,18 +56,6 @@ classDiagram
         +Number punctualityRate
         +Number fairPlayRate
         +Number honorScore
-    }
-
-    class RatingSample {
-        <<value object>>
-        +Int punctuality
-        +Int conduct
-    }
-
-    class AttendanceSample {
-        <<value object>>
-        +Int attended
-        +Int noShow
     }
 
     class RefundBreakdown {
@@ -70,17 +87,21 @@ classDiagram
     class Rating
     class Payment
 
-    HonorService ..> RatingSample : recibe
-    HonorService ..> AttendanceSample : recibe
     HonorService ..> HonorBreakdown : devuelve
-    HonorService ..> Env : lee
     PaymentService ..> RefundBreakdown : devuelve
+    HonorService ..> Env : lee
     PaymentService ..> Env : lee
-
-    HonorService ..> Rating : promedia
-    HonorService ..> User : actualiza honorScore
-    PaymentService ..> Payment : crea y confirma
-    PaymentService ..> Participation : marca PAID
-    MatchingService ..> Match : busca por radio
-    MatchingService ..> Participation : aprueba y cuenta cupos
+    HonorService ..> AppError : lanza
+    PaymentService ..> AppError : lanza
     MatchingService ..> AppError : lanza
+
+    HonorService ..> Rating : guarda y promedia
+    HonorService ..> User : actualiza honor y matchesPlayed
+    HonorService ..> Participation : cierra asistencia
+    PaymentService ..> Payment : crea, confirma y reembolsa
+    PaymentService ..> Participation : marca PAID o CANCELLED
+    MatchingService ..> Match : busca por radio
+    MatchingService ..> Participation : crea y aprueba sin sobreventa
+    MatchService ..> Match : publica y detalla
+    AuthService ..> User : registra y autentica
+    MatchService ..> PaymentService : cuota y comisión

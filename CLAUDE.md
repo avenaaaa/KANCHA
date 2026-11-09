@@ -89,7 +89,7 @@ La estructura detallada está en `DESARROLLO.md` §3.
 | E6 | KAN-3 | Sistema de Honor | Alta | HU-06, HU-07 |
 | E7 | KAN-4 | Pago fraccionado | Alta | HU-08 |
 | E8 | KAN-28 | Retención por deserción | Alta | HU-09 |
-| E9 | KAN-5 | Notificaciones | Media | HU-10 |
+| E9 | KAN-5 | Notificaciones | Media | HU-10 · fuera de alcance desde el 8-nov |
 | E10 | KAN-6 | Moderación | Baja | HU-11 |
 
 > **Diez épicas, una capacidad cada una.** La Fase 1 se entregó con seis épicas que agrupaban dos cosas
@@ -106,19 +106,21 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU | Jira | Épica | Título | MoSCoW | Pts | Sprint |
 |----|------|-------|--------|--------|-----|--------|
 | HU-01 | KAN-7 | E1 | Registro de agente libre | Must | 3 | 6 |
-| HU-02 | KAN-8 | E2 | Perfil tipo carta de jugador | Should | 5 | 8 |
+| HU-02 | KAN-8 | E2 | Perfil tipo carta de jugador | Should | 5 | 7 |
 | HU-03 | KAN-9 | E3 | Publicar partido con cupos incompletos | Must | 5 | 6 |
 | HU-04 | KAN-10 | E4 | Buscar partidos cercanos en el mapa | Must | 8 | 6 |
 | HU-05 | KAN-11 | E5 | Postularme a un partido | Must | 3 | 6 |
-| HU-06 | KAN-12 | E6 | Calificar compañeros post-partido | Must | 5 | 8 |
-| HU-07 | KAN-13 | E6 | Cálculo automático de puntaje de honor | Should | 5 | 8 |
+| HU-06 | KAN-12 | E6 | Calificar compañeros post-partido | Must | 5 | 7 |
+| HU-07 | KAN-13 | E6 | Cálculo automático de puntaje de honor | Should | 5 | 7 |
 | HU-08 | KAN-14 | E7 | Reserva con pago fraccionado | Must | 8 | 7 |
 | HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
-| HU-10 | KAN-16 | E9 | Notificación de cupo disponible | Could | 3 | 9 |
+| HU-10 | KAN-16 | E9 | Notificación de cupo disponible | Won't (esta fase) | 3 | Backlog |
 | HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
 
-**Total comprometido MVP (HU-01 a HU-10): 50 puntos en 5 sprints de desarrollo (5 a 9).**
-La columna Sprint refleja la replanificación del 16 de octubre de 2026, vigente en Jira.
+**Total del MVP (HU-01 a HU-09): 47 puntos, todos terminados al 8 de noviembre de 2026 (Sprint 7).**
+La columna Sprint refleja la replanificación del 8 de noviembre de 2026, vigente en Jira. Además,
+la tarea **KAN-30** implementó la regla "Partidos jugados" (registro de asistencia), que ninguna
+historia cubría.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -152,7 +154,9 @@ Nivel del partido Todo partido declara level (PRINCIPIANTE | MEDIO | AVANZADO). 
                   carta de partido y es filtrable en el mapa.
 
 Partidos jugados  matchesPlayed se incrementa al cerrar una participación como asistida. Se muestra
-                  en la carta de jugador.
+                  en la carta de jugador. Al terminar el partido, el organizador marca a cada
+                  confirmado como "asistió" o "no se presentó" (NO_SHOW), una sola vez; la tasa
+                  de asistencia del honor sale de ese registro. (KAN-30)
 ```
 
 ---
@@ -168,10 +172,10 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 3 | 01–14 sep 2026 | Hecho: modelo de datos, UML y esqueleto del repo (KAN-22) | Fase 2 |
 | 4 | 15–28 sep 2026 | Hecho: ambiente de desarrollo, repositorio público, Docker y CI (KAN-24). HU-01 y HU-03 no se iniciaron | Fase 2 |
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
-| 6 | 13–26 oct 2026 | HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
-| 7 | 27 oct–09 nov 2026 | HU-08, HU-09 — pago fraccionado y retención | Fase 2 |
-| 8 | 10–23 nov 2026 | HU-02, HU-06, HU-07 — carta de jugador, calificación y honor · despliegue | Fase 3 |
-| 9 | 24 nov–07 dic 2026 | HU-10 · cierre de pruebas C1 · README final, ensayo y defensa ante la comisión | Fase 3 |
+| 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
+| 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
+| 8 | 10–23 nov 2026 | Despliegue en Render + Supabase · pruebas de rendimiento · límite de login · prueba en iPhone y Android | Fase 3 |
+| 9 | 24 nov–07 dic 2026 | Cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
 > dejar operativo el ambiente. Las historias se corrieron un sprint y el desarrollo ahora llega hasta
@@ -181,6 +185,11 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 >
 > **Replanificación del 16 de octubre de 2026.** El Sprint 5 cerró sin incremento por la carga laboral
 > de la práctica. HU-01 y HU-03 pasaron al Sprint 6, que reúne el recorrido central de la demo.
+>
+> **Replanificación del 8 de noviembre de 2026.** HU-02, HU-06 y HU-07 se terminaron dentro del Sprint 7
+> y se movieron a ese sprint en Jira. HU-10 salió del alcance (*Won't* en esta fase), como estaba
+> previsto si el plan se atrasaba: con Expo Go las notificaciones push tienen límites y el tiempo rinde
+> más en desplegar, medir rendimiento y preparar la defensa. El MVP cierra con 9 historias y 47 puntos.
 
 ---
 
@@ -273,4 +282,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 16 de octubre de 2026 (Sprint 6)*
+*Última actualización: 8 de noviembre de 2026 (Sprint 7)*
