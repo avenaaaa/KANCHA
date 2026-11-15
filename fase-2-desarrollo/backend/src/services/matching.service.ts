@@ -4,6 +4,7 @@ import {
   participationRepository,
   type LockedMatch,
 } from '../repositories/participation.repository.js';
+import { paymentRepository } from '../repositories/payment.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
 import { isUniqueViolation } from '../utils/db-errors.js';
 import { calculateAmountDue } from './payment.service.js';
@@ -96,6 +97,15 @@ export async function findNearby(q: NearbyQuery, now: Date = new Date()): Promis
   return rows.map(toMatchSummary);
 }
 
+/**
+ * Quien perdió el cupo sin haber pagado (pago fallido, cancelación o rechazo) puede
+ * volver a postular. Quien canceló un cupo ya pagado, no: su pago guarda el reembolso
+ * y la retención de ese partido, y un pago nuevo lo pisaría.
+ */
+export function canRejoin(previousPaymentStatus: string | null): boolean {
+  return previousPaymentStatus === null || !['AUTHORIZED', 'RETAINED', 'REFUNDED'].includes(previousPaymentStatus);
+}
+
 /** HU-05: "WHEN presiono Unirme THEN mi postulación queda registrada como Pendiente". */
 export async function join(matchId: string, userId: string, now: Date = new Date()): Promise<Participation> {
   const match = await matchRepository.findById(matchId);
@@ -108,10 +118,13 @@ export async function join(matchId: string, userId: string, now: Date = new Date
     return await participationRepository.create(matchId, userId);
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
-    // Quien perdió su cupo (pago fallido o cancelación) puede volver a postular.
     const previous = await participationRepository.findOne(matchId, userId);
-    if (previous?.status === 'CANCELLED') return participationRepository.reopen(previous.id);
-    throw conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
+    if (previous?.status !== 'CANCELLED') throw conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
+    const payment = await paymentRepository.findByParticipation(previous.id);
+    if (!canRejoin(payment?.status ?? null)) {
+      throw conflict('CANCELLED_PAID_SLOT', 'Cancelaste un cupo ya pagado en este partido y no puedes volver a postular');
+    }
+    return participationRepository.reopen(previous.id);
   }
 }
 

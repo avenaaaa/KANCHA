@@ -5,9 +5,12 @@ const webpay = vi.hoisted(() => ({
   formUrl: 'https://webpay3gint.transbank.cl/webpayserver/initTransaction',
   create: vi.fn(),
   commit: vi.fn(),
+  status: vi.fn(),
+  refund: vi.fn(),
 }));
 vi.mock('../../src/repositories/webpay.repository.js', () => ({ webpayRepository: webpay }));
 
+import { AppError } from '../../src/utils/errors.js';
 import { prisma } from '../../src/config/prisma.js';
 import { api, dbReady, northOf, publishMatch, registerUser } from './helpers.js';
 
@@ -26,6 +29,14 @@ describe.skipIf(!hasDb)('Pago fraccionado con Webpay · HU-08 (integración)', (
   beforeEach(() => {
     webpay.create.mockReset().mockImplementation(async () => ({ token: `tok-${Math.random().toString(36).slice(2)}` }));
     webpay.commit.mockReset();
+    webpay.status.mockReset().mockResolvedValue({ status: 'INITIALIZED', responseCode: -1, amount: 6600, buyOrder: 'X', authorizationCode: null, cardLast4: null });
+    webpay.refund.mockReset().mockResolvedValue({ type: 'REVERSED' });
+  });
+
+  const APROBADO = { status: 'AUTHORIZED', responseCode: 0, amount: 6600, buyOrder: 'X', authorizationCode: '1213', cardLast4: '6623' };
+  const estado = async (participationId: string) => ({
+    cupo: (await prisma.participation.findUniqueOrThrow({ where: { id: participationId } })).status,
+    pago: (await prisma.payment.findUniqueOrThrow({ where: { participationId } })).status,
   });
 
   /** Partido de $24.000 en 4 cupos (cuota $6.000) con un jugador ya aprobado. */
@@ -50,9 +61,11 @@ describe.skipIf(!hasDb)('Pago fraccionado con Webpay · HU-08 (integración)', (
 
     expect(init.status).toBe(201);
     expect(init.body).toMatchObject({ amount: 6600, commission: 600, checkoutPath: `/payments/${pago.id}/webpay` });
+    // El id de sesión es aleatorio, no el id del usuario (que es público): ver S-16.
+    expect(pago.sessionId).not.toBe(jugador.user.id);
     expect(webpay.create).toHaveBeenCalledWith(
       pago.buyOrder,
-      jugador.user.id,
+      pago.sessionId,
       6600,
       expect.stringMatching(/\/api\/v1\/payments\/return$/),
     );
@@ -146,6 +159,96 @@ describe.skipIf(!hasDb)('Pago fraccionado con Webpay · HU-08 (integración)', (
 
     await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
     expect(await prisma.match.findUniqueOrThrow({ where: { id: c.partido.id } })).toMatchObject({ status: 'OPEN', filledSlots: 3 });
+  });
+
+  it('I-12 · DEF-08 · cancelar con Webpay abierto cierra el pago: terminarlo después no confirma ni cobra', async () => {
+    const { partido, jugador, participationId, pago } = await iniciarPago();
+
+    const cancela = await api().delete(`/api/v1/participations/${participationId}`).set(auth(jugador.token));
+    expect(cancela.status).toBe(200);
+    expect(await estado(participationId)).toEqual({ cupo: 'CANCELLED', pago: 'FAILED' });
+
+    // El jugador vuelve a la pestaña de Webpay y termina de pagar.
+    const form = await api().get(`/api/v1/payments/${pago.id}/webpay`);
+    expect(form.status).toBe(404);
+    webpay.commit.mockResolvedValue(APROBADO);
+    const vuelta = await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
+    expect(vuelta.text).toContain('El pago no se completó');
+    expect(webpay.commit).not.toHaveBeenCalled();
+    expect(await estado(participationId)).toEqual({ cupo: 'CANCELLED', pago: 'FAILED' });
+    expect((await prisma.match.findUniqueOrThrow({ where: { id: partido.id } })).filledSlots).toBe(2);
+  });
+
+  it('I-13 · DEF-08 · si el cupo se cancela mientras Transbank confirma, se devuelve todo lo cobrado', async () => {
+    const { participationId, pago } = await iniciarPago();
+    // La cancelación gana la carrera justo antes de registrar el pago aprobado.
+    webpay.commit.mockImplementation(async () => {
+      await prisma.participation.update({ where: { id: participationId }, data: { status: 'CANCELLED' } });
+      return APROBADO;
+    });
+
+    const vuelta = await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
+    expect(vuelta.text).toContain('El pago no se completó');
+    expect(webpay.refund).toHaveBeenCalledWith(pago.token, 6600);
+    expect(await estado(participationId)).toEqual({ cupo: 'CANCELLED', pago: 'REFUNDED' });
+  });
+
+  it('I-14 · DEF-10 · si la respuesta del commit se pierde, se consulta el estado y el pago queda registrado', async () => {
+    const { participationId, pago } = await iniciarPago();
+    webpay.commit.mockRejectedValue(new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió'));
+    webpay.status.mockResolvedValue(APROBADO);
+
+    const vuelta = await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
+    expect(vuelta.text).toContain('Pago aprobado');
+    expect(webpay.status).toHaveBeenCalledWith(pago.token);
+    expect(await estado(participationId)).toEqual({ cupo: 'PAID', pago: 'AUTHORIZED' });
+  });
+
+  it('I-14 · si Transbank tampoco responde el estado, el pago sigue iniciado y se informa 502', async () => {
+    const { participationId, pago } = await iniciarPago();
+    const caida = new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió');
+    webpay.commit.mockRejectedValue(caida);
+    webpay.status.mockRejectedValue(caida);
+
+    const vuelta = await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
+    expect(vuelta.status).toBe(502);
+    expect(await estado(participationId)).toEqual({ cupo: 'APPROVED', pago: 'INITIATED' });
+  });
+
+  it('I-15 · DEF-10 · reintentar un pago que Transbank ya aprobó no cobra dos veces (409 ALREADY_PAID)', async () => {
+    const { jugador, participationId } = await iniciarPago();
+    webpay.status.mockResolvedValue(APROBADO);
+    webpay.create.mockClear();
+
+    const otraVez = await api().post(`/api/v1/payments/${participationId}/init`).set(auth(jugador.token));
+    expect(otraVez.status).toBe(409);
+    expect(otraVez.body.error.code).toBe('ALREADY_PAID');
+    expect(webpay.create).not.toHaveBeenCalled();
+    expect(await estado(participationId)).toEqual({ cupo: 'PAID', pago: 'AUTHORIZED' });
+  });
+
+  it('I-15 · reintentar un pago que quedó sin pagar crea un cobro nuevo', async () => {
+    const { jugador, participationId, pago } = await iniciarPago();
+    const otraVez = await api().post(`/api/v1/payments/${participationId}/init`).set(auth(jugador.token));
+    expect(otraVez.status).toBe(201);
+    const nuevo = await prisma.payment.findUniqueOrThrow({ where: { participationId } });
+    expect(nuevo.token).not.toBe(pago.token);
+    expect(nuevo.status).toBe('INITIATED');
+  });
+
+  it('S-16 · DEF-12 · "tiempo agotado" con una orden de compra ajena y sin su id de sesión no toca el pago (404)', async () => {
+    const { participationId, pago } = await iniciarPago();
+
+    const ajeno = await api().get(`/api/v1/payments/return?TBK_ORDEN_COMPRA=${pago.buyOrder}&TBK_ID_SESION=adivinado`);
+    expect(ajeno.status).toBe(404);
+    const sinSesion = await api().get(`/api/v1/payments/return?TBK_ORDEN_COMPRA=${pago.buyOrder}`);
+    expect(sinSesion.status).toBe(404);
+    expect(await estado(participationId)).toEqual({ cupo: 'APPROVED', pago: 'INITIATED' });
+
+    // La vuelta real de Transbank trae el id de sesión de ese pago.
+    const real = await api().get(`/api/v1/payments/return?TBK_ORDEN_COMPRA=${pago.buyOrder}&TBK_ID_SESION=${pago.sessionId}`);
+    expect(real.text).toContain('El pago no se completó');
+    expect(await estado(participationId)).toEqual({ cupo: 'CANCELLED', pago: 'FAILED' });
   });
 
   it('S-05 · la vuelta de Webpay sin token se rechaza con 422', async () => {

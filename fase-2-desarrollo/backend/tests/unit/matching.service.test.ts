@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkCanJoin, decideApproval } from '../../src/services/matching.service.js';
+import { canRejoin, checkCanJoin, decideApproval } from '../../src/services/matching.service.js';
 import type { LockedMatch } from '../../src/repositories/participation.repository.js';
 
 const ahora = new Date('2026-10-17T15:00:00Z');
@@ -72,5 +72,16 @@ describe('decideApproval (HU-05)', () => {
     const d = decideApproval({ status: 'APPROVED' }, bloqueado, 'organizador', ahora);
     expect(d.ok).toBe(false);
     if (!d.ok) expect(d.error.code).toBe('PARTICIPATION_NOT_PENDING');
+  });
+});
+
+describe('canRejoin (DEF-13)', () => {
+  it('U-72 · vuelve a postular quien no llegó a pagar; quien canceló un cupo pagado, no', () => {
+    expect(canRejoin(null)).toBe(true);
+    expect(canRejoin('FAILED')).toBe(true);
+    expect(canRejoin('INITIATED')).toBe(true);
+    expect(canRejoin('RETAINED')).toBe(false);
+    expect(canRejoin('REFUNDED')).toBe(false);
+    expect(canRejoin('AUTHORIZED')).toBe(false);
   });
 });
