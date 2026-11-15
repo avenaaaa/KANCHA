@@ -4,8 +4,12 @@
   "private": true,
   "description": "API REST de Kancha — plataforma geolocalizada para partidos amateur",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "engines": {
+    "node": ">=22"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
@@ -25,6 +29,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
+    "express-rate-limit": "^8.7.4",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "pino": "^9.6.0",

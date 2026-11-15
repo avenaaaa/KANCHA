@@ -12,6 +12,9 @@ export default defineConfig({
       DATABASE_URL: 'postgresql://kancha:kancha@localhost:5432/kancha_test',
       JWT_SECRET: 'test-secret-solo-para-pruebas',
       BCRYPT_ROUNDS: '4',
+      // La suite registra cientos de cuentas desde una misma IP; S-12 se prueba con su propio límite.
+      LOGIN_RATE_LIMIT: '100000',
+      REGISTER_RATE_LIMIT: '100000',
     },
     // Las pruebas de integración comparten la base kancha_test: se ejecutan en serie.
     fileParallelism: false,

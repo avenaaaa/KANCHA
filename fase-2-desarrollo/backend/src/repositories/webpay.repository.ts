@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import type * as Tbk from 'transbank-sdk';
 import { env } from '../config/env.js';
+import { logger } from '../config/logger.js';
 import { AppError } from '../utils/errors.js';
 
 // transbank-sdk es CommonJS y Node no detecta sus exportaciones con nombre desde ESM.
@@ -65,9 +66,8 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    throw new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió. Intenta de nuevo en unos minutos.', {
-      cause: err instanceof Error ? err.message : String(err),
-    });
+    logger.error({ err }, 'Fallo en la llamada a Transbank');
+    throw new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió. Intenta de nuevo en unos minutos.');
   }
 }
 

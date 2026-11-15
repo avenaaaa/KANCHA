@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import { env } from './config/env.js';
 import { apiRouter } from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFound } from './utils/errors.js';
@@ -9,6 +10,9 @@ import { openapi } from './docs/openapi.js';
 
 export function createApp() {
   const app = express();
+
+  // Detrás de un proxy (Render), la IP y el protocolo reales vienen en X-Forwarded-*.
+  app.set('trust proxy', env.TRUST_PROXY);
 
   app.use(helmet());
   app.use(cors());
