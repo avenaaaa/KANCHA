@@ -31,10 +31,11 @@ flowchart LR
         UC11["UC11 · Recibir notificación de cupo<br/>HU-10 · fuera del MVP"]
         UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
         UC13["UC13 · Registrar asistencia<br/>KAN-30"]
+        UC14["UC14 · Rechazar postulación<br/>KAN-32"]
     end
 
     AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
-    OR --> UC1 & UC3 & UC6 & UC9 & UC13
+    OR --> UC1 & UC3 & UC6 & UC9 & UC13 & UC14
     AD --> UC12
 
     UC7 -.-> TBK
@@ -51,7 +52,7 @@ flowchart LR
 ```
 
 **Lectura:** los casos de uso con línea continua forman el MVP entregado (HU-01 a HU-09, más el
-registro de asistencia de KAN-30, que también recalcula el honor). UC11 y UC12 aparecen punteados:
+registro de asistencia de KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32). UC11 y UC12 aparecen punteados:
 HU-10 salió del alcance el 8 de noviembre de 2026 y HU-11 está marcada `Won't have this phase`; ambas
 viven en el backlog.
 Las flechas punteadas hacia la derecha marcan la dependencia de sistemas externos.
@@ -114,7 +115,11 @@ sequenceDiagram
     API->>PAY: startPayment(participationId, userId)
     PAY->>DB: lee Participation (status APPROVED) y el partido
     PAY->>PAY: decideCheckout · amount = amountDue + 10 % de servicio
-    PAY->>TBK: Webpay.create(buyOrder, sessionId, amount, returnUrl)
+    opt Quedó un pago iniciado de un intento anterior
+        PAY->>TBK: Webpay.status(token anterior)
+        TBK-->>PAY: si ya estaba aprobado: se registra y responde 409, sin cobrar otra vez
+    end
+    PAY->>TBK: Webpay.create(buyOrder, sessionId aleatorio, amount, returnUrl)
     TBK-->>PAY: { url, token }
     PAY->>DB: crea Payment status=INITIATED
     PAY-->>API: { paymentId, amount, checkoutPath }
@@ -127,11 +132,16 @@ sequenceDiagram
     API->>PAY: finishPayment(token_ws)
     PAY->>TBK: Webpay.commit(token), una sola vez
     TBK-->>PAY: { status, responseCode, authorizationCode }
+    Note over PAY,TBK: Si la respuesta se pierde, se consulta Webpay.status(token) antes de dar el pago por perdido
 
     alt status AUTHORIZED y responseCode 0
-        PAY->>DB: BEGIN · Payment = AUTHORIZED · Participation = PAID · COMMIT
+        PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido · Payment = AUTHORIZED · Participation = PAID · COMMIT
         PAY-->>API: comprobante
         API-->>J: "Confirmado y pagado"
+    else Aprobado, pero el cupo se canceló mientras el jugador pagaba
+        PAY->>TBK: Webpay.refund(token, monto completo)
+        PAY->>DB: Payment = REFUNDED
+        API-->>J: "El pago no se completó"
     else Rechazado, anulado (TBK_TOKEN) o tiempo agotado
         PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido
         PAY->>DB: Payment = FAILED · Participation = CANCELLED · libera el cupo (FULL → OPEN) · COMMIT
@@ -139,6 +149,13 @@ sequenceDiagram
         API-->>J: "Tu pago no se completó y el cupo quedó libre"
     end
 ```
+
+**Lectura:** el pago y la cancelación pueden cruzarse, y el diagrama muestra cómo se resuelve cada cruce.
+Cancelar un cupo con Webpay abierto deja el pago `FAILED`, así que terminarlo después ya no se confirma.
+Si la cancelación llega justo mientras Transbank confirma, el partido bloqueado decide el orden: o el pago
+queda registrado antes de cancelar (y se reembolsa según la regla de las 12 h), o el cupo ya no existe y se
+devuelve todo. En la vuelta "tiempo agotado", Transbank no envía token: se exige el id de sesión aleatorio
+del pago, porque la orden de compra sola es predecible.
 
 ---
 
@@ -381,6 +398,7 @@ classDiagram
         PAID
         CANCELLED
         NO_SHOW
+        REJECTED
     }
 
     class PayStatus {
@@ -451,10 +469,13 @@ classDiagram
     class MatchingService {
         <<service>>
         +checkCanJoin(match, userId, now) JoinBlock
+        +canRejoin(previousPaymentStatus) Boolean
         +decideApproval(match, participation, actorId) ApprovalDecision
+        +decideRejection(participation, match, actorId) AppError
         +findNearby(query) MatchSummary[]
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation
+        +reject(participationId, actorId) Participation
     }
 
     class MatchService {
@@ -532,11 +553,11 @@ classDiagram
 
 **Lectura:** todas las operaciones existen en `backend/src/services/`, un archivo `*.service.ts` por
 servicio. Las que empiezan con `calculate`, `check`, `decide`, `build` o `assert` son funciones puras y
-se prueban sin base de datos (76 pruebas unitarias). Las demás orquestan el acceso a datos a través de
-`repositories/` y se prueban contra PostGIS real (62 pruebas de integración).
+se prueban sin base de datos (84 pruebas unitarias). Las demás orquestan el acceso a datos a través de
+`repositories/` y se prueban contra PostGIS real (83 pruebas de integración).
 `Env` reúne los parámetros de negocio configurables, para que cambiar la comisión o la ventana de
 retención no exija tocar código.
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 8 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 15 de noviembre de 2026*

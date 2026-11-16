@@ -12,7 +12,11 @@ sequenceDiagram
     API->>PAY: startPayment(participationId, userId)
     PAY->>DB: lee Participation (status APPROVED) y el partido
     PAY->>PAY: decideCheckout · amount = amountDue + 10 % de servicio
-    PAY->>TBK: Webpay.create(buyOrder, sessionId, amount, returnUrl)
+    opt Quedó un pago iniciado de un intento anterior
+        PAY->>TBK: Webpay.status(token anterior)
+        TBK-->>PAY: si ya estaba aprobado: se registra y responde 409, sin cobrar otra vez
+    end
+    PAY->>TBK: Webpay.create(buyOrder, sessionId aleatorio, amount, returnUrl)
     TBK-->>PAY: { url, token }
     PAY->>DB: crea Payment status=INITIATED
     PAY-->>API: { paymentId, amount, checkoutPath }
@@ -25,11 +29,16 @@ sequenceDiagram
     API->>PAY: finishPayment(token_ws)
     PAY->>TBK: Webpay.commit(token), una sola vez
     TBK-->>PAY: { status, responseCode, authorizationCode }
+    Note over PAY,TBK: Si la respuesta se pierde, se consulta Webpay.status(token) antes de dar el pago por perdido
 
     alt status AUTHORIZED y responseCode 0
-        PAY->>DB: BEGIN · Payment = AUTHORIZED · Participation = PAID · COMMIT
+        PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido · Payment = AUTHORIZED · Participation = PAID · COMMIT
         PAY-->>API: comprobante
         API-->>J: "Confirmado y pagado"
+    else Aprobado, pero el cupo se canceló mientras el jugador pagaba
+        PAY->>TBK: Webpay.refund(token, monto completo)
+        PAY->>DB: Payment = REFUNDED
+        API-->>J: "El pago no se completó"
     else Rechazado, anulado (TBK_TOKEN) o tiempo agotado
         PAY->>DB: BEGIN · SELECT … FOR UPDATE del partido
         PAY->>DB: Payment = FAILED · Participation = CANCELLED · libera el cupo (FULL → OPEN) · COMMIT
