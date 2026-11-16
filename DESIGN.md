@@ -162,6 +162,17 @@ El Sistema de Honor es el "Perfil de Confianza" del jugador. Mide tres métricas
 
 **Visualización en card de partido:** ícono de escudo con puntaje numérico del 0–10 en naranja (un usuario sin reseñas muestra "Sin calificaciones aún", nunca 0).
 
+### 4.6 Filtro "Falta uno" (partidos urgentes)
+
+Botón del mapa que deja a la vista solo los partidos urgentes: les falta exactamente un jugador y empiezan en 2 horas o menos (la regla está en `DESARROLLO.md` §5.2). No es el CTA de la §4.3: aquel une al jugador a un partido; este filtra el mapa.
+
+- **Ubicación:** en el celular, justo sobre la barra horizontal de partidos, a la izquierda de "Publicar". En pantallas anchas, bajo los filtros del panel y sobre la lista.
+- **Forma:** píldora de 44 px de alto, texto "Falta uno" en Roboto Bold 15px.
+- **Inactivo:** fondo `#2A2A2A` al 94 % (superficie flotante sobre el mapa), borde y texto `#F0A500`, ícono ">>".
+- **Activo:** fondo `#F0A500`, texto `#1A1A1A`, ícono de visto.
+- Con el filtro activo el contador dice "N partidos necesitan un jugador en 2 h o menos". Si no hay ninguno, se muestra un mensaje propio con el botón "Ver todos los partidos", nunca una lista vacía.
+- Urgente significa ahora: activar "Falta uno" vuelve el horario a "Cuando sea", y elegir un día lo apaga.
+
 ---
 
 ## 5. Iconografía Multi-deporte

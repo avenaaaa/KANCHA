@@ -39,8 +39,8 @@ permite las redes privadas.
 
 ### Cuentas de demostración
 
-La base arranca con datos de La Florida: 8 jugadores, 12 partidos con cupo (4 de fútbol, 4 de pádel
-y 4 de básquetbol), un partido histórico con reseñas y un partido de pádel que terminó hace 3 horas,
+La base arranca con datos de La Florida: 8 jugadores, 15 partidos con cupo (5 de fútbol, 5 de pádel
+y 5 de básquetbol; uno de cada deporte es un "falta uno" urgente que empieza en menos de 2 horas), un partido histórico con reseñas y un partido de pádel que terminó hace 3 horas,
 listo para registrar asistencia y calificar en vivo. Todas las cuentas usan la contraseña `kancha2026`.
 
 | Cuenta | Para qué sirve en la demo |
@@ -61,6 +61,7 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-01 · Registro | Crear cuenta con la disciplina favorita; el honor parte en "Sin calificaciones aún" |
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte, horario y nivel |
+| Falta uno | Con el botón "Falta uno" del mapa, ver solo los partidos urgentes: les falta un jugador y empiezan en 2 horas o menos |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe o rechace, y quedar confirmado sin sobreventa del último cupo |
 | HU-08 · Pagar | Pagar la parte del arriendo más un 10 % de servicio con Webpay Plus (Transbank, ambiente de Integración) y ver el comprobante |
 | HU-09 · Cancelar | Cancelar el cupo: con 12 h o más se devuelve el 100 %; con menos, se retiene el 50 % |
