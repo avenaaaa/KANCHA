@@ -96,6 +96,8 @@ describe.skipIf(!hasDb)('Pago fraccionado con Webpay · HU-08 (integración)', (
     expect(res.text).toContain(`action="${webpay.formUrl}"`);
     expect(res.text).toContain(`value="${pago.token}"`);
     expect(res.headers['content-security-policy']).toContain('form-action https://webpay3gint.transbank.cl');
+    // Lleva el token: no debe quedar guardada en el navegador ni en un proxy.
+    expect(res.headers['cache-control']).toBe('no-store');
   });
 
   it('I-06 · pago aprobado: cupo "Confirmado y pagado" y comprobante; recargar no vuelve a cobrar', async () => {

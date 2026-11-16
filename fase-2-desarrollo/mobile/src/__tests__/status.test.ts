@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { matchPollInterval, playerStatus } from '@/lib/status';
+import { useFilters } from '@/store/filterStore';
 import type { MatchDetail, RatingWindow } from '@/api/types';
 
 describe('playerStatus · rótulo del cupo en Mis partidos (DEF-17)', () => {
@@ -37,5 +38,17 @@ describe('matchPollInterval · refresco del detalle (DEF-16)', () => {
     expect(matchPollInterval(partido({ status: null }))).toBe(false);
     expect(matchPollInterval(partido({ status: 'PENDING' }, 'OPEN'))).toBe(false);
     expect(matchPollInterval(undefined)).toBe(false);
+  });
+});
+
+describe('filtro de nivel del mapa (regla "Nivel del partido")', () => {
+  it('M-26 · parte sin nivel elegido; tocar uno lo activa y tocarlo de nuevo vuelve a todos', () => {
+    expect(useFilters.getState().level).toBeNull();
+    useFilters.getState().toggleLevel('AVANZADO');
+    expect(useFilters.getState().level).toBe('AVANZADO');
+    useFilters.getState().toggleLevel('MEDIO');
+    expect(useFilters.getState().level).toBe('MEDIO');
+    useFilters.getState().toggleLevel('MEDIO');
+    expect(useFilters.getState().level).toBeNull();
   });
 });

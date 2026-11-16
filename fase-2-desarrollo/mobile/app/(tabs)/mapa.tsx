@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
 import { useNearbyMatches } from '@/api/hooks';
+import { SKILL_LEVELS } from '@/theme/sports';
 import { errorMessage } from '@/api/client';
 import type { MatchSummary } from '@/api/types';
 import { useFilters } from '@/store/filterStore';
@@ -59,13 +60,13 @@ export default function MapScreen() {
     ? Math.min(width - PANEL_WIDTH, height - 64) * 0.9
     : Math.min(width, height - insets.top - 64 - MOBILE_TOP - MOBILE_BOTTOM) * 0.95;
 
-  const { sports, when, radius: radiusM, toggleSport, setWhen, setRadius } = useFilters();
+  const { sports, when, radius: radiusM, level, toggleSport, toggleLevel, setWhen, setRadius } = useFilters();
   const { origin, userLocation, source, locate } = useOrigin();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // El rango "Hoy / Mañana / Finde" se recalcula solo cuando cambia el filtro.
   const range = useMemo(() => whenRange(when), [when]);
-  const params = source === 'locating' ? null : { ...origin, radius: radiusM, sports, ...range };
+  const params = source === 'locating' ? null : { ...origin, radius: radiusM, sports, level, ...range };
   const { data, isLoading, isError, error, refetch, isFetching } = useNearbyMatches(params);
   const matches = useMemo(() => data?.matches ?? [], [data]);
 
@@ -122,6 +123,10 @@ export default function MapScreen() {
       <View style={s.divider} />
       {RADIUS_OPTIONS.map((r) => (
         <Chip key={r} label={`${r / 1000} km`} active={radiusM === r} onPress={() => setRadius(r)} floating={!wide} />
+      ))}
+      <View style={s.divider} />
+      {SKILL_LEVELS.map((l) => (
+        <Chip key={l.key} label={l.label} active={level === l.key} onPress={() => toggleLevel(l.key)} floating={!wide} />
       ))}
     </>
   );

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SPORTS, type SportKey } from '@/theme/sports';
+import { SPORTS, type SkillLevelKey, type SportKey } from '@/theme/sports';
 import type { When } from '@/lib/format';
 import type { RadiusOption } from '@/theme/geo';
 
@@ -10,7 +10,11 @@ interface FilterState {
   sports: SportKey[];
   when: When;
   radius: RadiusOption;
+  /** null = todos los niveles. */
+  level: SkillLevelKey | null;
   toggleSport: (sport: SportKey) => void;
+  /** Tocar el nivel ya elegido lo quita. */
+  toggleLevel: (level: SkillLevelKey) => void;
   setWhen: (when: When) => void;
   setRadius: (radius: RadiusOption) => void;
 }
@@ -19,6 +23,7 @@ export const useFilters = create<FilterState>((set) => ({
   sports: ALL,
   when: 'all',
   radius: 5_000,
+  level: null,
 
   toggleSport: (sport) =>
     set(({ sports }) => {
@@ -26,6 +31,7 @@ export const useFilters = create<FilterState>((set) => ({
       // Apagar el último deporte vuelve a mostrar los tres: un mapa vacío por filtro no sirve.
       return { sports: next.length === 0 ? ALL : ALL.filter((s) => next.includes(s)) };
     }),
+  toggleLevel: (level) => set((state) => ({ level: state.level === level ? null : level })),
   setWhen: (when) => set({ when }),
   setRadius: (radius) => set({ radius }),
 }));

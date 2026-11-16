@@ -3,7 +3,7 @@ import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
 import { matchPollInterval } from '@/lib/status';
 import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
-import type { SportKey } from '@/theme/sports';
+import type { SkillLevelKey, SportKey } from '@/theme/sports';
 
 /** Hooks de datos. Las pantallas nunca llaman a fetch directamente. */
 
@@ -36,6 +36,7 @@ export interface NearbyParams {
   lng: number;
   radius: number;
   sports: SportKey[];
+  level?: SkillLevelKey | null;
   from?: string;
   to?: string;
 }
@@ -52,6 +53,7 @@ export function useNearbyMatches(p: NearbyParams | null) {
       });
       // Con los tres deportes activos no se filtra: así entran deportes futuros sin tocar la app.
       if (p!.sports.length > 0 && p!.sports.length < 3) q.set('sport', p!.sports.join(','));
+      if (p!.level) q.set('level', p!.level);
       if (p!.from) q.set('from', p!.from);
       if (p!.to) q.set('to', p!.to);
       return api<{ matches: MatchSummary[]; count: number }>(`/matches/nearby?${q.toString()}`);
