@@ -184,7 +184,7 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
-| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · pendiente: rediseño visual, despliegue en Render + Supabase, pruebas de rendimiento y prueba en iPhone y Android | Fase 3 |
+| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · pendiente: rediseño visual (KAN-33), despliegue en Render + Supabase (KAN-34), pruebas de rendimiento (KAN-35), releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
 | 9 | 24 nov–07 dic 2026 | Cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en

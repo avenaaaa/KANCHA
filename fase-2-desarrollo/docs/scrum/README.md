@@ -10,11 +10,12 @@ Retrospective.
 | 4 | 15 – 28 sep 2026 | HU-01 y HU-03 | 0 de 8 puntos · ambiente y repositorio publicados | [sprint-04.md](sprint-04.md) |
 | 5 | 29 sep – 12 oct 2026 | HU-01 y HU-03 | 0 de 8 puntos · impedimento laboral · historias al Sprint 6 | [sprint-05.md](sprint-05.md) |
 | 6 | 13 – 26 oct 2026 | HU-01, HU-03, HU-04 y HU-05 | 16 de 19 puntos · HU-05 se cerró el 5 de noviembre | [sprint-06.md](sprint-06.md) |
-| 7 | 27 oct – 9 nov 2026 | HU-08 y HU-09 | 13 de 13 puntos, más 15 adelantados del Sprint 8 (HU-02, HU-06, HU-07) y KAN-30 · en curso al 8 de noviembre | [sprint-07.md](sprint-07.md) |
-| 8 | 10 – 23 nov 2026 | Despliegue, rendimiento y seguridad | Planificado | — |
+| 7 | 27 oct – 9 nov 2026 | HU-08 y HU-09 | 13 de 13 puntos, más 15 adelantados del Sprint 8 (HU-02, HU-06, HU-07) y KAN-30 | [sprint-07.md](sprint-07.md) |
+| 8 | 10 – 23 nov 2026 | Dejar el MVP listo para la defensa | En curso · auditoría de cierre, sus correcciones (KAN-31) y rechazo de postulaciones (KAN-32) al 15 de noviembre | [sprint-08.md](sprint-08.md) |
 | 9 | 24 nov – 7 dic 2026 | Cierre de pruebas y defensa | Planificado | — |
 
-Los sprints 1 y 2 corresponden a la Fase 1. La planificación vigente es la de la replanificación del
+Los sprints 1 y 2 corresponden a la Fase 1. Desde el Sprint 8 no quedan historias por desarrollar: el
+trabajo se mide en tareas, no en puntos. La planificación vigente es la de la replanificación del
 8 de noviembre de 2026: HU-02, HU-06 y HU-07 se terminaron en el Sprint 7 y HU-10 salió del alcance
 del MVP. El detalle está en `CLAUDE.md` §5 y `DESARROLLO.md` §11.
 

@@ -260,7 +260,11 @@ PostGIS en el modelo de datos.
 | R-05 | Arranque en frío del stack | `docker compose up --build` | API sana en menos de 60 s desde contenedores construidos | Docker |
 
 Los umbrales son metas del proyecto para una demo y un piloto comunal. Los endpoints ya existen;
-las pruebas se ejecutan en el Sprint 8 y sus resultados se guardan en `docs/evidencias/`.
+las pruebas se ejecutan en el Sprint 8 (KAN-35) y sus resultados se guardan en `docs/evidencias/`.
+
+**Medición preliminar (14-nov-2026).** 100 búsquedas por radio seguidas contra la API en Docker: mediana
+de 4 ms y p95 de 5 ms. Es un solo usuario y los 12 partidos del seed, así que **no reemplaza a R-01**:
+solo descarta un problema grueso antes de la prueba de carga real.
 
 ---
 

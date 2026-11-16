@@ -7,7 +7,7 @@
 
 | Documento pedido | Dónde está | Estado |
 |---|---|---|
-| Diagrama de Arquitectura: componentes | [03-arquitectura.md](03-arquitectura.md#1-diagrama-de-componentes) | Listo · actualizado al 8-nov |
+| Diagrama de Arquitectura: componentes | [03-arquitectura.md](03-arquitectura.md#1-diagrama-de-componentes) | Listo · actualizado al 15-nov |
 | Diagrama de Arquitectura: despliegue | [03-arquitectura.md](03-arquitectura.md#2-diagrama-de-despliegue) | Listo · la nube se despliega en el Sprint 8 |
 | Modelo relacional normalizado | [01-modelo-datos.md](01-modelo-datos.md) · normalización en la [sección 6](01-modelo-datos.md#6-normalización) | Listo · seis migraciones |
 | Diagrama de clases | [02-diagramas-uml.md](02-diagramas-uml.md#7-diagrama-de-clases--modelo-de-dominio), secciones 7 y 8 | Listo · corresponde al código del 15-nov |
@@ -31,7 +31,7 @@ Release, Review y Retrospective están reunidos en un documento por sprint.
 | 5 | 29 sep – 12 oct 2026 | [scrum/sprint-05.md](scrum/sprint-05.md) | Cerrado |
 | 6 | 13 – 26 oct 2026 | [scrum/sprint-06.md](scrum/sprint-06.md) | Cerrado |
 | 7 | 27 oct – 9 nov 2026 | [scrum/sprint-07.md](scrum/sprint-07.md) | Cerrado |
-| 8 | 10 – 23 nov 2026 | Pendiente: se escribe al cerrar el sprint | En curso |
+| 8 | 10 – 23 nov 2026 | [scrum/sprint-08.md](scrum/sprint-08.md) | En curso |
 
 Resumen, velocidad y planificación de los sprints siguientes: [scrum/README.md](scrum/README.md).
 
