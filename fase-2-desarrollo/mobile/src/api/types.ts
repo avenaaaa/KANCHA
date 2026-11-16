@@ -42,7 +42,7 @@ export interface MatchSummary {
   distanceM?: number;
 }
 
-export type ParticipationStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'NO_SHOW';
+export type ParticipationStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'NO_SHOW' | 'REJECTED';
 
 export interface Participant {
   participationId: string;

@@ -23,6 +23,8 @@ export function playerStatus(status: ParticipationStatus | null, mustPay: boolea
       return { label: 'Ya no tienes cupo en este partido', tone: 'muted', icon: 'user' };
     case 'NO_SHOW':
       return { label: 'No te presentaste', tone: 'muted', icon: 'user' };
+    case 'REJECTED':
+      return { label: 'El organizador no aceptó tu postulación', tone: 'muted', icon: 'user' };
     default:
       return { label: 'Esperando al organizador', tone: 'warning', icon: 'clock' };
   }

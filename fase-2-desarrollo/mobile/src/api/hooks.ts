@@ -128,6 +128,19 @@ export function useCancelParticipation(matchId: string) {
   });
 }
 
+/** KAN-32: el organizador rechaza una postulación pendiente. */
+export function useRejectParticipation(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (participationId: string) =>
+      api<{ participationId: string; status: string }>(`/participations/${participationId}/reject`, { method: 'PATCH' }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
 /** KAN-30: el organizador marca "asistió" o "no se presentó" al terminar el partido. */
 export function useRecordAttendance(matchId: string) {
   const qc = useQueryClient();

@@ -40,6 +40,8 @@ enum PartStatus {
   PAID
   CANCELLED
   NO_SHOW
+  /// El organizador no aceptó la postulación (KAN-32). El jugador puede volver a postular.
+  REJECTED
 }
 
 enum PayStatus {

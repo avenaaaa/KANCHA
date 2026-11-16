@@ -11,6 +11,7 @@ describe('playerStatus · rótulo del cupo en Mis partidos (DEF-17)', () => {
     expect(playerStatus('PAID', true)).toMatchObject({ label: 'Confirmado y pagado', tone: 'success' });
     expect(playerStatus('CANCELLED', true)).toMatchObject({ label: 'Ya no tienes cupo en este partido', tone: 'muted' });
     expect(playerStatus('NO_SHOW', true)).toMatchObject({ label: 'No te presentaste', tone: 'muted' });
+    expect(playerStatus('REJECTED', true)).toMatchObject({ label: 'El organizador no aceptó tu postulación', tone: 'muted' });
   });
 });
 

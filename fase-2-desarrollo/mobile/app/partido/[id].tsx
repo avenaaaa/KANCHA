@@ -12,6 +12,7 @@ import {
   useJoinMatch,
   useMatch,
   useRecordAttendance,
+  useRejectParticipation,
   useStartPayment,
 } from '@/api/hooks';
 import { confirmAction } from '@/lib/confirm';
@@ -43,6 +44,7 @@ function MatchDetailView() {
   const { data: m, isLoading, isError, error, refetch, isRefetching } = useMatch(id);
   const join = useJoinMatch(id);
   const approve = useApproveParticipation(id);
+  const reject = useRejectParticipation(id);
   const pay = useStartPayment(id);
   const cancel = useCancelParticipation(id);
   const attendance = useRecordAttendance(id);
@@ -147,16 +149,26 @@ function MatchDetailView() {
             </Text>
             {pending.map((p) => (
               <PersonRow key={p.participationId} p={p}>
-                <Button
-                  label="Aprobar"
-                  onPress={() => approve.mutate(p.participationId)}
-                  loading={approve.isPending && approve.variables === p.participationId}
-                  disabled={m.slotsLeft === 0}
-                  style={s.approveBtn}
-                />
+                <View style={s.attendance}>
+                  <Button
+                    label="Aprobar"
+                    onPress={() => approve.mutate(p.participationId)}
+                    loading={approve.isPending && approve.variables === p.participationId}
+                    disabled={m.slotsLeft === 0}
+                    style={s.approveBtn}
+                  />
+                  <Button
+                    label="Rechazar"
+                    variant="secondary"
+                    onPress={() => reject.mutate(p.participationId)}
+                    loading={reject.isPending && reject.variables === p.participationId}
+                    style={s.approveBtn}
+                  />
+                </View>
               </PersonRow>
             ))}
             {approve.isError && <Text style={s.error}>{errorMessage(approve.error)}</Text>}
+            {reject.isError && <Text style={s.error}>{errorMessage(reject.error)}</Text>}
           </View>
         )}
 
@@ -198,7 +210,7 @@ function MatchDetailView() {
           {attendance.isError && <Text style={s.error}>{errorMessage(attendance.error)}</Text>}
           {m.filledSlots > confirmed.length && (
             <Text style={s.caption}>
-              {plural(m.filledSlots - confirmed.length, 'cupo ocupado más es de un jugador', 'cupos ocupados más son de jugadores')} que el
+              {plural(m.filledSlots - confirmed.length, 'cupo ocupado por un jugador', 'cupos ocupados por jugadores')} que el
               organizador ya tenía.
             </Text>
           )}
@@ -332,7 +344,7 @@ function JoinCta({
   }
 
   if (m.viewer.isOrganizer) {
-    return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;
+    return <StatusLine tone="muted" text="Organizas este partido. Aprueba o rechaza las postulaciones desde aquí." />;
   }
   if (status === 'PENDING') {
     return (
@@ -379,13 +391,17 @@ function JoinCta({
       </View>
     );
   }
+  // Quien canceló un cupo ya pagado no vuelve a postular a este partido (la API responde 409).
+  if (status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED')) {
+    return <StatusLine tone="muted" text={`${cancelledText(payment)} Ya no puedes volver a postular a este partido.`} />;
+  }
   return (
     <View style={{ gap: spacing.sm }}>
+      {status === 'REJECTED' ? (
+        <StatusLine tone="muted" text="El organizador no aceptó tu postulación. Si aún hay cupo, puedes postular de nuevo." />
+      ) : null}
       {status === 'CANCELLED' && payment?.status === 'FAILED' ? (
         <StatusLine tone="muted" text="Tu pago no se completó y el cupo quedó libre. Si aún hay lugar, puedes postular de nuevo." />
-      ) : null}
-      {status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED') ? (
-        <StatusLine tone="muted" text={cancelledText(payment)} />
       ) : null}
       {errorText}
       <Button

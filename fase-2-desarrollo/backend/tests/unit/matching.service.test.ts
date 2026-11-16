@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canRejoin, checkCanJoin, decideApproval } from '../../src/services/matching.service.js';
+import { canRejoin, checkCanJoin, decideApproval, decideRejection } from '../../src/services/matching.service.js';
 import type { LockedMatch } from '../../src/repositories/participation.repository.js';
 
 const ahora = new Date('2026-10-17T15:00:00Z');
@@ -83,5 +83,17 @@ describe('canRejoin (DEF-13)', () => {
     expect(canRejoin('RETAINED')).toBe(false);
     expect(canRejoin('REFUNDED')).toBe(false);
     expect(canRejoin('AUTHORIZED')).toBe(false);
+  });
+});
+
+describe('decideRejection (KAN-32)', () => {
+  const partido = { organizerId: 'organizador' };
+
+  it('U-79 · solo el organizador rechaza, y solo una postulación pendiente', () => {
+    expect(decideRejection({ status: 'PENDING' }, partido, 'organizador')).toBeNull();
+    expect(decideRejection({ status: 'PENDING' }, partido, 'otro-jugador')?.statusCode).toBe(403);
+    for (const status of ['APPROVED', 'PAID', 'CANCELLED', 'REJECTED', 'NO_SHOW'] as const) {
+      expect(decideRejection({ status }, partido, 'organizador')?.code).toBe('PARTICIPATION_NOT_PENDING');
+    }
   });
 });

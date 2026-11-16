@@ -97,12 +97,16 @@ export const participationRepository = {
     return prisma.participation.findUnique({ where: { matchId_userId: { matchId, userId } } });
   },
 
-  /** Volver a postular tras perder el cupo reutiliza la fila: UNIQUE (matchId, userId) no admite otra. */
-  reopen(participationId: string): Promise<Participation> {
-    return prisma.participation.update({
-      where: { id: participationId },
+  /**
+   * Volver a postular tras perder el cupo reutiliza la fila: UNIQUE (matchId, userId) no admite otra.
+   * Solo reabre lo que sigue cancelado o rechazado; null si otra petición ya la reabrió.
+   */
+  async reopen(participationId: string): Promise<Participation | null> {
+    const { count } = await prisma.participation.updateMany({
+      where: { id: participationId, status: { in: ['CANCELLED', 'REJECTED'] } },
       data: { status: 'PENDING', amountDue: 0, joinedAt: new Date() },
     });
+    return count === 1 ? prisma.participation.findUnique({ where: { id: participationId } }) : null;
   },
 
   findByMatch(matchId: string): Promise<ParticipantRow[]> {
