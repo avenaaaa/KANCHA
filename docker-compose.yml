@@ -10,8 +10,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kancha}
       POSTGRES_DB: ${POSTGRES_DB:-kancha}
     # Solo desde este equipo: la base usa la clave de ejemplo y no debe verse en la red.
+    # Van los dos loopback porque en Windows "localhost" se resuelve primero por IPv6:
+    # solo con 127.0.0.1, cada conexión nueva perdía unos 2 s antes de caer a IPv4.
     ports:
       - "127.0.0.1:5432:5432"
+      - "[::1]:5432:5432"
     volumes:
       - kancha-db-data:/var/lib/postgresql/data
     healthcheck:

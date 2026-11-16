@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
+// El error inesperado se registra en el log; aquí no hace falta ensuciar la salida de las pruebas.
+vi.mock('../../src/config/logger.js', () => ({ logger: { error: vi.fn() } }));
+
 import { errorHandler } from '../../src/middlewares/errorHandler.js';
 import { conflict } from '../../src/utils/errors.js';
 
