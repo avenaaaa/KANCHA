@@ -270,6 +270,14 @@ export const openapi = {
           { name: 'radius', in: 'query', schema: { type: 'integer', default: 5000, minimum: 500, maximum: 20000 }, description: 'Metros' },
           { name: 'sport', in: 'query', schema: { type: 'string' }, description: 'Uno o varios separados por coma: FUTBOL,PADEL' },
           { name: 'level', in: 'query', schema: { $ref: '#/components/schemas/Level' } },
+          {
+            name: 'urgent',
+            in: 'query',
+            schema: { type: 'string', enum: ['true', 'false'] },
+            description:
+              'Filtro "Falta uno" (KAN-37): solo partidos a los que les falta exactamente 1 jugador y que empiezan ' +
+              'en 2 horas o menos (URGENT_WINDOW_HOURS)',
+          },
           { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
           { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
         ],

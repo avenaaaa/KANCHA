@@ -67,6 +67,12 @@ const PARTIDOS = [
   { title: 'Básquet 5x5 · Liga amateur',     sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Polideportivo La Florida', calle: 'Av. La Florida', dx: -1.3, dy: 0.5, slots: 10, filled: 8,  cost: 32000, dia: 1, hora: '20:30' },
   { title: 'Básquet 3x3 · Principiantes',    sport: Sport.BASQUETBOL, level: SkillLevel.PRINCIPIANTE, venue: 'Multicancha Trinidad',   calle: 'Av. Trinidad', dx: 2.2,  dy: 2.1,  slots: 6,  filled: 2,  cost: 0,     dia: 1, hora: '17:00' },
   { title: 'Básquet 5x5 · Tarde de cancha', sport: Sport.BASQUETBOL, level: SkillLevel.MEDIO,        venue: 'Gimnasio Bellavista',    calle: 'Av. Bellavista', dx: -0.4, dy: -2.8, slots: 10, filled: 7,  cost: 28000, dia: 3, hora: '18:00' },
+
+  // KAN-37 · "Falta uno": uno urgente por deporte. Les falta 1 jugador y empiezan en menos de 2 horas
+  // desde que se levanta la demo, así el botón "Falta uno" siempre tiene algo que mostrar.
+  { title: 'Fútbol 5 · Falta uno ya',       sport: Sport.FUTBOL,     level: SkillLevel.MEDIO,        venue: 'Cancha Vicuña Mackenna',  calle: 'Av. Vicuña Mackenna', dx: 0.6,  dy: -0.5, slots: 10, filled: 9, cost: 30000, dia: 0, hora: '00:00', enHoras: 1.5 },
+  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1 },
+  { title: 'Básquet 3x3 · Falta uno ya',    sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Multicancha San José',    calle: 'San José de la Estrella', dx: 1.5, dy: 1.1, slots: 6, filled: 5, cost: 0, dia: 0, hora: '00:00', enHoras: 1.75 },
 ];
 
 async function main() {
@@ -108,13 +114,13 @@ async function main() {
         (gen_random_uuid(), ${organizer.id}, ${p.title}, ${p.sport}::"Sport", ${p.level}::"SkillLevel",
          ${p.venue}, ${`${p.calle}, La Florida`},
          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-         ${proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
+         ${p.enHoras !== undefined ? enHoras(p.enHoras) : proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
          ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus", NOW(), NOW())
       RETURNING "id";
     `;
     partidos.push({ ...p, id: row!.id, organizerId: organizer.id });
   }
-  console.log(`   ${partidos.length} partidos creados (4 por deporte)`);
+  console.log(`   ${partidos.length} partidos creados (5 por deporte, uno de ellos urgente)`);
 
   // Historial: un partido ya terminado con reseñas, para que el honor no salga vacío.
   const [historico] = await prisma.$queryRaw<{ id: string }[]>`

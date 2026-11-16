@@ -42,6 +42,8 @@ const schema = z
     RETENTION_WINDOW_HOURS: z.coerce.number().positive().default(12),
     RETENTION_RATE: z.coerce.number().min(0).max(1).default(0.5),
     RATING_WINDOW_HOURS: z.coerce.number().positive().default(48),
+    /** KAN-37: un partido es "urgente" si le falta 1 jugador y empieza dentro de estas horas. */
+    URGENT_WINDOW_HOURS: z.coerce.number().positive().default(2),
     HONOR_SAMPLE_SIZE: z.coerce.number().int().positive().default(20),
   })
   .superRefine((v, ctx) => {
