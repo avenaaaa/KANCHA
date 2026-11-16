@@ -15,7 +15,8 @@ export function createApp() {
   app.set('trust proxy', env.TRUST_PROXY);
 
   app.use(helmet());
-  app.use(cors());
+  // En la nube se limita al sitio web propio; la app nativa no usa CORS.
+  app.use(cors(env.CORS_ORIGINS ? { origin: env.CORS_ORIGINS.split(',').map((o) => o.trim()) } : undefined));
   app.use(express.json({ limit: '1mb' }));
 
   // Documentación navegable del contrato (DESARROLLO.md §6.4).

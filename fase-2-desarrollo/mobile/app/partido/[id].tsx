@@ -59,7 +59,9 @@ function MatchDetailView() {
 
   async function onCancel() {
     if (!m?.viewer.participationId) return;
-    if (await confirmAction('Cancelar mi cupo', cancelMessage(m), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
+    // El reembolso depende de la hora: se vuelve a pedir para no prometer el 100 % con un dato viejo.
+    const fresh = (await refetch()).data ?? m;
+    if (await confirmAction('Cancelar mi cupo', cancelMessage(fresh), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
   }
 
   if (isLoading || !m) {

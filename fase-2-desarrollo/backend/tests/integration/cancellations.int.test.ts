@@ -121,6 +121,13 @@ describe.skipIf(!hasDb)('Cancelación y retención · HU-09 (integración)', () 
     });
   });
 
+  it('CN-36 · la base rechaza retener más de lo cobrado (CHECK)', async () => {
+    const { participationId } = await cupo(48, true);
+    await expect(
+      prisma.payment.update({ where: { participationId }, data: { retained: 6601 } }),
+    ).rejects.toThrow(/Payment_retained_check|check constraint/i);
+  });
+
   it('S-03 · nadie cancela el cupo de otro jugador (403)', async () => {
     const { participationId } = await cupo(48, true);
     const intruso = await registerUser('Intruso');

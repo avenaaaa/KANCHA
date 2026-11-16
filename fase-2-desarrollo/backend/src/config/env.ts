@@ -18,6 +18,8 @@ const schema = z
       .transform((v) => v === 'true'),
     /** Saltos de proxy delante de la API: 0 en local, 1 en Render. Define la IP real del cliente (S-12). */
     TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+    /** Orígenes web que pueden llamar a la API, separados por coma. Vacío = cualquiera (demo local y app nativa). */
+    CORS_ORIGINS: z.string().optional(),
     /** S-12: contraseñas erradas por IP cada 15 minutos. */
     LOGIN_RATE_LIMIT: z.coerce.number().int().positive().default(10),
     /** S-12: cuentas nuevas por IP cada hora. */

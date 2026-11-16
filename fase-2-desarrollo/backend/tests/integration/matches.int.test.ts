@@ -85,6 +85,15 @@ describe.skipIf(!hasDb)('Partidos · HU-03 y HU-04 (integración)', () => {
     expect(res.body.matches.every((m: { sport: string }) => m.sport === 'PADEL')).toBe(true);
   });
 
+  it('CN-35 · la base rechaza cupos ocupados sobre el total o negativos (CHECK), aunque el servicio fallara', async () => {
+    const partido = await publishMatch(token, { ...northOf(1_300), totalSlots: 4, filledSlots: 3 });
+    const forzar = (filledSlots: number) => prisma.match.update({ where: { id: partido.id }, data: { filledSlots } });
+
+    await expect(forzar(5)).rejects.toThrow(/Match_filledSlots_check|check constraint/i);
+    await expect(forzar(-1)).rejects.toThrow(/Match_filledSlots_check|check constraint/i);
+    await expect(forzar(4)).resolves.toMatchObject({ filledSlots: 4 });
+  });
+
   it('CN-34 · el filtro de nivel deja solo los partidos de ese nivel', async () => {
     const avanzado = await publishMatch(token, { ...northOf(1_200), title: 'Nivel avanzado', level: 'AVANZADO' });
     const inicial = await publishMatch(token, { ...northOf(1_250), title: 'Nivel inicial', level: 'PRINCIPIANTE' });
