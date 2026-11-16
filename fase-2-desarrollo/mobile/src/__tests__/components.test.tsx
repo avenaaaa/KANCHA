@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { HonorBadge } from '@/components/HonorBadge';
 import { SlotBar } from '@/components/SlotBar';
 import { SportFilter } from '@/components/SportFilter';
@@ -52,11 +52,11 @@ describe('SlotBar', () => {
 describe('SportFilter (DESIGN.md §4.4)', () => {
   it('M-10 · muestra los tres deportes en orden Fútbol → Pádel → Básquet', async () => {
     await render(<SportFilter active={['FUTBOL', 'PADEL', 'BASQUETBOL']} onToggle={() => undefined} />);
-    const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityState?.selected);
-    expect(labels).toEqual([true, true, true]);
-    expect(screen.getByText('Fútbol')).toBeTruthy();
-    expect(screen.getByText('Pádel')).toBeTruthy();
-    expect(screen.getByText('Básquet')).toBeTruthy();
+    const chips = screen.getAllByRole('button');
+    expect(chips.map((b) => b.props.accessibilityState?.selected)).toEqual([true, true, true]);
+    // El orden se comprueba de verdad: el texto de cada chip, en la posición en que se dibuja.
+    const texto = (i: number) => within(chips[i]!).getByText(/Fútbol|Pádel|Básquet/).props.children;
+    expect([texto(0), texto(1), texto(2)]).toEqual(['Fútbol', 'Pádel', 'Básquet']);
   });
 
   it('M-11 · tocar un chip avisa qué deporte cambió', async () => {

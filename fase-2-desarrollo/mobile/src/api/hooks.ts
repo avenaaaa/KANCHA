@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
+import { matchPollInterval } from '@/lib/status';
 import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
 import type { SportKey } from '@/theme/sports';
 
@@ -59,8 +60,13 @@ export function useNearbyMatches(p: NearbyParams | null) {
   });
 }
 
+/** El detalle se vuelve a pedir solo mientras hay algo que esperar (ver matchPollInterval). */
 export function useMatch(id: string) {
-  return useQuery({ queryKey: keys.match(id), queryFn: () => api<MatchDetail>(`/matches/${id}`) });
+  return useQuery({
+    queryKey: keys.match(id),
+    queryFn: () => api<MatchDetail>(`/matches/${id}`),
+    refetchInterval: (query) => matchPollInterval(query.state.data),
+  });
 }
 
 export function useMyMatches() {

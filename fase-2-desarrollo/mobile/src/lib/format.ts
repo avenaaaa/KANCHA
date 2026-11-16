@@ -33,6 +33,16 @@ export function formatDay(d: Date, now: Date = new Date()): string {
   return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]}`;
 }
 
+/** "hoy a las 20:00", "mañana a las 20:00" o "el sáb 18 oct a las 20:00": se lee bien tras "hasta". */
+export function formatDeadline(d: Date, now: Date = new Date()): string {
+  const day = formatDay(d, now);
+  const when = day === 'Hoy' || day === 'Mañana' ? day.toLowerCase() : `el ${day}`;
+  return `${when} a las ${formatTime(d)}`;
+}
+
+/** "1 cupo libre", "3 cupos libres". */
+export const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
 /** "Hoy 20:00", "Mañana 18:30", "sáb 18 oct 20:00". */
 export function formatWhen(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);

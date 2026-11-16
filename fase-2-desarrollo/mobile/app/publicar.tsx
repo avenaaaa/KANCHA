@@ -199,6 +199,7 @@ function PublishForm() {
             keyboardType="number-pad"
             placeholder="0 si es gratis"
             maxLength={7}
+            error={errors['totalCost']}
           />
           <Text style={s.lead}>
             {totalCost === 0
@@ -212,6 +213,8 @@ function PublishForm() {
         <View style={{ width: '100%', maxWidth: 720, gap: spacing.sm }}>
           {publish.isError && !(publish.error instanceof ApiRequestError && publish.error.status === 422) ? (
             <Text style={s.error}>{errorMessage(publish.error)}</Text>
+          ) : Object.keys(errors).length > 0 ? (
+            <Text style={s.error}>Revisa los datos marcados antes de publicar.</Text>
           ) : null}
           <Button label="Publicar partido" onPress={submit} loading={publish.isPending} forward />
         </View>

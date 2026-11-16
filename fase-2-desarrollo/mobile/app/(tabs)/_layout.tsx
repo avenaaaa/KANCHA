@@ -1,5 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
@@ -12,6 +13,9 @@ const tabIcon =
 
 export default function TabsLayout() {
   const status = useAuth((s) => s.status);
+  // La barra dibuja dentro de su alto el margen del indicador de inicio del iPhone:
+  // con un alto fijo, ese margen se comía el ícono y la etiqueta.
+  const insets = useSafeAreaInsets();
   if (status !== 'signedIn') return <Redirect href="/login" />;
 
   return (
@@ -21,7 +25,7 @@ export default function TabsLayout() {
         // DESIGN.md §7: el estado activo usa el naranja en el texto.
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border, height: 64, paddingTop: 6 },
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border, height: 64 + insets.bottom, paddingTop: 6 },
         tabBarLabelStyle: { fontFamily: fonts.bold, fontSize: 12, paddingBottom: 6 },
         sceneStyle: { backgroundColor: colors.background },
       }}
