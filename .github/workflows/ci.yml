@@ -54,7 +54,8 @@ jobs:
           path: fase-2-desarrollo/backend/coverage
 
   mobile:
-    name: App Expo (tipos, pruebas y build web)
+    # El nombre no se cambia: la regla de protección de main y develop exige este check por su nombre.
+    name: App Expo (tipos y build web)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -72,7 +73,8 @@ jobs:
       - run: npx expo export --platform web
 
   docker:
-    name: Docker Compose (build, arranque y humo)
+    # El nombre no se cambia: la regla de protección de main y develop exige este check por su nombre.
+    name: Imagenes Docker
     needs: [backend, mobile]
     runs-on: ubuntu-latest
     steps:
