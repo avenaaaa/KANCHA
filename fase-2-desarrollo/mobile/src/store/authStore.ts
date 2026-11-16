@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { setAuthToken, setUnauthorizedHandler } from '@/api/client';
+import { queryClient } from '@/api/queryClient';
 import type { Session, User } from '@/api/types';
 
 const KEY = 'kancha.session';
@@ -36,6 +37,8 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   async signIn(session) {
+    // Otra cuenta, otra caché: sin esto se verían por un momento el perfil y los partidos de la anterior.
+    queryClient.clear();
     setAuthToken(session.token);
     set({ status: 'signedIn', token: session.token, user: session.user });
     try {
@@ -46,6 +49,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   async signOut() {
+    queryClient.clear();
     setAuthToken(null);
     set({ status: 'signedOut', token: null, user: null });
     try {

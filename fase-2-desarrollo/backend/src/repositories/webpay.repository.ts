@@ -1,10 +1,11 @@
 import { createRequire } from 'node:module';
 import type * as Tbk from 'transbank-sdk';
 import { env } from '../config/env.js';
+import { logger } from '../config/logger.js';
 import { AppError } from '../utils/errors.js';
 
 // transbank-sdk es CommonJS y Node no detecta sus exportaciones con nombre desde ESM.
-const { Environment, IntegrationApiKeys, IntegrationCommerceCodes, WebpayPlus } = createRequire(import.meta.url)(
+const { Environment, IntegrationApiKeys, IntegrationCommerceCodes, Options, WebpayPlus } = createRequire(import.meta.url)(
   'transbank-sdk',
 ) as typeof Tbk;
 
@@ -29,20 +30,44 @@ export interface WebpayCommit {
 
 const isProduction = env.TBK_ENV === 'production';
 
+// 8 s por llamada. El SDK espera 10 minutos por defecto, más que la transacción de base
+// (15 s) dentro de la que se reembolsa: Transbank podría responder con ella ya cerrada.
+const TIMEOUT_MS = 8_000;
+
 function transaction() {
-  return isProduction
-    ? WebpayPlus.Transaction.buildForProduction(env.TBK_COMMERCE_CODE ?? '', env.TBK_API_KEY ?? '')
-    : WebpayPlus.Transaction.buildForIntegration(IntegrationCommerceCodes.WEBPAY_PLUS, IntegrationApiKeys.WEBPAY);
+  return new WebpayPlus.Transaction(
+    isProduction
+      ? new Options(env.TBK_COMMERCE_CODE ?? '', env.TBK_API_KEY ?? '', Environment.Production, TIMEOUT_MS)
+      : new Options(IntegrationCommerceCodes.WEBPAY_PLUS, IntegrationApiKeys.WEBPAY, Environment.Integration, TIMEOUT_MS),
+  );
 }
+
+interface TbkTransaction {
+  status: string;
+  response_code?: number;
+  amount: number;
+  buy_order: string;
+  authorization_code?: string;
+  card_detail?: { card_number?: string };
+}
+
+const toCommit = (r: TbkTransaction): WebpayCommit => ({
+  status: r.status,
+  // Una transacción que el jugador aún no paga no trae código de respuesta: no está aprobada.
+  responseCode: r.response_code ?? -1,
+  amount: r.amount,
+  buyOrder: r.buy_order,
+  authorizationCode: r.authorization_code ?? null,
+  cardLast4: r.card_detail?.card_number ?? null,
+});
 
 /** Un fallo de red o de Transbank no es culpa del jugador: 502, y el cupo no cambia. */
 async function call<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    throw new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió. Intenta de nuevo en unos minutos.', {
-      cause: err instanceof Error ? err.message : String(err),
-    });
+    logger.error({ err }, 'Fallo en la llamada a Transbank');
+    throw new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'Transbank no respondió. Intenta de nuevo en unos minutos.');
   }
 }
 
@@ -58,24 +83,12 @@ export const webpayRepository = {
   },
 
   commit(token: string): Promise<WebpayCommit> {
-    return call(async () => {
-      const r = (await transaction().commit(token)) as {
-        status: string;
-        response_code: number;
-        amount: number;
-        buy_order: string;
-        authorization_code?: string;
-        card_detail?: { card_number?: string };
-      };
-      return {
-        status: r.status,
-        responseCode: r.response_code,
-        amount: r.amount,
-        buyOrder: r.buy_order,
-        authorizationCode: r.authorization_code ?? null,
-        cardLast4: r.card_detail?.card_number ?? null,
-      };
-    });
+    return call(async () => toCommit((await transaction().commit(token)) as TbkTransaction));
+  },
+
+  /** Estado real de una transacción: para no dar por perdido un pago cuya respuesta no llegó. */
+  status(token: string): Promise<WebpayCommit> {
+    return call(async () => toCommit((await transaction().status(token)) as TbkTransaction));
   },
 
   /** Reembolso total o parcial (HU-09). El mismo día contable, Transbank lo anula. */

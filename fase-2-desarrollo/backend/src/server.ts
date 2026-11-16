@@ -9,12 +9,14 @@ const server = app.listen(env.PORT, () => {
   logger.info(`🟠 Kancha API escuchando en http://localhost:${env.PORT}/api/v1`);
 });
 
-const shutdown = async (signal: string): Promise<void> => {
+/** Deja terminar las peticiones en curso (un pago a medio confirmar) antes de salir. */
+const shutdown = (signal: string): void => {
   logger.info(`${signal} recibido, cerrando…`);
-  server.close();
-  await prisma.$disconnect();
-  process.exit(0);
+  server.close(() => {
+    void prisma.$disconnect().finally(() => process.exit(0));
+  });
+  server.closeIdleConnections();
 };
 
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

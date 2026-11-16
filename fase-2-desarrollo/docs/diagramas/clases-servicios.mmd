@@ -28,10 +28,13 @@ classDiagram
     class MatchingService {
         <<service>>
         +checkCanJoin(match, userId, now) JoinBlock
+        +canRejoin(previousPaymentStatus) Boolean
         +decideApproval(match, participation, actorId) ApprovalDecision
+        +decideRejection(participation, match, actorId) AppError
         +findNearby(query) MatchSummary[]
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation
+        +reject(participationId, actorId) Participation
     }
 
     class MatchService {

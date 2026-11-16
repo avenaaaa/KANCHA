@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatCLP, formatDay, formatDistance, slotsCta, whenRange } from '@/lib/format';
+import { formatCLP, formatDay, formatDeadline, formatDistance, plural, slotsCta, whenRange } from '@/lib/format';
 
 describe('formatos de la interfaz', () => {
   it('M-01 · muestra pesos chilenos con punto de miles y "Gratis" para 0', () => {
@@ -35,5 +35,18 @@ describe('formatos de la interfaz', () => {
 
   it('M-06 · "Cuando sea" no limita el horario', () => {
     expect(whenRange('all')).toEqual({});
+  });
+
+  it('M-20 · la fecha límite se lee bien después de "hasta": hoy, mañana o el día', () => {
+    const ahora = new Date(2026, 10, 14, 9, 0);
+    expect(formatDeadline(new Date(2026, 10, 14, 20, 30), ahora)).toBe('hoy a las 20:30');
+    expect(formatDeadline(new Date(2026, 10, 15, 8, 5), ahora)).toBe('mañana a las 08:05');
+    expect(formatDeadline(new Date(2026, 10, 18, 21, 0), ahora)).toMatch(/^el \S+ 18 nov a las 21:00$/);
+  });
+
+  it('M-21 · las cantidades concuerdan en singular y plural', () => {
+    expect(plural(1, 'cupo libre', 'cupos libres')).toBe('1 cupo libre');
+    expect(plural(3, 'cupo libre', 'cupos libres')).toBe('3 cupos libres');
+    expect(plural(0, 'cupo libre', 'cupos libres')).toBe('0 cupos libres');
   });
 });

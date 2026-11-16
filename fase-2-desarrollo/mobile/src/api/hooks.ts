@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
+import { matchPollInterval } from '@/lib/status';
 import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
-import type { SportKey } from '@/theme/sports';
+import type { SkillLevelKey, SportKey } from '@/theme/sports';
 
 /** Hooks de datos. Las pantallas nunca llaman a fetch directamente. */
 
@@ -35,6 +36,7 @@ export interface NearbyParams {
   lng: number;
   radius: number;
   sports: SportKey[];
+  level?: SkillLevelKey | null;
   from?: string;
   to?: string;
 }
@@ -51,6 +53,7 @@ export function useNearbyMatches(p: NearbyParams | null) {
       });
       // Con los tres deportes activos no se filtra: así entran deportes futuros sin tocar la app.
       if (p!.sports.length > 0 && p!.sports.length < 3) q.set('sport', p!.sports.join(','));
+      if (p!.level) q.set('level', p!.level);
       if (p!.from) q.set('from', p!.from);
       if (p!.to) q.set('to', p!.to);
       return api<{ matches: MatchSummary[]; count: number }>(`/matches/nearby?${q.toString()}`);
@@ -59,8 +62,13 @@ export function useNearbyMatches(p: NearbyParams | null) {
   });
 }
 
+/** El detalle se vuelve a pedir solo mientras hay algo que esperar (ver matchPollInterval). */
 export function useMatch(id: string) {
-  return useQuery({ queryKey: keys.match(id), queryFn: () => api<MatchDetail>(`/matches/${id}`) });
+  return useQuery({
+    queryKey: keys.match(id),
+    queryFn: () => api<MatchDetail>(`/matches/${id}`),
+    refetchInterval: (query) => matchPollInterval(query.state.data),
+  });
 }
 
 export function useMyMatches() {
@@ -113,6 +121,19 @@ export function useCancelParticipation(matchId: string) {
       api<{ status: string; refund: { refunded: number; retained: number } | null }>(`/participations/${participationId}`, {
         method: 'DELETE',
       }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
+/** KAN-32: el organizador rechaza una postulación pendiente. */
+export function useRejectParticipation(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (participationId: string) =>
+      api<{ participationId: string; status: string }>(`/participations/${participationId}/reject`, { method: 'PATCH' }),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.match(matchId) });
       void qc.invalidateQueries({ queryKey: ['matches'] });

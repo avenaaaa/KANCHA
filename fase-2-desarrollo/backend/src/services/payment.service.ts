@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { MatchStatus } from '@prisma/client';
 import { env } from '../config/env.js';
 import {
@@ -179,7 +180,8 @@ export function decideCancellation(
 /**
  * HU-09: el jugador cancela su cupo. Todo ocurre con el partido bloqueado: una
  * segunda cancelación simultánea espera, relee el cupo ya cancelado y recibe 409,
- * así nunca se reembolsa dos veces. Si Transbank falla, la transacción se revierte.
+ * así nunca se reembolsa dos veces. El reembolso es el último paso: si Transbank
+ * falla, la transacción se revierte y no se movió dinero.
  */
 export function cancelParticipation(
   participationId: string,
@@ -190,22 +192,29 @@ export function cancelParticipation(
     const p = await paymentRepository.findForCancellation(participationId);
     if (!p) throw notFound('PARTICIPATION_NOT_FOUND', 'La postulación no existe');
     const match = await tx.lockMatch(p.matchId);
+    // Tras el bloqueo se relee lo que otra petición pudo cambiar: el cupo y su pago.
     const current = await tx.findParticipation(participationId);
+    const payment = await tx.findPayment(participationId);
 
-    const decision = decideCancellation({ ...p, status: current?.status ?? p.status }, userId, now);
+    const decision = decideCancellation({ ...p, status: current?.status ?? p.status, payment }, userId, now);
     if (!decision.ok) throw decision.error;
 
     const { refund } = decision;
-    if (refund && p.payment) {
-      if (refund.refunded > 0 && p.payment.token) await webpayRepository.refund(p.payment.token, refund.refunded);
-      await tx.markPayment(p.payment.id, {
+    if (refund && payment) {
+      await tx.markPayment(payment.id, {
         status: refund.retained > 0 ? 'RETAINED' : 'REFUNDED',
         retained: refund.retained,
         commission: refund.platformCommission,
       });
+    } else if (payment?.status === 'INITIATED') {
+      // Un pago a medio hacer se cierra: si el jugador lo termina en Webpay, ya no se confirma.
+      await tx.markPayment(payment.id, { status: 'FAILED' });
     }
     if (decision.releasesSlot && match) await releaseLockedSlot(tx, participationId, match);
     else await tx.markParticipation(participationId, 'CANCELLED');
+
+    // Transbank va al final: si falla, la transacción se revierte sin haber movido dinero.
+    if (refund && refund.refunded > 0 && payment?.token) await webpayRepository.refund(payment.token, refund.refunded);
     return { status: 'CANCELLED' as const, refund };
   });
 }
@@ -213,6 +222,40 @@ export function cancelParticipation(
 /** Transbank aprueba solo con response_code 0 y estado AUTHORIZED. */
 export const isApproved = (c: Pick<WebpayCommit, 'status' | 'responseCode'>): boolean =>
   c.responseCode === 0 && c.status === 'AUTHORIZED';
+
+/**
+ * Pago aprobado y cupo pagado juntos, con el partido bloqueado. Así una cancelación
+ * simultánea espera y decide con el pago ya confirmado, o esta confirmación ve el
+ * cupo ya cancelado (GONE) y quien llama devuelve el dinero.
+ */
+function settleApprovedPayment(
+  payment: { id: string; participationId: string },
+  at: Date,
+): Promise<'SETTLED' | 'ALREADY' | 'GONE'> {
+  return participationRepository.inApprovalTransaction(async (tx) => {
+    const found = await tx.findParticipation(payment.participationId);
+    if (!found) return 'GONE';
+    await tx.lockMatch(found.matchId);
+    const current = await tx.findParticipation(payment.participationId);
+    const pay = await tx.findPayment(payment.participationId);
+    if (current?.status === 'PAID' && pay?.status === 'AUTHORIZED') return 'ALREADY';
+    if (current?.status !== 'APPROVED' || pay?.status !== 'INITIATED') return 'GONE';
+    await tx.markPayment(payment.id, { status: 'AUTHORIZED', authorizedAt: at });
+    await tx.markParticipation(payment.participationId, 'PAID');
+    return 'SETTLED';
+  });
+}
+
+/** Si la respuesta del commit se pierde, se consulta el estado real antes de dar el pago por perdido. */
+async function commitOrStatus(token: string): Promise<WebpayCommit> {
+  try {
+    return await webpayRepository.commit(token);
+  } catch (err) {
+    return webpayRepository.status(token).catch(() => {
+      throw err;
+    });
+  }
+}
 
 /** Paso 1: crea la transacción en Webpay y deja el pago INITIATED. */
 export async function startPayment(
@@ -227,14 +270,26 @@ export async function startPayment(
   const decision = decideCheckout(p, userId, now);
   if (!decision.ok) throw decision.error;
 
+  // Un intento anterior pudo aprobarse sin que su respuesta llegara: se consulta a
+  // Transbank antes de crear otro cobro. Si no responde por ese token viejo, se sigue.
+  const previous = await paymentRepository.findByParticipation(participationId);
+  if (previous?.status === 'INITIATED' && previous.token) {
+    const state = await webpayRepository.status(previous.token).catch(() => null);
+    if (state && isApproved(state) && (await settleApprovedPayment(previous, now)) !== 'GONE') {
+      throw conflict('ALREADY_PAID', 'Tu cupo ya está pagado');
+    }
+  }
+
   const buyOrder = buildBuyOrder(participationId, now);
-  const { token } = await webpayRepository.create(buyOrder, userId, decision.amount, returnUrl);
+  // Aleatorio: es lo que prueba que una vuelta "tiempo agotado" viene de Transbank (ver finishPayment).
+  const sessionId = randomUUID();
+  const { token } = await webpayRepository.create(buyOrder, sessionId, decision.amount, returnUrl);
   const payment = await paymentRepository.upsertInitiated({
     participationId,
     amount: decision.amount,
     commission: decision.commission,
     buyOrder,
-    sessionId: userId,
+    sessionId,
     token,
   });
   return { paymentId: payment.id, amount: decision.amount, commission: decision.commission };
@@ -285,19 +340,26 @@ export async function finishPayment(input: WebpayReturn, now: Date = new Date())
       return toResult(payment, payment.status === 'AUTHORIZED', null, payment.authorizedAt);
     }
 
-    const commit = await webpayRepository.commit(input.token_ws);
+    const commit = await commitOrStatus(input.token_ws);
     if (isApproved(commit)) {
-      await paymentRepository.markAuthorized(payment, now);
-      return toResult(payment, true, commit, now);
+      if ((await settleApprovedPayment(payment, now)) !== 'GONE') return toResult(payment, true, commit, now);
+      // El cupo se canceló mientras el jugador pagaba: se devuelve todo lo cobrado.
+      await webpayRepository.refund(input.token_ws, payment.amount);
+      await paymentRepository.markRefunded(payment.id);
+      return toResult(payment, false, commit, null);
     }
     await releaseUnpaidSlot(payment.participationId, payment.id);
     return toResult(payment, false, commit, null);
   }
 
-  const payment = input.TBK_ORDEN_COMPRA
-    ? await paymentRepository.findByBuyOrder(input.TBK_ORDEN_COMPRA)
-    : await paymentRepository.findByToken(input.TBK_TOKEN ?? '');
-  if (!payment) throw notFound('PAYMENT_NOT_FOUND', 'No encontramos este pago');
+  // Anulado: llega TBK_TOKEN, que es secreto. Tiempo agotado: llega solo la orden de
+  // compra, que es predecible, así que además se exige el id de sesión de ese pago.
+  const payment = input.TBK_TOKEN
+    ? await paymentRepository.findByToken(input.TBK_TOKEN)
+    : await paymentRepository.findByBuyOrder(input.TBK_ORDEN_COMPRA ?? '');
+  if (!payment || (!input.TBK_TOKEN && payment.sessionId !== input.TBK_ID_SESION)) {
+    throw notFound('PAYMENT_NOT_FOUND', 'No encontramos este pago');
+  }
   if (payment.status === 'INITIATED') await releaseUnpaidSlot(payment.participationId, payment.id);
   return toResult(payment, payment.status === 'AUTHORIZED', null, payment.authorizedAt);
 }

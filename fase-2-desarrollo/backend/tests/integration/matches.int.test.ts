@@ -85,6 +85,29 @@ describe.skipIf(!hasDb)('Partidos · HU-03 y HU-04 (integración)', () => {
     expect(res.body.matches.every((m: { sport: string }) => m.sport === 'PADEL')).toBe(true);
   });
 
+  it('CN-35 · la base rechaza cupos ocupados sobre el total o negativos (CHECK), aunque el servicio fallara', async () => {
+    const partido = await publishMatch(token, { ...northOf(1_300), totalSlots: 4, filledSlots: 3 });
+    const forzar = (filledSlots: number) => prisma.match.update({ where: { id: partido.id }, data: { filledSlots } });
+
+    await expect(forzar(5)).rejects.toThrow(/Match_filledSlots_check|check constraint/i);
+    await expect(forzar(-1)).rejects.toThrow(/Match_filledSlots_check|check constraint/i);
+    await expect(forzar(4)).resolves.toMatchObject({ filledSlots: 4 });
+  });
+
+  it('CN-34 · el filtro de nivel deja solo los partidos de ese nivel', async () => {
+    const avanzado = await publishMatch(token, { ...northOf(1_200), title: 'Nivel avanzado', level: 'AVANZADO' });
+    const inicial = await publishMatch(token, { ...northOf(1_250), title: 'Nivel inicial', level: 'PRINCIPIANTE' });
+
+    const res = await nearby({ level: 'AVANZADO' });
+    expect(res.status).toBe(200);
+    const ids = res.body.matches.map((m: { id: string }) => m.id);
+    expect(ids).toContain(avanzado.id);
+    expect(ids).not.toContain(inicial.id);
+    expect(res.body.matches.every((m: { level: string }) => m.level === 'AVANZADO')).toBe(true);
+
+    expect((await nearby({ level: 'EXPERTO' })).status).toBe(422);
+  });
+
   it('CN-09b · filtro por horario: solo partidos dentro del rango', async () => {
     const tarde = await publishMatch(token, { ...northOf(200), startsAt: inHours(120), title: 'En 5 días' });
     const res = await nearby({ from: inHours(100), to: inHours(140) });

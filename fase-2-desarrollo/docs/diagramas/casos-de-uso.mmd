@@ -20,10 +20,11 @@ flowchart LR
         UC11["UC11 · Recibir notificación de cupo<br/>HU-10 · fuera del MVP"]
         UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
         UC13["UC13 · Registrar asistencia<br/>KAN-30"]
+        UC14["UC14 · Rechazar postulación<br/>KAN-32"]
     end
 
     AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
-    OR --> UC1 & UC3 & UC6 & UC9 & UC13
+    OR --> UC1 & UC3 & UC6 & UC9 & UC13 & UC14
     AD --> UC12
 
     UC7 -.-> TBK

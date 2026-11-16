@@ -1,4 +1,6 @@
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { useCallback } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
@@ -15,13 +17,19 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const cached = useAuth((s) => s.user);
   const signOut = useAuth((s) => s.signOut);
-  const { data } = useMe();
+  const { data, refetch, isRefetching } = useMe();
+  // El honor y los partidos jugados cambian mientras la pestaña sigue montada.
+  useFocusEffect(useCallback(() => void refetch(), [refetch]));
   const health = useQuery({ queryKey: ['health'], queryFn: getHealth, staleTime: 60_000 });
   const user = data ?? cached;
   if (!user) return null;
 
   return (
-    <ScrollView style={s.screen} contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.lg }]}>
+    <ScrollView
+      style={s.screen}
+      contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.lg }]}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} tintColor={colors.accent} />}
+    >
       <PlayerCard user={user} />
 
       <Button label="Cerrar sesión" variant="secondary" icon="logout" onPress={() => void signOut()} />

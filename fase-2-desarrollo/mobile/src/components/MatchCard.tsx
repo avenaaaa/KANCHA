@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
-import { levelLabel } from '@/theme/sports';
-import { formatCLP, formatDistance, formatWhen } from '@/lib/format';
+import { levelLabel, sportLabel } from '@/theme/sports';
+import { formatCLP, formatDistance, formatWhen, plural } from '@/lib/format';
 import type { MatchSummary } from '@/api/types';
 import { Icon } from '@/components/icons/Icon';
 import { SportBadge } from './SportBadge';
@@ -27,7 +27,7 @@ export function MatchCard({ match, onPress, selected = false, footer }: MatchCar
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${match.title}, ${formatWhen(match.startsAt)}, ${match.slotsLeft} cupos libres`}
+      accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}`}
       style={({ pressed }) => [s.card, selected && s.selected, pressed && { opacity: 0.85 }]}
     >
       <View style={s.top}>

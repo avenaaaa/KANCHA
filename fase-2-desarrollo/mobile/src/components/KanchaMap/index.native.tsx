@@ -109,7 +109,7 @@ export default function KanchaMap({
           onPress={() => onSelect?.(m.id)}
           tracksViewChanges={tracking}
           zIndex={m.id === selectedId ? 2 : 1}
-          accessibilityLabel={`Partido con ${m.slotsLeft} cupos libres`}
+          accessibilityLabel={`Partido con ${m.slotsLeft} ${m.slotsLeft === 1 ? 'cupo libre' : 'cupos libres'}`}
         >
           <NativePin match={m} selected={m.id === selectedId} />
         </Marker>

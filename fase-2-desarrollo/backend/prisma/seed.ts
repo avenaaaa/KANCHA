@@ -70,6 +70,11 @@ const PARTIDOS = [
 ];
 
 async function main() {
+  // El seed BORRA todo antes de sembrar. En producción solo corre si la demo lo pide.
+  if (process.env['NODE_ENV'] === 'production' && process.env['DEMO_MODE'] !== 'true') {
+    console.log('⏭️  Seed omitido: NODE_ENV=production sin DEMO_MODE=true. No se tocó ningún dato.');
+    return;
+  }
   console.log('🟠 Sembrando datos de demostración de Kancha…');
 
   await prisma.rating.deleteMany();

@@ -113,4 +113,72 @@ describe.skipIf(!hasDb)('Postulaciones · HU-05 (integración)', () => {
       myStatus: 'PENDING',
     });
   });
+
+  it('I-17 · rechazar deja la postulación REJECTED, no mueve cupos y el jugador puede volver a postular', async () => {
+    const partido = await publishMatch(organizador.token, { ...northOf(800), totalSlots: 4, filledSlots: 3 });
+    const jugador = await registerUser('Rechazado');
+    const join = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+    const id = join.body.participationId as string;
+
+    const res = await api().patch(`/api/v1/participations/${id}/reject`).set(auth(organizador.token));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ participationId: id, status: 'REJECTED' });
+
+    const detalle = await api().get(`/api/v1/matches/${partido.id}`).set(auth(jugador.token));
+    expect(detalle.body).toMatchObject({ filledSlots: 3, status: 'OPEN' });
+    expect(detalle.body.viewer.status).toBe('REJECTED');
+    // El organizador ya no la ve entre las postulaciones por revisar.
+    const delOrganizador = await api().get(`/api/v1/matches/${partido.id}`).set(auth(organizador.token));
+    expect(delOrganizador.body.participants).toEqual([]);
+
+    const otraVez = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+    expect(otraVez.status).toBe(201);
+    expect(otraVez.body).toMatchObject({ participationId: id, status: 'PENDING' });
+  });
+
+  it('CN-37 · no se rechaza una postulación ya aprobada ni dos veces la misma (409)', async () => {
+    const partido = await publishMatch(organizador.token, northOf(850));
+    const aprobado = await registerUser('Ya aprobado');
+    const pendiente = await registerUser('Pendiente');
+    const ja = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(aprobado.token));
+    const jp = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(pendiente.token));
+    await api().patch(`/api/v1/participations/${ja.body.participationId}/approve`).set(auth(organizador.token));
+
+    const yaAprobada = await api().patch(`/api/v1/participations/${ja.body.participationId}/reject`).set(auth(organizador.token));
+    expect(yaAprobada.status).toBe(409);
+    expect(yaAprobada.body.error.code).toBe('PARTICIPATION_NOT_PENDING');
+
+    await api().patch(`/api/v1/participations/${jp.body.participationId}/reject`).set(auth(organizador.token));
+    const dosVeces = await api().patch(`/api/v1/participations/${jp.body.participationId}/reject`).set(auth(organizador.token));
+    expect(dosVeces.status).toBe(409);
+  });
+
+  it('CN-38 · aprobar y rechazar la misma postulación a la vez: una gana y la otra recibe 409', async () => {
+    const partido = await publishMatch(organizador.token, { ...northOf(900), totalSlots: 4, filledSlots: 2 });
+    const jugador = await registerUser('Disputado');
+    const join = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+    const id = join.body.participationId as string;
+
+    const resultados = await Promise.all([
+      api().patch(`/api/v1/participations/${id}/approve`).set(auth(organizador.token)),
+      api().patch(`/api/v1/participations/${id}/reject`).set(auth(organizador.token)),
+    ]);
+    expect(resultados.map((r) => r.status).sort()).toEqual([200, 409]);
+
+    // Los cupos calzan con el estado final: 3 si ganó la aprobación, 2 si ganó el rechazo.
+    const final = await prisma.participation.findUniqueOrThrow({ where: { id } });
+    const cupos = (await prisma.match.findUniqueOrThrow({ where: { id: partido.id } })).filledSlots;
+    expect(cupos).toBe(final.status === 'APPROVED' ? 3 : 2);
+  });
+
+  it('S-17 · rechazar una postulación de un partido ajeno → 403', async () => {
+    const partido = await publishMatch(organizador.token, northOf(950));
+    const jugador = await registerUser('Jugador');
+    const intruso = await registerUser('Intruso');
+    const join = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+
+    const res = await api().patch(`/api/v1/participations/${join.body.participationId}/reject`).set(auth(intruso.token));
+    expect(res.status).toBe(403);
+    expect((await prisma.participation.findUniqueOrThrow({ where: { id: join.body.participationId } })).status).toBe('PENDING');
+  });
 });

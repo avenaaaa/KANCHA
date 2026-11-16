@@ -5,6 +5,7 @@ const webpay = vi.hoisted(() => ({
   formUrl: 'https://webpay3gint.transbank.cl/webpayserver/initTransaction',
   create: vi.fn(),
   commit: vi.fn(),
+  status: vi.fn(),
   refund: vi.fn(),
 }));
 vi.mock('../../src/repositories/webpay.repository.js', () => ({ webpayRepository: webpay }));
@@ -105,6 +106,26 @@ describe.skipIf(!hasDb)('Cancelación y retención · HU-09 (integración)', () 
     const res = await cancelar(join.body.participationId, jugador.token);
     expect(res.status).toBe(200);
     expect((await prisma.match.findUniqueOrThrow({ where: { id: partido.id } })).filledSlots).toBe(2);
+  });
+
+  it('CN-33 · DEF-13 · quien canceló un cupo pagado no vuelve a postular a ese partido y la retención queda intacta', async () => {
+    const { partido, jugador, participationId } = await cupo(6, true);
+    await cancelar(participationId, jugador.token);
+
+    const otraVez = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+    expect(otraVez.status).toBe(409);
+    expect(otraVez.body.error.code).toBe('CANCELLED_PAID_SLOT');
+    expect(await prisma.payment.findUniqueOrThrow({ where: { participationId } })).toMatchObject({
+      status: 'RETAINED',
+      retained: 3300,
+    });
+  });
+
+  it('CN-36 · la base rechaza retener más de lo cobrado (CHECK)', async () => {
+    const { participationId } = await cupo(48, true);
+    await expect(
+      prisma.payment.update({ where: { participationId }, data: { retained: 6601 } }),
+    ).rejects.toThrow(/Payment_retained_check|check constraint/i);
   });
 
   it('S-03 · nadie cancela el cupo de otro jugador (403)', async () => {

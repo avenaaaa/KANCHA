@@ -1,11 +1,13 @@
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { useMyMatches } from '@/api/hooks';
 import { errorMessage } from '@/api/client';
+import { playerStatus } from '@/lib/status';
 import type { MyMatch } from '@/api/types';
 import { MatchCard } from '@/components/MatchCard';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +18,8 @@ import { Icon } from '@/components/icons/Icon';
 export default function MyMatchesScreen() {
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyMatches();
+  // Las pestañas no se desmontan: al volver a esta se piden los datos de nuevo.
+  useFocusEffect(useCallback(() => void refetch(), [refetch]));
   const now = Date.now();
   const upcoming = (data?.matches ?? []).filter((m) => new Date(m.startsAt).getTime() > now - m.durationMin * 60_000);
   const organizing = upcoming.filter((m) => m.role === 'ORGANIZER');
@@ -55,7 +59,7 @@ export default function MyMatchesScreen() {
         </View>
       ) : (
         <>
-          <Section title="Califica a tus compañeros" matches={toRate} rate />
+          <Section title="Partidos jugados" matches={toRate} rate />
           <Section title="Organizas" matches={organizing} />
           <Section title="Juegas" matches={playing} />
         </>
@@ -73,18 +77,21 @@ function Section({ title, matches, rate = false }: { title: string; matches: MyM
         <MatchCard
           key={m.id}
           match={m}
-          onPress={() => router.push(rate ? `/calificar/${m.id}` : `/partido/${m.id}`)}
-          footer={rate ? <RateFooter /> : <Footer m={m} />}
+          // El organizador va al detalle: ahí registra la asistencia y también califica.
+          onPress={() => router.push(rate && m.role !== 'ORGANIZER' ? `/calificar/${m.id}` : `/partido/${m.id}`)}
+          footer={rate ? <RateFooter organizer={m.role === 'ORGANIZER'} /> : <Footer m={m} />}
         />
       ))}
     </View>
   );
 }
 
-function RateFooter() {
+function RateFooter({ organizer }: { organizer: boolean }) {
   return (
     <View style={s.footer}>
-      <Text style={[s.footerText, { color: colors.accent }]}>Tienes 48 horas para calificar</Text>
+      <Text style={[s.footerText, { color: colors.accent }]}>
+        {organizer ? 'Registra la asistencia y califica' : 'Califica a tus compañeros'}
+      </Text>
       <Icon name="forward" size={14} color={colors.accent} strokeWidth={2.4} />
     </View>
   );
@@ -102,21 +109,12 @@ function Footer({ m }: { m: MyMatch }) {
       </View>
     );
   }
-  const toPay = m.myStatus === 'APPROVED' && m.pricePerPlayer > 0;
-  const confirmed = (m.myStatus === 'APPROVED' && !toPay) || m.myStatus === 'PAID';
-  const color = confirmed ? colors.success : colors.warning;
-  const label =
-    m.myStatus === 'PAID'
-      ? 'Confirmado y pagado'
-      : toPay
-        ? 'Confirmado · falta pagar tu parte'
-        : confirmed
-          ? 'Confirmado'
-          : 'Esperando al organizador';
+  const st = playerStatus(m.myStatus, m.pricePerPlayer > 0);
+  const color = st.tone === 'success' ? colors.success : st.tone === 'warning' ? colors.warning : colors.textMuted;
   return (
     <View style={s.footer}>
-      <Icon name={confirmed ? 'check' : toPay ? 'wallet' : 'clock'} size={16} color={color} strokeWidth={2} />
-      <Text style={[s.footerText, { color }]}>{label}</Text>
+      <Icon name={st.icon} size={16} color={color} strokeWidth={2} />
+      <Text style={[s.footerText, { color }]}>{st.label}</Text>
     </View>
   );
 }

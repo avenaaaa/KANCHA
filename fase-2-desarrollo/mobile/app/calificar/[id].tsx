@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
-import { formatDay, formatTime } from '@/lib/format';
+import { formatDeadline } from '@/lib/format';
 import { usePendingRatings, useRateTeammate } from '@/api/hooks';
 import { errorMessage } from '@/api/client';
 import type { PendingRatings } from '@/api/types';
@@ -74,8 +74,7 @@ function Pending({ matchId, data }: { matchId: string; data: PendingRatings }) {
   return (
     <>
       <Text style={s.muted}>
-        Califica de 1 a 5 cómo llegó y cómo jugó cada uno. Tienes hasta el {formatDay(closes).toLowerCase()} a las{' '}
-        {formatTime(closes)}.
+        Califica de 1 a 5 cómo llegó y cómo jugó cada uno. Tienes hasta {formatDeadline(closes)}.
       </Text>
       {data.pending.map((p) => (
         <TeammateCard key={p.userId} matchId={matchId} teammate={p} />

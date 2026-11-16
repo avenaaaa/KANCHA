@@ -1,17 +1,18 @@
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
-import { formatCLP, formatTime, formatDay, slotsCta } from '@/lib/format';
+import { formatCLP, formatTime, formatDay, plural, slotsCta } from '@/lib/format';
 import {
   useApproveParticipation,
   useCancelParticipation,
   useJoinMatch,
   useMatch,
   useRecordAttendance,
+  useRejectParticipation,
   useStartPayment,
 } from '@/api/hooks';
 import { confirmAction } from '@/lib/confirm';
@@ -40,16 +41,29 @@ function MatchDetailView() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { data: m, isLoading, isError, error, refetch } = useMatch(id);
+  const { data: m, isLoading, isError, error, refetch, isRefetching } = useMatch(id);
   const join = useJoinMatch(id);
   const approve = useApproveParticipation(id);
+  const reject = useRejectParticipation(id);
   const pay = useStartPayment(id);
   const cancel = useCancelParticipation(id);
   const attendance = useRecordAttendance(id);
 
+  // "No vino" baja el honor del jugador y no se puede corregir después: se confirma antes.
+  async function onNoShow(p: Participant) {
+    const ok = await confirmAction(
+      `¿${p.user.name} no se presentó?`,
+      'Su asistencia bajará y ya no podrá calificar ni ser calificado en este partido. No se puede deshacer.',
+      'No se presentó',
+    );
+    if (ok) attendance.mutate({ participationId: p.participationId, attended: false });
+  }
+
   async function onCancel() {
     if (!m?.viewer.participationId) return;
-    if (await confirmAction('Cancelar mi cupo', cancelMessage(m), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
+    // El reembolso depende de la hora: se vuelve a pedir para no prometer el 100 % con un dato viejo.
+    const fresh = (await refetch()).data ?? m;
+    if (await confirmAction('Cancelar mi cupo', cancelMessage(fresh), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
   }
 
   if (isLoading || !m) {
@@ -85,7 +99,10 @@ function MatchDetailView() {
   return (
     <View style={[s.screen, { paddingTop: insets.top }]}>
       <ScreenHeader />
-      <ScrollView contentContainerStyle={[s.body, { paddingBottom: 220 + insets.bottom }]}>
+      <ScrollView
+        contentContainerStyle={[s.body, { paddingBottom: 220 + insets.bottom }]}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} tintColor={colors.accent} />}
+      >
         <View style={s.hero}>
           <SportBadge sport={m.sport} size={56} />
           <View style={{ flex: 1, gap: 6 }}>
@@ -132,16 +149,26 @@ function MatchDetailView() {
             </Text>
             {pending.map((p) => (
               <PersonRow key={p.participationId} p={p}>
-                <Button
-                  label="Aprobar"
-                  onPress={() => approve.mutate(p.participationId)}
-                  loading={approve.isPending && approve.variables === p.participationId}
-                  disabled={m.slotsLeft === 0}
-                  style={s.approveBtn}
-                />
+                <View style={s.attendance}>
+                  <Button
+                    label="Aprobar"
+                    onPress={() => approve.mutate(p.participationId)}
+                    loading={approve.isPending && approve.variables === p.participationId}
+                    disabled={m.slotsLeft === 0}
+                    style={s.approveBtn}
+                  />
+                  <Button
+                    label="Rechazar"
+                    variant="secondary"
+                    onPress={() => reject.mutate(p.participationId)}
+                    loading={reject.isPending && reject.variables === p.participationId}
+                    style={s.approveBtn}
+                  />
+                </View>
               </PersonRow>
             ))}
             {approve.isError && <Text style={s.error}>{errorMessage(approve.error)}</Text>}
+            {reject.isError && <Text style={s.error}>{errorMessage(reject.error)}</Text>}
           </View>
         )}
 
@@ -167,18 +194,26 @@ function MatchDetailView() {
                   <Button
                     label="No vino"
                     variant="secondary"
-                    onPress={() => attendance.mutate({ participationId: p.participationId, attended: false })}
+                    onPress={() => void onNoShow(p)}
                     loading={attendance.isPending && attendance.variables?.participationId === p.participationId && !attendance.variables.attended}
                     style={s.approveBtn}
                   />
+                </View>
+              ) : closeAttendance && p.attended ? (
+                <View style={s.attended}>
+                  <Icon name="check" size={16} color={colors.success} strokeWidth={2} />
+                  <Text style={[s.caption, { color: colors.success }]}>Asistió</Text>
                 </View>
               ) : undefined}
             </PersonRow>
           ))}
           {attendance.isError && <Text style={s.error}>{errorMessage(attendance.error)}</Text>}
-          <Text style={s.caption}>
-            Los otros {Math.max(0, m.filledSlots - confirmed.length)} cupos ocupados son jugadores que el organizador ya tenía.
-          </Text>
+          {m.filledSlots > confirmed.length && (
+            <Text style={s.caption}>
+              {plural(m.filledSlots - confirmed.length, 'cupo ocupado por un jugador', 'cupos ocupados por jugadores')} que el
+              organizador ya tenía.
+            </Text>
+          )}
         </View>
       </ScrollView>
 
@@ -302,19 +337,19 @@ function JoinCta({
     }
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="success" text="Partido jugado. Tienes 48 horas para calificar a tus compañeros." />
+        <StatusLine tone="success" text="Partido jugado. Puedes calificar a tus compañeros hasta 48 horas después del término." />
         <Button label="Calificar a mis compañeros" onPress={() => router.push(`/calificar/${m.id}`)} forward />
       </View>
     );
   }
 
   if (m.viewer.isOrganizer) {
-    return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;
+    return <StatusLine tone="muted" text="Organizas este partido. Aprueba o rechaza las postulaciones desde aquí." />;
   }
   if (status === 'PENDING') {
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="warning" text="Postulación enviada. Te confirmamos cuando el organizador la apruebe." />
+        <StatusLine tone="warning" text="Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe." />
         {errorText}
         {cancelButton}
       </View>
@@ -356,13 +391,17 @@ function JoinCta({
       </View>
     );
   }
+  // Quien canceló un cupo ya pagado no vuelve a postular a este partido (la API responde 409).
+  if (status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED')) {
+    return <StatusLine tone="muted" text={`${cancelledText(payment)} Ya no puedes volver a postular a este partido.`} />;
+  }
   return (
     <View style={{ gap: spacing.sm }}>
+      {status === 'REJECTED' ? (
+        <StatusLine tone="muted" text="El organizador no aceptó tu postulación. Si aún hay cupo, puedes postular de nuevo." />
+      ) : null}
       {status === 'CANCELLED' && payment?.status === 'FAILED' ? (
         <StatusLine tone="muted" text="Tu pago no se completó y el cupo quedó libre. Si aún hay lugar, puedes postular de nuevo." />
-      ) : null}
-      {status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED') ? (
-        <StatusLine tone="muted" text={cancelledText(payment)} />
       ) : null}
       {errorText}
       <Button
@@ -411,7 +450,8 @@ const s = StyleSheet.create({
   sectionLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.textMuted },
   personRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md - 4, minHeight: 48 },
   personName: { fontFamily: fonts.medium, fontSize: 15, color: colors.text, flexShrink: 1 },
-  approveBtn: { minHeight: 40, paddingHorizontal: spacing.md },
+  approveBtn: { minHeight: 44, paddingHorizontal: spacing.md },
+  attended: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   attendance: { flexDirection: 'row', gap: spacing.sm },
   error: { ...type.caption, fontSize: 13, color: colors.error },
   ctaBar: {

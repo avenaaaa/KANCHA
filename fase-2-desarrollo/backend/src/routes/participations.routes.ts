@@ -7,7 +7,7 @@ import { attendanceSchema } from '../schemas/rating.schema.js';
 
 /**
  * HU-05 (KAN-11): el organizador aprueba una postulación. HU-09 (KAN-15): el jugador cancela su cupo.
- * KAN-30: el organizador cierra la asistencia al terminar el partido.
+ * KAN-30: el organizador cierra la asistencia al terminar el partido. KAN-32: rechaza una postulación.
  */
 export const participationsRouter = Router();
 
@@ -16,6 +16,13 @@ participationsRouter.patch(
   authenticate,
   validate(idParamSchema, 'params'),
   participationsController.approve,
+);
+
+participationsRouter.patch(
+  '/participations/:id/reject',
+  authenticate,
+  validate(idParamSchema, 'params'),
+  participationsController.reject,
 );
 
 participationsRouter.delete(

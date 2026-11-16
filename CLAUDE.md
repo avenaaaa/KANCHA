@@ -120,7 +120,8 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 **Total del MVP (HU-01 a HU-09): 47 puntos, todos terminados al 8 de noviembre de 2026 (Sprint 7).**
 La columna Sprint refleja la replanificación del 8 de noviembre de 2026, vigente en Jira. Además,
 la tarea **KAN-30** implementó la regla "Partidos jugados" (registro de asistencia), que ninguna
-historia cubría.
+historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre del 14 de noviembre
+(`fase-2-desarrollo/docs/05-auditoria-cierre.md`) y **KAN-32** agregó el rechazo de postulaciones.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -129,8 +130,10 @@ Honor inicial     Un usuario recién registrado tiene honorScore = NULL, nunca 0
                   La UI muestra "Sin calificaciones aún". Un novato no es un mal jugador.
                   (HU-01 + HU-02)
 
-Cálculo de honor  Promedio ponderado de las últimas 20 calificaciones: (puntualidad + conducta) / 2,
-                  redondeado a 1 decimal. Se recalcula al guardar cada reseña. (HU-07)
+Cálculo de honor  Promedio de tres señales en escala 0–10, redondeado a 1 decimal: asistencia
+                  (asistió / asistió + no se presentó), puntualidad y juego limpio (estas dos, de
+                  las últimas 20 reseñas recibidas). Solo cuentan las señales que existen. Se
+                  recalcula al guardar cada reseña y al registrar cada asistencia. (HU-07)
 
 Ventana de reseña Tras finalizar un partido hay 48 h para calificar. Cumplido el plazo, el partido
                   se archiva sin calificación y ya no admite reseñas. (HU-06)
@@ -146,6 +149,13 @@ Retención         Cancela a menos de 12 h del inicio → se retiene el 50%, el 
 
 Sobreventa        Aprobar una participación incrementa filledSlots dentro de una transacción con
                   bloqueo de fila. Dos jugadores nunca pueden tomar el mismo último cupo. (HU-05)
+
+Rechazo           El organizador puede rechazar una postulación pendiente: queda REJECTED, no
+                  ocupa cupo y el jugador puede volver a postular. (KAN-32)
+
+Volver a postular Quien perdió el cupo sin pagar (pago fallido, cancelación o rechazo) puede
+                  postular de nuevo. Quien canceló un cupo ya pagado no vuelve a ese partido:
+                  su pago conserva el reembolso y la retención. (HU-09)
 
 Un solo puntaje   honorScore en escala 0–10 es el ÚNICO número de reputación. El mockup de Fase 1
                   mostraba también un "rating 4.8" en escala 1–5: se elimina por redundante.
@@ -174,7 +184,7 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
-| 8 | 10–23 nov 2026 | Despliegue en Render + Supabase · pruebas de rendimiento · límite de login · prueba en iPhone y Android | Fase 3 |
+| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · pendiente: rediseño visual (KAN-33), despliegue en Render + Supabase (KAN-34), pruebas de rendimiento (KAN-35), releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
 | 9 | 24 nov–07 dic 2026 | Cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
@@ -282,4 +292,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 8 de noviembre de 2026 (Sprint 7)*
+*Última actualización: 15 de noviembre de 2026 (Sprint 8)*

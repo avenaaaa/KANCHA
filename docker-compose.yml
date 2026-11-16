@@ -9,8 +9,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-kancha}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kancha}
       POSTGRES_DB: ${POSTGRES_DB:-kancha}
+    # Solo desde este equipo: la base usa la clave de ejemplo y no debe verse en la red.
+    # Van los dos loopback porque en Windows "localhost" se resuelve primero por IPv6:
+    # solo con 127.0.0.1, cada conexión nueva perdía unos 2 s antes de caer a IPv4.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+      - "[::1]:5432:5432"
     volumes:
       - kancha-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -26,6 +30,9 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      # Demo local: recarga los datos de demostración en cada arranque y acepta la clave JWT de ejemplo.
+      # En un despliegue real no se define, y la API se niega a arrancar con esa clave.
+      DEMO_MODE: "true"
       DATABASE_URL: postgresql://${POSTGRES_USER:-kancha}:${POSTGRES_PASSWORD:-kancha}@db:5432/${POSTGRES_DB:-kancha}
       JWT_SECRET: ${JWT_SECRET:-cambiar-esta-clave-en-produccion-kancha}
       PORT: 3000
@@ -42,7 +49,7 @@ services:
     # la del CI y la de la nube tienen exactamente el mismo esquema.
     command: >
       sh -c "npx prisma migrate deploy &&
-             (npx tsx prisma/seed.ts || echo 'Seed omitido: la base ya tiene datos') &&
+             (npx tsx prisma/seed.ts || echo 'El seed de demostracion fallo; la API arranca igual') &&
              node dist/server.js"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/v1/health"]
