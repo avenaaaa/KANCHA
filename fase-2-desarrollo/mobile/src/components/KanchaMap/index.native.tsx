@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import MapView, { Circle, Marker, type Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, type Region } from 'react-native-maps';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
+import { COMUNA } from '@/lib/places';
 import type { KanchaMapProps, MapMatch } from './types';
+
+const COMUNA_COORDS = COMUNA.map(([longitude, latitude]) => ({ latitude, longitude }));
 
 export * from './types';
 
@@ -51,7 +54,6 @@ export default function KanchaMap({
   matches = [],
   selectedId = null,
   onSelect,
-  radiusM,
   userLocation = null,
   picked = null,
   onPick,
@@ -72,8 +74,6 @@ export default function KanchaMap({
     ref.current?.animateToRegion(regionFor(center.lat, center.lng, zoom), 500);
   }, [center.lat, center.lng, zoom]);
 
-  const ring = userLocation ?? center;
-
   return (
     <MapView
       ref={ref}
@@ -92,15 +92,8 @@ export default function KanchaMap({
         else onSelect?.(null);
       }}
     >
-      {radiusM ? (
-        <Circle
-          center={{ latitude: ring.lat, longitude: ring.lng }}
-          radius={radiusM}
-          strokeColor={colors.hairline}
-          strokeWidth={1.5}
-          fillColor={colors.radiusFill}
-        />
-      ) : null}
+      {/* El piloto es La Florida: se dibuja su límite real, no un círculo. */}
+      <Polygon coordinates={COMUNA_COORDS} strokeColor={colors.accent} strokeWidth={2} fillColor={colors.radiusFill} />
 
       {matches.map((m) => (
         <Marker

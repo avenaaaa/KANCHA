@@ -13,8 +13,11 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// Centro aproximado de La Florida
-const CENTRO = { lat: -33.5228, lng: -70.5983 };
+// Punto interior de La Florida. El anterior (Vicuña Mackenna con Vespucio) está pegado al borde
+// poniente de la comuna: la mitad de los partidos de la demo caía en La Granja o San Joaquín.
+const CENTRO = { lat: -33.5425, lng: -70.585 };
+/** Los desplazamientos se achican para que los 15 partidos queden dentro del límite real de la comuna. */
+const ESCALA = 0.7;
 
 /** Desplaza un punto en kilómetros. Suficiente para datos de demostración. */
 function offset(lat: number, lng: number, dxKm: number, dyKm: number) {
@@ -104,7 +107,7 @@ async function main() {
   const partidos = [];
   for (const [i, p] of PARTIDOS.entries()) {
     const organizer = usuarios[i % usuarios.length]!;
-    const { lat, lng } = offset(CENTRO.lat, CENTRO.lng, p.dx, p.dy);
+    const { lat, lng } = offset(CENTRO.lat, CENTRO.lng, p.dx * ESCALA, p.dy * ESCALA);
 
     const [row] = await prisma.$queryRaw<{ id: string }[]>`
       INSERT INTO "Match"

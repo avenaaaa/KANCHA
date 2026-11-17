@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import maplibregl, { type GeoJSONSource, type Map as MlMap, type Marker } from 'maplibre-gl';
+import maplibregl, { type Map as MlMap, type Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/typography';
 import { MAP_STYLE_URL } from '@/theme/geo';
 import { iconSvg } from '@/components/icons/paths';
-import { circleCoords, type KanchaMapProps, type LatLng, type MapMatch } from './types';
+import { COMUNA } from '@/lib/places';
+import type { KanchaMapProps, MapMatch } from './types';
 
 export * from './types';
 
@@ -79,7 +80,6 @@ export default function KanchaMap({
   matches = [],
   selectedId = null,
   onSelect,
-  radiusM,
   userLocation = null,
   picked = null,
   onPick,
@@ -93,8 +93,6 @@ export default function KanchaMap({
   const pickMarker = useRef<Marker | null>(null);
   const handlers = useRef({ onSelect, onPick });
   handlers.current = { onSelect, onPick };
-  const radiusRef = useRef<{ center: LatLng; radiusM?: number }>({ center, radiusM });
-  radiusRef.current = { center: userLocation ?? center, radiusM };
 
   // Crear el mapa una sola vez.
   useEffect(() => {
@@ -120,18 +118,17 @@ export default function KanchaMap({
     });
 
     map.on('load', () => {
-      map.addSource('radius', { type: 'geojson', data: radiusGeoJson(radiusRef.current) });
-      map.addLayer({
-        id: 'radius-fill',
-        type: 'fill',
-        source: 'radius',
-        paint: { 'fill-color': colors.radiusFill },
+      // El piloto es La Florida: se dibuja su límite real, no un círculo.
+      map.addSource('comuna', {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [COMUNA] } },
       });
+      map.addLayer({ id: 'comuna-fill', type: 'fill', source: 'comuna', paint: { 'fill-color': colors.radiusFill } });
       map.addLayer({
-        id: 'radius-line',
+        id: 'comuna-line',
         type: 'line',
-        source: 'radius',
-        paint: { 'line-color': colors.text, 'line-opacity': 0.28, 'line-width': 1.5, 'line-dasharray': [2, 2] },
+        source: 'comuna',
+        paint: { 'line-color': colors.accent, 'line-opacity': 0.85, 'line-width': 2 },
       });
     });
 
@@ -154,12 +151,6 @@ export default function KanchaMap({
     if (reducedMotion()) map.jumpTo(opts);
     else map.easeTo({ ...opts, duration: 600 });
   }, [center.lat, center.lng, zoom, bottomInset]);
-
-  // Radio de búsqueda.
-  useEffect(() => {
-    const src = mapRef.current?.getSource('radius') as GeoJSONSource | undefined;
-    src?.setData(radiusGeoJson({ center: userLocation ?? center, radiusM }));
-  }, [radiusM, userLocation?.lat, userLocation?.lng, center.lat, center.lng]);
 
   // Sincronizar pines con los partidos.
   useEffect(() => {
@@ -246,15 +237,6 @@ export default function KanchaMap({
       <div ref={containerRef} className="kancha-map" style={{ position: 'absolute', inset: 0 }} />
     </View>
   );
-}
-
-function radiusGeoJson({ center, radiusM }: { center: LatLng; radiusM?: number }): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: radiusM
-      ? [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [circleCoords(center, radiusM)] } }]
-      : [],
-  };
 }
 
 const s = StyleSheet.create({

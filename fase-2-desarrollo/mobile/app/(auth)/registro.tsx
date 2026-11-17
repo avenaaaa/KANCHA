@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { SportPicker } from '@/components/SportPicker';
 import { AuthHero } from '@/components/AuthHero';
+import { SPORT_PLAYER } from '@/theme/sportImages';
 import { register } from '@/api/hooks';
 import { ApiRequestError, errorMessage } from '@/api/client';
 import { useAuth } from '@/store/authStore';
@@ -70,6 +71,7 @@ export default function RegisterScreen() {
       >
         <View style={wide ? s.heroWide : undefined}>
           <AuthHero
+            photo={SPORT_PLAYER.BASQUETBOL}
             lines={['Ponte', 'la', 'camiseta.']}
             size={wide ? 128 : 64}
             caption="Tu perfil parte sin calificaciones: el honor se gana jugando."

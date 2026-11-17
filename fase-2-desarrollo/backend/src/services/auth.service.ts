@@ -4,7 +4,7 @@ import type { User } from '@prisma/client';
 import { env } from '../config/env.js';
 import { userRepository } from '../repositories/user.repository.js';
 import type { LoginInput, RegisterInput } from '../schemas/auth.schema.js';
-import { AppError, conflict, notFound } from '../utils/errors.js';
+import { AppError, conflict, notFound, unauthorized } from '../utils/errors.js';
 import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 
 /**
@@ -88,6 +88,8 @@ export async function login(input: LoginInput): Promise<AuthResult> {
 
 export async function getProfile(userId: string, { isSelf = false } = {}): Promise<PublicUser> {
   const user = await userRepository.findById(userId);
-  if (!user) throw notFound('USER_NOT_FOUND', 'El jugador no existe');
+  // Si quien pregunta por sí mismo ya no existe (la demo regeneró los datos), su sesión dejó de valer:
+  // 401, para que la app cierre la sesión en vez de seguir con un usuario fantasma.
+  if (!user) throw isSelf ? unauthorized('Tu sesión ya no es válida. Vuelve a entrar.') : notFound('USER_NOT_FOUND', 'El jugador no existe');
   return toPublicUser(user, { includeEmail: isSelf });
 }

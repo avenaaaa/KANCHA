@@ -9,7 +9,10 @@
 > atenerse a este documento, conservando solo la paleta de la sección 2. Donde el código y este
 > documento difieran, manda el código: esquinas de 20 px en las cartas, Anton en títulos de pantalla y
 > en los números clave (hora, honor, partidos jugados), el isotipo junto al nombre, el deporte en una
-> baldosa naranja y el "Falta 1 »" visible en cada carta de partido. Las referencias fueron la
+> baldosa naranja y el "Falta 1 »" visible en cada carta de partido. Después se sumaron fotografía en blanco
+> y negro por deporte (portada del partido, carta de jugador y pantallas de entrada), la carta de
+> jugador como carta coleccionable con el honor sobre naranja y transiciones entre pantallas. Las
+> referencias fueron la
 > presentación de Fase 1 y un tablero de identidades deportivas en negro y naranja.
 
 ## 1. Identidad de Marca

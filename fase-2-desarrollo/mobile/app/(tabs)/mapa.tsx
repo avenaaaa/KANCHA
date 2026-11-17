@@ -117,6 +117,7 @@ export default function MapScreen() {
       onPress={toggleUrgent}
       accessibilityRole="button"
       accessibilityState={{ selected: urgent }}
+      aria-selected={urgent}
       accessibilityLabel="Falta uno"
       accessibilityHint={`Muestra solo los partidos a los que les falta un jugador y empiezan en ${URGENT_HOURS} horas o menos`}
       style={({ pressed }) => [s.urgentBtn, urgent && s.urgentBtnOn, pressed && { opacity: 0.85 }]}
@@ -198,7 +199,6 @@ export default function MapScreen() {
       matches={mapMatches}
       selectedId={selectedId}
       onSelect={selectFromMap}
-      radiusM={radiusM}
       userLocation={userLocation}
       bottomInset={wide ? 0 : MOBILE_BOTTOM - MOBILE_TOP}
     />
@@ -245,9 +245,9 @@ export default function MapScreen() {
           </View>
           <ScrollView ref={listRef} contentContainerStyle={s.panelList}>
             {status}
-            {matches.map((m) => (
+            {matches.map((m, i) => (
               <View key={m.id} onLayout={(e) => rowY.current.set(m.id, e.nativeEvent.layout.y)}>
-                <MatchCard match={m} selected={m.id === selectedId} onPress={() => open(m)} />
+                <MatchCard match={m} index={i} selected={m.id === selectedId} onPress={() => open(m)} />
               </View>
             ))}
           </ScrollView>
@@ -306,9 +306,9 @@ export default function MapScreen() {
             contentContainerStyle={s.carousel}
             onMomentumScrollEnd={onCarouselSettle}
             getItemLayout={(_, index) => ({ length: CARD_WIDTH + spacing.sm, offset: (CARD_WIDTH + spacing.sm) * index, index })}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <View style={{ width: CARD_WIDTH }}>
-                <MatchCard match={item} selected={item.id === selectedId} onPress={() => open(item)} />
+                <MatchCard match={item} index={index} selected={item.id === selectedId} onPress={() => open(item)} />
               </View>
             )}
           />

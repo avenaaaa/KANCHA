@@ -1,4 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { formatAddress, insideComuna, reverseGeocode, VENUES } from '@/lib/places';
+import { describe, expect, it, jest } from '@jest/globals';
+import { LA_FLORIDA } from '@/theme/geo';
 import { matchPollInterval, playerStatus } from '@/lib/status';
 import { useFilters } from '@/store/filterStore';
 import type { MatchDetail, RatingWindow } from '@/api/types';
@@ -72,5 +74,38 @@ describe('filtro "Falta uno" del mapa (KAN-37)', () => {
     expect(f().urgent).toBe(true);
     f().toggleUrgent();
     expect(f().urgent).toBe(false);
+  });
+});
+
+
+describe('La Florida: límite real y direcciones (KAN-38)', () => {
+  it('M-28 · el centro de la comuna está dentro y Ñuñoa o el centro de Santiago, fuera', () => {
+    expect(insideComuna(LA_FLORIDA)).toBe(true);
+    expect(insideComuna({ lat: -33.5228, lng: -70.5983 })).toBe(true);
+    expect(insideComuna({ lat: -33.4569, lng: -70.5975 })).toBe(false);
+    expect(insideComuna({ lat: -33.4489, lng: -70.6693 })).toBe(false);
+  });
+
+  it('M-29 · todas las canchas ofrecidas existen dentro de la comuna', () => {
+    expect(VENUES.length).toBeGreaterThan(10);
+    expect(VENUES.filter((v) => !insideComuna(v))).toEqual([]);
+  });
+
+  it('M-30 · la dirección se arma con calle y número; sin calle no se propone nada', () => {
+    expect(formatAddress({ road: 'Avenida Vicuña Mackenna', house_number: '7110' })).toBe('Avenida Vicuña Mackenna 7110, La Florida');
+    expect(formatAddress({ road: 'Walker Martínez' })).toBe('Walker Martínez, La Florida');
+    expect(formatAddress({ suburb: 'La Florida' })).toBeNull();
+  });
+
+  it('M-31 · la dirección sale del servicio; si el servicio falla o responde mal, no se inventa nada', async () => {
+    const punto = { lat: -33.5228, lng: -70.5983 };
+    const red = jest.spyOn(globalThis, 'fetch');
+    red.mockResolvedValueOnce({ ok: true, json: async () => ({ address: { road: 'Enrique Olivares', house_number: '857' } }) } as Response);
+    expect(await reverseGeocode(punto)).toBe('Enrique Olivares 857, La Florida');
+    red.mockResolvedValueOnce({ ok: false } as Response);
+    expect(await reverseGeocode(punto)).toBeNull();
+    red.mockRejectedValueOnce(new Error('sin conexión'));
+    expect(await reverseGeocode(punto)).toBeNull();
+    red.mockRestore();
   });
 });

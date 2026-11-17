@@ -1,8 +1,8 @@
-/** Piloto del MVP: La Florida, Región Metropolitana (CLAUDE.md §1). */
-export const LA_FLORIDA = { lat: -33.5228, lng: -70.5983 } as const;
-
-/** Más allá de esta distancia la app asume que el usuario está fuera del piloto (la comuna mide unos 70 km²). */
-export const PILOT_RADIUS_M = 6_000;
+/**
+ * Piloto del MVP: La Florida, Región Metropolitana (CLAUDE.md §1). Es un punto interior de la
+ * comuna (el mismo del seed), no su esquina poniente: desde aquí se busca cuando no hay GPS.
+ */
+export const LA_FLORIDA = { lat: -33.5425, lng: -70.585 } as const;
 
 /** Una posición menos precisa que esto viene de la red o la IP (un PC sin GPS) y no sirve para "cerca de ti". */
 export const MAX_ACCURACY_M = 1_000;
