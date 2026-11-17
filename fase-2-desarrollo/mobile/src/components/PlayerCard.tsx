@@ -7,6 +7,7 @@ import type { User } from '@/api/types';
 import { Avatar } from '@/components/Avatar';
 import { HonorBadge } from '@/components/HonorBadge';
 import { Icon } from '@/components/icons/Icon';
+import { FadeIn } from '@/components/ui/FadeIn';
 
 /**
  * Carta de jugador (HU-02): honor, partidos jugados y las tres métricas del
@@ -14,7 +15,7 @@ import { Icon } from '@/components/icons/Icon';
  */
 export function PlayerCard({ user }: { user: User }) {
   return (
-    <View style={s.card}>
+    <FadeIn style={s.card}>
       <View style={s.head}>
         <Avatar name={user.name} size={72} />
         <View style={{ flex: 1, gap: 6 }}>
@@ -49,7 +50,7 @@ export function PlayerCard({ user }: { user: User }) {
         <Metric label="Puntualidad" value={user.punctualityRate} />
         <Metric label="Juego limpio" value={user.fairPlayRate} />
       </View>
-    </View>
+    </FadeIn>
   );
 }
 

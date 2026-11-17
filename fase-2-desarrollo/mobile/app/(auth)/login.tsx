@@ -91,6 +91,7 @@ export default function LoginScreen() {
       >
         <View style={wide ? s.heroWide : undefined}>
           <AuthHero
+            photo={require('../../assets/img/hero-futbol.png')}
             lines={['Nos', 'falta', 'uno.']}
             size={wide ? 150 : 88}
             caption="Encuentra el partido al que le falta alguien, cerca de ti. Fútbol, pádel o básquet."

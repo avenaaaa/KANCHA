@@ -62,6 +62,7 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte, horario y nivel |
 | Falta uno | Con el botón "Falta uno" del mapa, ver solo los partidos urgentes: les falta un jugador y empiezan en 2 horas o menos |
+| Comuna y canchas | El mapa dibuja el límite real de La Florida. Al publicar se elige una cancha que existe en la comuna (datos de OpenStreetMap) o se marca un punto, y la dirección se completa sola |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe o rechace, y quedar confirmado sin sobreventa del último cupo |
 | HU-08 · Pagar | Pagar la parte del arriendo más un 10 % de servicio con Webpay Plus (Transbank, ambiente de Integración) y ver el comprobante |
 | HU-09 · Cancelar | Cancelar el cupo: con 12 h o más se devuelve el 100 %; con menos, se retiene el 50 % |

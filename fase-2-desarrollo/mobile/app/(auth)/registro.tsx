@@ -70,6 +70,7 @@ export default function RegisterScreen() {
       >
         <View style={wide ? s.heroWide : undefined}>
           <AuthHero
+            photo={require('../../assets/img/hero-basquet.png')}
             lines={['Ponte', 'la', 'camiseta.']}
             size={wide ? 128 : 64}
             caption="Tu perfil parte sin calificaciones: el honor se gana jugando."

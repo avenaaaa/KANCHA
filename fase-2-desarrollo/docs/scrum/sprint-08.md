@@ -35,6 +35,7 @@ se termina la documentación y después se hace el rediseño visual.
 | [KAN-31](https://lukasguerrerokancha.atlassian.net/browse/KAN-31) | Tarea | Correcciones de la auditoría de cierre | Listo · PR #15 integrado a `develop` el 16-nov |
 | [KAN-32](https://lukasguerrerokancha.atlassian.net/browse/KAN-32) | Tarea | El organizador puede rechazar una postulación | Listo · PR #15 integrado a `develop` el 16-nov |
 | [KAN-37](https://lukasguerrerokancha.atlassian.net/browse/KAN-37) | Tarea | Botón "Falta uno": filtrar en el mapa los partidos urgentes | En revisión · PR #16 a `develop` · agregada el 16-nov |
+| [KAN-38](https://lukasguerrerokancha.atlassian.net/browse/KAN-38) | Tarea | Límite real de La Florida, canchas existentes al publicar y dirección automática | En revisión · PR #18 a `develop` · agregada el 16-nov · evidencia `evidencias/sprint-08/10` a `12` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | En revisión · PR #17 a `develop` · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
 | [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | Por hacer |

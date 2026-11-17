@@ -9,6 +9,7 @@ import { Icon } from '@/components/icons/Icon';
 import { SportBadge } from './SportBadge';
 import { SlotBar } from './SlotBar';
 import { HonorBadge } from './HonorBadge';
+import { FadeIn } from './ui/FadeIn';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -26,11 +27,12 @@ export function MatchCard({ match, onPress, selected = false, footer }: MatchCar
   const when = formatWhen(match.startsAt);
   const cut = when.lastIndexOf(' ');
   return (
+    <FadeIn>
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}`}
-      style={({ pressed }) => [s.card, selected && s.selected, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [s.card, selected && s.selected, pressed && s.pressed]}
     >
       <View style={s.top}>
         <SportBadge sport={match.sport} />
@@ -82,6 +84,7 @@ export function MatchCard({ match, onPress, selected = false, footer }: MatchCar
       </View>
       {footer}
     </Pressable>
+    </FadeIn>
   );
 }
 
@@ -95,6 +98,7 @@ const s = StyleSheet.create({
     borderColor: colors.surface,
   },
   selected: { borderColor: colors.accent },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   top: { flexDirection: 'row', gap: spacing.md - 4, alignItems: 'center' },
   titleBlock: { flex: 1, gap: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },

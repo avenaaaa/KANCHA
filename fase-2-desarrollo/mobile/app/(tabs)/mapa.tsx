@@ -198,7 +198,6 @@ export default function MapScreen() {
       matches={mapMatches}
       selectedId={selectedId}
       onSelect={selectFromMap}
-      radiusM={radiusM}
       userLocation={userLocation}
       bottomInset={wide ? 0 : MOBILE_BOTTOM - MOBILE_TOP}
     />
