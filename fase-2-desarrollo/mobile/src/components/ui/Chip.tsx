@@ -41,7 +41,7 @@ export function Chip({ label, active, onPress, icon, floating = false, disabled 
 
 const s = StyleSheet.create({
   chip: {
-    height: 36,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

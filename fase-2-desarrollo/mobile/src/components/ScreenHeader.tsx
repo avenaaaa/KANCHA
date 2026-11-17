@@ -39,5 +39,5 @@ const s = StyleSheet.create({
     gap: spacing.sm,
   },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  title: { ...type.h3, color: colors.text, flex: 1, textAlign: 'center' },
+  title: { ...type.display, fontSize: 20, lineHeight: 26, color: colors.text, flex: 1 },
 });

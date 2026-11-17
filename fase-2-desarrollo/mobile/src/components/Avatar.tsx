@@ -5,7 +5,7 @@ import { initials } from '@/lib/format';
 
 export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   return (
-    <View style={[s.circle, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View style={[s.circle, { width: size, height: size, borderRadius: size * 0.3 }]}>
       <Text style={[s.text, { fontSize: size * 0.38 }]}>{initials(name)}</Text>
     </View>
   );
@@ -19,5 +19,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontFamily: fonts.bold, color: colors.text },
+  text: { fontFamily: fonts.display, color: colors.accent, letterSpacing: 0.5 },
 });
