@@ -73,6 +73,9 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 
 La notificación de cupo disponible (HU-10) quedó fuera del alcance del MVP el 8 de noviembre de 2026.
 
+Los datos geográficos (límite de la comuna, canchas y direcciones) son de © colaboradores de
+[OpenStreetMap](https://www.openstreetmap.org/copyright), bajo licencia ODbL.
+
 ## Estructura del repositorio
 
 Una carpeta por cada fase del Portafolio de Título.

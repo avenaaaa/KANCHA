@@ -1,7 +1,7 @@
 # Sprint 8 — Dejar el MVP listo para la defensa
 
 > 10 al 23 de noviembre de 2026 · Fase 3 · **Sprint en curso**
-> Corte de este documento: 16 de noviembre de 2026 (día 7 de 14).
+> Corte de este documento: 17 de noviembre de 2026 (día 8 de 14).
 
 ---
 
@@ -18,7 +18,7 @@ de historia. El trabajo se mide en tareas.
 | Duración | 14 días (10 – 23 de noviembre) |
 | Equipo | Lukas Guerrero, desarrollador único |
 | Compromiso | 8 tareas: auditoría y correcciones, rechazo de postulaciones, rediseño visual, despliegue, rendimiento, releases, prueba en teléfonos y documentación |
-| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno" (16 de noviembre) |
+| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno", y KAN-38, el límite real de la comuna con canchas existentes (16 de noviembre) |
 
 El 15 de noviembre se acordó el orden de cierre, en tres etapas: (1) terminar de revisar y dejar todo
 implementado, (2) rediseñar la parte visual y (3) terminar la documentación y estudiar cómo se
@@ -28,15 +28,18 @@ El 16 de noviembre se agregó KAN-37, el botón "Falta uno": faltaba la función
 problema que Kancha resuelve. Ese día también se invirtió el orden de las dos últimas etapas: primero
 se termina la documentación y después se hace el rediseño visual.
 
+Esa misma noche el autor pidió hacer el rediseño de inmediato (KAN-33), con dos skills de diseño y la
+presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda como última etapa.
+
 ## 2. Sprint Backlog
 
-| Issue | Tipo | Título | Estado al 16-nov |
+| Issue | Tipo | Título | Estado al 17-nov |
 |---|---|---|---|
 | [KAN-31](https://lukasguerrerokancha.atlassian.net/browse/KAN-31) | Tarea | Correcciones de la auditoría de cierre | Listo · PR #15 integrado a `develop` el 16-nov |
 | [KAN-32](https://lukasguerrerokancha.atlassian.net/browse/KAN-32) | Tarea | El organizador puede rechazar una postulación | Listo · PR #15 integrado a `develop` el 16-nov |
 | [KAN-37](https://lukasguerrerokancha.atlassian.net/browse/KAN-37) | Tarea | Botón "Falta uno": filtrar en el mapa los partidos urgentes | En revisión · PR #16 a `develop` · agregada el 16-nov |
-| [KAN-38](https://lukasguerrerokancha.atlassian.net/browse/KAN-38) | Tarea | Límite real de La Florida, canchas existentes al publicar y dirección automática | En revisión · PR #18 a `develop` · agregada el 16-nov · evidencia `evidencias/sprint-08/10` a `12` |
-| [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | En revisión · PR #17 a `develop` · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09` |
+| [KAN-38](https://lukasguerrerokancha.atlassian.net/browse/KAN-38) | Tarea | Límite real de La Florida, canchas existentes al publicar y dirección automática | En revisión · PR #18 a `develop` · agregada el 16-nov · evidencia `evidencias/sprint-08/10` a `12`, `15` y `16` |
+| [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | En revisión · PR #17 y PR #18 a `develop` · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
 | [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | Por hacer |
 | [KAN-36](https://lukasguerrerokancha.atlassian.net/browse/KAN-36) | Tarea | Llevar `develop` a `main` y publicar los releases | Por hacer |
@@ -53,17 +56,18 @@ Desglose técnico de lo hecho:
 | KAN-31 · CI | Cobertura con umbral; base en hora de Chile; arranque real de `docker compose` | Las pruebas Jest corren en el CI |
 | KAN-32 | `PATCH /participations/:id/reject` con el bloqueo de la aprobación; estado `REJECTED` | Botón "Rechazar" y mensaje al jugador |
 | KAN-37 | `GET /matches/nearby?urgent=true`: solo partidos a los que les falta exactamente 1 jugador y que empiezan dentro de `URGENT_WINDOW_HOURS` (2 h) · tres partidos urgentes en los datos de demostración, uno por deporte | Botón "Falta uno" justo sobre la barra de partidos del mapa, con su contador y su mensaje cuando no hay urgentes |
+| KAN-33 | — | Isotipo de Kancha, Anton en títulos y números clave, hora grande y "Falta 1" en la carta de partido, carta de jugador como carta coleccionable, fotografía por deporte (portada del partido, carta de jugador y entrada) y transiciones entre pantallas |
+| KAN-38 | El seed ubica los 15 partidos dentro de la comuna · `/users/me` responde 401 si el usuario de la sesión ya no existe | Límite real de La Florida en el mapa (OpenStreetMap), lista de canchas existentes al publicar, dirección automática al marcar un punto (Nominatim) y rechazo de puntos fuera de la comuna |
 
 ## 3. Scrumboard
 
-Estado del tablero al 16 de noviembre:
+Estado del tablero al 17 de noviembre:
 
 | Por hacer | En curso | En revisión | Listo |
 |---|---|---|---|
-| KAN-33 · Rediseño visual | KAN-29 · Prueba en teléfonos | KAN-37 · Falta uno | KAN-31 · Auditoría |
-| KAN-34 · Despliegue | KAN-23 · Documentación | | KAN-32 · Rechazar |
-| KAN-35 · Rendimiento | | | |
-| KAN-36 · Releases | | | |
+| KAN-34 · Despliegue | KAN-29 · Prueba en teléfonos | KAN-37 · Falta uno | KAN-31 · Auditoría |
+| KAN-35 · Rendimiento | KAN-23 · Documentación | KAN-33 · Rediseño visual | KAN-32 · Rechazar |
+| KAN-36 · Releases | | KAN-38 · Comuna y canchas | |
 
 ## 4. Burndown Chart
 
@@ -72,16 +76,18 @@ Tareas pendientes por día, hasta el corte (el ideal es la primera línea y el r
 ```mermaid
 xychart-beta
     title "Sprint 8 · tareas pendientes"
-    x-axis "Día del sprint" [1, 2, 3, 4, 5, 6, 7]
+    x-axis "Día del sprint" [1, 2, 3, 4, 5, 6, 7, 8]
     y-axis "Tareas" 0 --> 8
-    line [8, 7.4, 6.8, 6.2, 5.5, 4.9, 4.3]
-    line [8, 8, 8, 8, 8, 8, 7]
+    line [8, 7.4, 6.8, 6.2, 5.5, 4.9, 4.3, 3.7]
+    line [8, 8, 8, 8, 8, 8, 7, 8]
 ```
 
 La línea real se mantuvo en 8 hasta el día 6 porque una tarea solo baja cuando cumple la Definición
 de Terminado, y eso incluye el merge con el CI en verde. El día 7 (16 de noviembre) se integró el
 PR #15: KAN-31 y KAN-32 pasaron a Listo y quedaron 6. Ese mismo día se agregó KAN-37, que deja 7
-tareas pendientes hasta que su PR se integre.
+tareas pendientes hasta que su PR se integre. El día 8 (17 de noviembre) se sumó KAN-38 y quedan 8
+pendientes: tres ya están terminadas y en revisión (KAN-37, KAN-33 y KAN-38) y bajan al integrarse
+sus PR.
 
 ## 5. Daily Meeting
 
@@ -91,6 +97,7 @@ tareas pendientes hasta que su PR se integre.
 | 14 nov | Revisión del avance: 138 pruebas del backend y 19 de la app en verde, build y tipos limpios. Medición de la búsqueda por radio: 100 peticiones, mediana 4 ms y p95 5 ms (12 partidos, un usuario). Auditoría de cierre: seis revisiones independientes y escépticos que intentan refutar cada hallazgo | Revisar los hallazgos y corregir | La sesión se interrumpió antes de terminar la verificación (IMP-13) |
 | 15 nov | Se recuperó el resultado: 71 hallazgos. Los 14 que quedaron sin escéptico se comprobaron a mano. Tres decisiones de negocio: el honor usa tres señales, no se vuelve a postular tras cancelar un cupo pagado, y se agrega "Rechazar". Correcciones de KAN-31 y KAN-32 con 167 pruebas del backend y 26 de la app. Informe de auditoría y documentación al día. PR #15 | Merge del PR #15. Empezar el rediseño visual (KAN-33) | `main` sigue atrás de `develop` (IMP-12) |
 | 16 nov | Merge del PR #15: KAN-31 y KAN-32 a *Listo*. Botón "Falta uno" (KAN-37): la API decide qué es urgente (falta 1 jugador y empieza en 2 h o menos) y el mapa lo filtra; 172 pruebas del backend y 27 de la app. Verificado en la app entrando desde el login, en ancho de celular y de escritorio. PR #16 | Merge del PR #16. Terminar la documentación (KAN-23) y después el rediseño visual (KAN-33) | Docker Desktop no arrancaba (IMP-15) |
+| 17 nov | Noche del 16 al 17. Rediseño visual (KAN-33, PR #17). Límite real de la comuna, canchas existentes y dirección automática (KAN-38, PR #18), con la carta de jugador nueva, fotos por deporte y transiciones. Revisión de incidencias: la demo caía fuera de la comuna (DEF-20), sesión sin usuario tras regenerar los datos (DEF-21), dirección que no habría funcionado en teléfonos (DEF-22) y estado de los chips para lectores de pantalla en la web. 173 pruebas del backend y 31 de la app; publicar un partido eligiendo una cancha, verificado en la app de punta a punta | Merge de los PR #16, #17 y #18, en ese orden. Documentos de la entrega (KAN-23) | Tres PR encadenados sin integrar (IMP-16) |
 
 ## 6. Registro de impedimentos
 
@@ -102,6 +109,7 @@ tareas pendientes hasta que su PR se integre.
 | IMP-13 | La auditoría se interrumpió antes de verificar dos de sus seis dimensiones | 14 hallazgos quedaron sin escéptico | Cerrado el 15-nov: se comprobaron a mano contra el código y en la app |
 | IMP-14 | Al limitar el puerto de la base a `127.0.0.1`, cada conexión nueva tardaba 2 s: en Windows `localhost` se resuelve primero por IPv6 | Una prueba de concurrencia empezó a fallar | Cerrado el 15-nov: el puerto se publica en los dos loopback |
 | IMP-15 | Docker Desktop no arrancaba: quedaron sockets huérfanos de un cierre anterior y el motor no podía renombrarlos | No se pudieron correr las pruebas de integración ni la app en Docker hasta resolverlo | Cerrado el 16-nov: con Docker detenido se apartaron las carpetas `Docker\run` y `docker-secrets-engine`; el motor levantó sin perder imágenes ni volúmenes |
+| IMP-16 | Tres PR abiertos a la vez y encadenados (#16, #17 y #18): cada uno parte de la rama del anterior | Hasta integrarlos en orden, `develop` no tiene el botón "Falta uno", el rediseño ni el límite de la comuna | Abierto |
 
 ## 7. Release
 
@@ -113,12 +121,14 @@ y botón "Falta uno"`.
 
 Se completa al cierre del sprint, el 23 de noviembre. Avance al corte:
 
-| Comprometido | Resultado al 16-nov |
+| Comprometido | Resultado al 17-nov |
 |---|---|
 | KAN-31 — Correcciones de la auditoría | Terminada e integrada (PR #15) · 45 de 71 hallazgos corregidos; informe en [`05-auditoria-cierre.md`](../05-auditoria-cierre.md) |
 | KAN-32 — Rechazar postulación | Terminada e integrada (PR #15) · evidencia en `evidencias/sprint-08/03-aprobar-o-rechazar-KAN32.jpg` |
 | KAN-37 — Botón "Falta uno" (agregada el 16-nov) | Terminada, en revisión (PR #16) · evidencia en `evidencias/sprint-08/04-falta-uno-activo-KAN37.png`, `05` y `06` |
-| KAN-33 a KAN-36, KAN-29 y KAN-23 | Sin terminar |
+| KAN-33 — Rediseño visual | Terminada, en revisión (PR #17 y PR #18) · evidencia en `evidencias/sprint-08/07` a `09`, `13` y `14` |
+| KAN-38 — Comuna, canchas y dirección (agregada el 16-nov) | Terminada, en revisión (PR #18) · evidencia en `evidencias/sprint-08/10` a `12`, `15` y `16` |
+| KAN-34 a KAN-36, KAN-29 y KAN-23 | Sin terminar |
 
 ## 9. Sprint Retrospective
 

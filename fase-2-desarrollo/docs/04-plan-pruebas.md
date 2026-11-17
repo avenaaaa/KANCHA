@@ -2,11 +2,11 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 16 de noviembre de 2026 (Sprint 8).
+> Corte del documento: 17 de noviembre de 2026 (Sprint 8).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Al 16 de noviembre están ejecutados los casos de
-las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32 y KAN-37. Siguen sin
+se automatiza cuando exista el código que prueba). Al 17 de noviembre están ejecutados los casos de
+las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Siguen sin
 ejecutar las pruebas de rendimiento y las unitarias pendientes de la sección 4.4.
 
 ---
@@ -29,13 +29,13 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 16-nov |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 17-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 30 de la app, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 31 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **85 ejecutadas contra PostGIS real, todas pasan** |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **86 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas · se ejecutan en el Sprint 8 |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 16 de 17 controles verificados; S-11 parcial |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 17 de 18 controles verificados; S-11 parcial |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -63,11 +63,11 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 16 de noviembre de 2026 |
+| Fecha | 17 de noviembre de 2026 |
 | Archivos de prueba del backend | 17 (8 unitarios y 9 de integración) |
-| Casos del backend | 172 ejecutados · 172 pasan · 0 fallan (87 unitarias, 85 de integración) |
-| Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,61 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 30 ejecutados · 30 pasan · el CI los corre en cada push desde el 15-nov |
+| Casos del backend | 173 ejecutados · 173 pasan · 0 fallan (87 unitarias, 86 de integración) |
+| Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,66 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
+| Casos de la app (Jest + React Native Testing Library) | 31 ejecutados · 31 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -161,6 +161,7 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 | M-26 | `filterStore` | El filtro de nivel parte vacío, se activa y se quita al tocarlo de nuevo | Pasa |
 | M-27 | `filterStore` | "Falta uno" se activa y se apaga; activarlo limpia el día elegido y elegir un día lo apaga (KAN-37) | Pasa |
 | M-28 a M-30 | `lib/places.ts` | El centro de La Florida cae dentro del límite real y Ñuñoa o Santiago centro, fuera; todas las canchas ofrecidas están dentro de la comuna; la dirección se arma con calle y número, y sin calle no se propone nada (KAN-38) | Pasa |
+| M-31 | `lib/places.ts` · `reverseGeocode` | La dirección sale del servicio de OpenStreetMap; si el servicio responde mal o no hay conexión, no se inventa nada y el campo queda para escribirlo (KAN-38, DEF-22) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -301,6 +302,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-15 | Acceso a objetos ajenos | Un jugador intenta cerrar su propia asistencia o la de otro | 403 | **Verificado** (`attendance.int.test.ts`, U-71) |
 | S-16 | Manipulación del pago | Anular el pago de otro jugador con su orden de compra, que es predecible | 404, sin tocar el pago | **Verificado** (`payments.int.test.ts`): la vuelta "tiempo agotado" exige el id de sesión aleatorio del pago (DEF-12) |
 | S-17 | Acceso a objetos ajenos | Rechazar una postulación de un partido ajeno | 403 | **Verificado** (`participations.int.test.ts`, U-79) |
+| S-18 | Sesión | Usar la sesión de un usuario que ya no existe (la demo regenera los datos en cada arranque) | 401, y la app vuelve al login | **Verificado** (`auth.int.test.ts`) · comprobado en la app el 17-nov (DEF-21) |
 
 ---
 
@@ -308,7 +310,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 
 | HU | Historia | Unitarias | Caja negra | Integración | Seguridad |
 |---|---|---|---|---|---|
-| HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12 |
+| HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12, S-18 |
 | HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
 | HU-03 | Publicar partido | U-23 a U-30 | CN-04 a CN-06 | I-03 | S-05 |
 | HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
@@ -321,6 +323,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27 | CN-39, CN-40 | I-04 | S-04 |
+| KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 
 ---
 
@@ -364,6 +367,9 @@ sección 7 y los diecisiete controles de seguridad de la sección 8.
 | DEF-17 | 14-nov-2026 | Mis partidos mostraba "Esperando al organizador" en un cupo cancelado | Media | Cerrado el 15-nov: cada estado tiene su rótulo; M-22 |
 | DEF-18 | 14-nov-2026 | Marcar "No vino" no pedía confirmación, aunque baja el honor del jugador y no se puede deshacer | Media | Cerrado el 15-nov: pide confirmación y "Asistió" queda marcado |
 | DEF-19 | 14-nov-2026 | Al publicar, un error de la API en el costo no se mostraba y el botón parecía no hacer nada (HU-03) | Baja | Cerrado el 15-nov: el error se muestra en el campo y hay un aviso general |
+| DEF-20 | 17-nov-2026 | Siete de los 15 partidos de demostración caían fuera de La Florida: el punto central del seed y de la app estaba en el borde poniente de la comuna. Quedó a la vista al dibujar el límite real (KAN-38) | Media | Cerrado el 17-nov: punto interior y desplazamientos al 70 %. Comprobado contra la API: 15 de 15 dentro del límite |
+| DEF-21 | 17-nov-2026 | Tras regenerar los datos de la demo, una sesión abierta seguía entrando con un usuario que ya no existía: `/users/me` respondía 404 y la app no cerraba la sesión | Media | Cerrado el 17-nov: responde 401 y la app valida la sesión al entrar (S-18) |
+| DEF-22 | 17-nov-2026 | La dirección automática usaba `AbortSignal.timeout`, que React Native no trae: en un teléfono nunca se habría completado (KAN-38) | Media | Cerrado el 17-nov, antes de integrarse: el límite de tiempo se arma con `AbortController` (M-31). Falta verlo en un teléfono real |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.
@@ -377,4 +383,4 @@ Las capturas del CI en verde, los reportes de cobertura y los resultados de k6 s
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 16 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 17 de noviembre de 2026*

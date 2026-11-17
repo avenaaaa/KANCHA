@@ -170,9 +170,11 @@ se comprobó leyendo el código, sin escéptico automático.
 
 ## 5. Backlog visual para la etapa 2
 
-> **Nota del 16 de noviembre.** El orden de cierre cambió: primero se termina la documentación y
-> después se hace el rediseño visual. Lo que este informe llama "etapa 2" pasa a ser la última etapa.
-> La lista sigue vigente tal cual. Ese día se agregó además el botón "Falta uno" del mapa (KAN-37).
+> **Nota del 17 de noviembre.** El rediseño visual (KAN-33) se hizo entre el 16 y el 17 de noviembre.
+> De esta lista cubrió: el isotipo en el encabezado y en la entrada, el "Falta 1" visible en la carta
+> de partido, la fotografía de la entrada y el alto de chips (40 px) y botones (56 px). Lo demás sigue
+> pendiente. Esos días se agregaron además el botón "Falta uno" (KAN-37) y el límite real de la comuna
+> con canchas existentes (KAN-38).
 
 La revisión de la interfaz entregó además esta lista priorizada. No son defectos: son mejoras para
 el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defecto.
@@ -197,7 +199,7 @@ el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defect
 | Baja | S | Rutas inexistentes | Agregar app/+not-found.tsx con la marca de Kancha y un ErrorBoundary global. | No existe ninguno: la pantalla por defecto de Expo Router es negra, está en inglés y lleva branding de Expo. Es un detalle menor pero fácil. |
 | Baja | S | Detalle de partido (barra inferior) | Reemplazar el paddingBottom fijo de 220 px del ScrollView por la altura real de la barra de CTA medida con onLayout. | Con estado aprobado, pago, error y botón de cancelar a la vez, la barra puede superar 220 px y tapar la última línea del contenido. |
 | Baja | S | Web ancho (login y registro) | Medir el hero a 900-1000 px de ancho y bajar el tamaño de Anton o ajustar el breakpoint si el titular se superpone al formulario. | A 900 px el hero (flexShrink 1) queda con unos 290-310 px, y 'CAMISETA.' en Anton 128 px mide probablemente más. Es una estimación sin medir, pero conviene mirarlo en el proyector. |
-| Media | S | Chips y botón "Falta uno" en la web | Publicar el estado activo con `aria-selected` o `aria-pressed`, además de `accessibilityState`. | Encontrado el 16-nov al verificar KAN-37 en el navegador: los chips y el botón no exponen ningún atributo `aria-*` de estado, así que en la web un lector de pantalla no distingue un filtro activo de uno inactivo. No se probó con lector de pantalla en el teléfono. |
+| Media | S | Chips y botón "Falta uno" en la web | **Hecho el 17-nov.** Publicar el estado activo con `aria-selected` o `aria-pressed`, además de `accessibilityState`. | Encontrado el 16-nov al verificar KAN-37 en el navegador: los chips y el botón no exponen ningún atributo `aria-*` de estado, así que en la web un lector de pantalla no distingue un filtro activo de uno inactivo. No se probó con lector de pantalla en el teléfono. |
 
 ---
 
