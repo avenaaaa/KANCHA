@@ -94,6 +94,37 @@ describe.skipIf(!hasDb)('Partidos · HU-03 y HU-04 (integración)', () => {
     await expect(forzar(4)).resolves.toMatchObject({ filledSlots: 4 });
   });
 
+  it('CN-39 · "Falta uno": solo partidos a los que les falta 1 jugador y que empiezan en 2 horas o menos', async () => {
+    const cupo = { totalSlots: 4, filledSlots: 3 };
+    const urgente = await publishMatch(token, { ...northOf(1_400), ...cupo, startsAt: inHours(1), title: 'Falta 1, en 1 h' });
+    const faltanDos = await publishMatch(token, { ...northOf(1_450), totalSlots: 4, filledSlots: 2, startsAt: inHours(1), title: 'Faltan 2, en 1 h' });
+    const lejano = await publishMatch(token, { ...northOf(1_500), ...cupo, startsAt: inHours(3), title: 'Falta 1, en 3 h' });
+
+    const res = await nearby({ urgent: 'true' });
+    expect(res.status).toBe(200);
+    const ids = res.body.matches.map((m: { id: string }) => m.id);
+    expect(ids).toContain(urgente.id);
+    expect(ids).not.toContain(faltanDos.id);
+    expect(ids).not.toContain(lejano.id);
+    expect(res.body.matches.every((m: { slotsLeft: number }) => m.slotsLeft === 1)).toBe(true);
+
+    // Sin el filtro, los tres siguen apareciendo.
+    const todos = (await nearby({})).body.matches.map((m: { id: string }) => m.id);
+    expect(todos).toEqual(expect.arrayContaining([urgente.id, faltanDos.id, lejano.id]));
+  });
+
+  it('CN-40 · "Falta uno" en el límite: a 1 h 59 min entra, a 2 h 01 min no', async () => {
+    const cupo = { totalSlots: 4, filledSlots: 3 };
+    const justo = await publishMatch(token, { ...northOf(1_550), ...cupo, startsAt: inHours(119 / 60), title: 'En 1 h 59' });
+    const tarde = await publishMatch(token, { ...northOf(1_600), ...cupo, startsAt: inHours(121 / 60), title: 'En 2 h 01' });
+
+    const ids = (await nearby({ urgent: 'true' })).body.matches.map((m: { id: string }) => m.id);
+    expect(ids).toContain(justo.id);
+    expect(ids).not.toContain(tarde.id);
+
+    expect((await nearby({ urgent: 'quizas' })).status).toBe(422);
+  });
+
   it('CN-34 · el filtro de nivel deja solo los partidos de ese nivel', async () => {
     const avanzado = await publishMatch(token, { ...northOf(1_200), title: 'Nivel avanzado', level: 'AVANZADO' });
     const inicial = await publishMatch(token, { ...northOf(1_250), title: 'Nivel inicial', level: 'PRINCIPIANTE' });

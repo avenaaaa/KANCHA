@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.6 — 15 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.7 — 16 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -398,7 +398,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública: honor, partidos jugados y métricas, sin correo · **implementado** (pantalla `/jugador/[id]` en la app) |
 | PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **fuera de alcance**: HU-10 salió del MVP el 8 de noviembre |
 | POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
-| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=` · **implementado**, con el filtro de nivel disponible en el mapa |
+| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING`. 409 `CANCELLED_PAID_SLOT` si canceló un cupo ya pagado en ese partido · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
@@ -460,6 +460,10 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      Quien canceló un cupo ya pagado no vuelve a postular a ese partido:
                      su pago conserva el reembolso y la retención. Quien perdió el cupo
                      sin pagar, o fue rechazado, sí puede.
+                     Filtro "Falta uno" (KAN-37): con urgent=true la búsqueda por radio deja
+                     solo los partidos a los que les falta exactamente 1 jugador y que
+                     empiezan dentro de URGENT_WINDOW_HOURS (2 h). La regla vive en
+                     urgentWindow(); la app solo envía el parámetro.
 
 Pago y cancelación a la vez (auditoría de cierre, KAN-31)
                      Cancelar cierra un pago iniciado (FAILED). Un pago aprobado se registra
@@ -550,8 +554,8 @@ http://localhost:3000/api/v1/health → { "status": "ok", "db": "connected" }
 ```
 
 El `seed.ts` debe dejar la demo lista: ~8 usuarios con distintos puntajes de honor,
-~12 partidos reales de La Florida (fútbol, pádel y básquet, **los tres con igual presencia**
-según `DESIGN.md`) repartidos en un radio de 5 km, y calificaciones previas para que el
+~15 partidos reales de La Florida (fútbol, pádel y básquet, **los tres con igual presencia**
+según `DESIGN.md`) repartidos en un radio de 5 km, uno urgente por deporte para el botón "Falta uno", y calificaciones previas para que el
 Sistema de Honor se vea funcionando desde el primer segundo.
 
 ---
@@ -737,7 +741,7 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
 | **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
-| **8** | 10–23 nov | **Hecho al 15-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19) y rechazo de postulaciones (KAN-32). **Pendiente:** rediseño visual (KAN-33), despliegue en Render + Supabase (KAN-34), pruebas de rendimiento con k6 (KAN-35), `develop` a `main` y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
+| **8** | 10–23 nov | **Hecho al 16-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32) y botón "Falta uno" para los partidos urgentes (KAN-37). **Pendiente:** documentación de cierre (KAN-23) y, después, rediseño visual (KAN-33), despliegue en Render + Supabase (KAN-34), pruebas de rendimiento con k6 (KAN-35), `develop` a `main` y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
 | **9** | 24 nov–07 dic | **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y
@@ -791,6 +795,7 @@ PLATFORM_COMMISSION_RATE=0.10
 RETENTION_WINDOW_HOURS=12
 RETENTION_RATE=0.50
 RATING_WINDOW_HOURS=48
+URGENT_WINDOW_HOURS=2
 HONOR_SAMPLE_SIZE=20
 
 # Frontend (Expo expone solo las variables con prefijo EXPO_PUBLIC_)

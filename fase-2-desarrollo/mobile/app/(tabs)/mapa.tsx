@@ -30,7 +30,7 @@ import { errorMessage } from '@/api/client';
 import type { MatchSummary } from '@/api/types';
 import { useFilters } from '@/store/filterStore';
 import { useOrigin } from '@/hooks/useOrigin';
-import { whenRange, type When } from '@/lib/format';
+import { plural, whenRange, type When } from '@/lib/format';
 
 const WHEN_OPTIONS: { key: When; label: string }[] = [
   { key: 'all', label: 'Cuando sea' },
@@ -42,7 +42,9 @@ const WHEN_OPTIONS: { key: When; label: string }[] = [
 const CARD_WIDTH = 300;
 const PANEL_WIDTH = 420;
 const MOBILE_TOP = 150;
-const MOBILE_BOTTOM = 250;
+const MOBILE_BOTTOM = 290;
+/** Solo para el texto: la regla real es URGENT_WINDOW_HOURS de la API. */
+const URGENT_HOURS = 2;
 
 /**
  * HU-04 (KAN-10): partidos con cupo cerca, en un mapa oscuro.
@@ -60,13 +62,13 @@ export default function MapScreen() {
     ? Math.min(width - PANEL_WIDTH, height - 64) * 0.9
     : Math.min(width, height - insets.top - 64 - MOBILE_TOP - MOBILE_BOTTOM) * 0.95;
 
-  const { sports, when, radius: radiusM, level, toggleSport, toggleLevel, setWhen, setRadius } = useFilters();
+  const { sports, when, radius: radiusM, level, urgent, toggleSport, toggleLevel, toggleUrgent, setWhen, setRadius } = useFilters();
   const { origin, userLocation, source, locate } = useOrigin();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // El rango "Hoy / Mañana / Finde" se recalcula solo cuando cambia el filtro.
   const range = useMemo(() => whenRange(when), [when]);
-  const params = source === 'locating' ? null : { ...origin, radius: radiusM, sports, level, ...range };
+  const params = source === 'locating' ? null : { ...origin, radius: radiusM, sports, level, urgent, ...range };
   const { data, isLoading, isError, error, refetch, isFetching } = useNearbyMatches(params);
   const matches = useMemo(() => data?.matches ?? [], [data]);
 
@@ -104,7 +106,24 @@ export default function MapScreen() {
   const summary =
     matches.length === 0
       ? null
-      : `${matches.length} ${matches.length === 1 ? 'partido' : 'partidos'} a menos de ${radiusM / 1000} km`;
+      : urgent
+        ? `${plural(matches.length, 'partido necesita', 'partidos necesitan')} un jugador en ${URGENT_HOURS} h o menos`
+        : `${plural(matches.length, 'partido', 'partidos')} a menos de ${radiusM / 1000} km`;
+
+  // KAN-37: el "falta uno" de última hora, la razón de ser de Kancha (DESIGN.md §4.6).
+  const urgentButton = (
+    <Pressable
+      onPress={toggleUrgent}
+      accessibilityRole="button"
+      accessibilityState={{ selected: urgent }}
+      accessibilityLabel="Falta uno"
+      accessibilityHint={`Muestra solo los partidos a los que les falta un jugador y empiezan en ${URGENT_HOURS} horas o menos`}
+      style={({ pressed }) => [s.urgentBtn, urgent && s.urgentBtnOn, pressed && { opacity: 0.85 }]}
+    >
+      <Text style={[s.urgentText, urgent && s.urgentTextOn]}>Falta uno</Text>
+      <Icon name={urgent ? 'check' : 'forward'} size={16} color={urgent ? colors.onAccent : colors.accent} strokeWidth={2.4} />
+    </Pressable>
+  );
 
   const pilotNote =
     source === 'pilot'
@@ -153,6 +172,14 @@ export default function MapScreen() {
       <Text style={s.stateTitle}>No pudimos cargar los partidos</Text>
       <Text style={s.stateText}>{errorMessage(error)}</Text>
       <Button label="Reintentar" variant="secondary" onPress={() => void refetch()} />
+    </View>
+  ) : matches.length === 0 && urgent ? (
+    <View style={s.stateCard}>
+      <Text style={s.stateTitle}>Ahora no hay un "falta uno" cerca</Text>
+      <Text style={s.stateText}>
+        Ningún partido cercano necesita un jugador en las próximas {URGENT_HOURS} horas. Vuelve a mirar en un rato.
+      </Text>
+      <Button label="Ver todos los partidos" variant="secondary" onPress={toggleUrgent} />
     </View>
   ) : matches.length === 0 ? (
     <View style={s.stateCard}>
@@ -211,7 +238,10 @@ export default function MapScreen() {
             </View>
             <Button label="Publicar" icon="plus" onPress={() => router.push('/publicar')} style={s.publishSmall} />
           </View>
-          <View style={{ paddingHorizontal: spacing.lg }}>{filters}</View>
+          <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
+            {filters}
+            <View style={{ alignSelf: 'flex-start' }}>{urgentButton}</View>
+          </View>
           <ScrollView ref={listRef} contentContainerStyle={s.panelList}>
             {status}
             {matches.map((m) => (
@@ -243,14 +273,13 @@ export default function MapScreen() {
       </View>
 
       <View style={s.bottom} pointerEvents="box-none">
+        {summary ? (
+          <View style={[s.countPill, s.countRow]} pointerEvents="none">
+            <Text style={s.countText}>{summary}</Text>
+          </View>
+        ) : null}
         <View style={s.bottomBar} pointerEvents="box-none">
-          {summary ? (
-            <View style={s.countPill}>
-              <Text style={s.countText}>{summary}</Text>
-            </View>
-          ) : (
-            <View />
-          )}
+          {urgentButton}
           <Pressable
             onPress={() => router.push('/publicar')}
             accessibilityRole="button"
@@ -323,7 +352,22 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.md - 4,
     paddingVertical: 6,
   },
+  countRow: { alignSelf: 'flex-start', marginLeft: spacing.md },
   countText: { fontFamily: fonts.bold, fontSize: 13, color: colors.text },
+  urgentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceFloating,
+  },
+  urgentBtnOn: { backgroundColor: colors.accent },
+  urgentText: { ...type.button, color: colors.accent },
+  urgentTextOn: { color: colors.onAccent },
   fab: {
     flexDirection: 'row',
     alignItems: 'center',

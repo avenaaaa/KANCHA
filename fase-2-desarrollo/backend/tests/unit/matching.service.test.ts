@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canRejoin, checkCanJoin, decideApproval, decideRejection } from '../../src/services/matching.service.js';
+import {
+  canRejoin,
+  checkCanJoin,
+  decideApproval,
+  decideRejection,
+  urgentWindow,
+} from '../../src/services/matching.service.js';
 import type { LockedMatch } from '../../src/repositories/participation.repository.js';
 
 const ahora = new Date('2026-10-17T15:00:00Z');
@@ -95,5 +101,27 @@ describe('decideRejection (KAN-32)', () => {
     for (const status of ['APPROVED', 'PAID', 'CANCELLED', 'REJECTED', 'NO_SHOW'] as const) {
       expect(decideRejection({ status }, partido, 'organizador')?.code).toBe('PARTICIPATION_NOT_PENDING');
     }
+  });
+});
+
+describe('urgentWindow · filtro "Falta uno" (KAN-37)', () => {
+  const ahora = new Date('2026-11-16T18:00:00Z');
+  const enDosHoras = new Date('2026-11-16T20:00:00Z');
+
+  it('U-80 · sin el filtro no cambia nada: respeta el horario pedido y no mira los cupos', () => {
+    expect(urgentWindow({ urgent: false }, ahora)).toEqual({ to: null, slotsLeft: null });
+    const to = new Date('2026-11-20T00:00:00Z');
+    expect(urgentWindow({ urgent: false, to }, ahora)).toEqual({ to, slotsLeft: null });
+  });
+
+  it('U-81 · urgente = falta exactamente 1 jugador y empieza dentro de las próximas 2 horas', () => {
+    expect(urgentWindow({ urgent: true }, ahora)).toEqual({ to: enDosHoras, slotsLeft: 1 });
+  });
+
+  it('U-82 · con un rango de horario además, manda el límite que termina antes', () => {
+    const antes = new Date('2026-11-16T19:00:00Z');
+    const despues = new Date('2026-11-17T00:00:00Z');
+    expect(urgentWindow({ urgent: true, to: antes }, ahora).to).toEqual(antes);
+    expect(urgentWindow({ urgent: true, to: despues }, ahora).to).toEqual(enDosHoras);
   });
 });

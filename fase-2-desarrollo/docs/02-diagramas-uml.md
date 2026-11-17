@@ -472,6 +472,7 @@ classDiagram
         +canRejoin(previousPaymentStatus) Boolean
         +decideApproval(match, participation, actorId) ApprovalDecision
         +decideRejection(participation, match, actorId) AppError
+        +urgentWindow(query, now) UrgentWindow
         +findNearby(query) MatchSummary[]
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation

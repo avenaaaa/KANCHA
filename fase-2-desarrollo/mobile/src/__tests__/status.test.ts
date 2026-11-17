@@ -53,3 +53,24 @@ describe('filtro de nivel del mapa (regla "Nivel del partido")', () => {
     expect(useFilters.getState().level).toBeNull();
   });
 });
+
+describe('filtro "Falta uno" del mapa (KAN-37)', () => {
+  it('M-27 · se activa y se apaga; activarlo limpia el día elegido y elegir un día lo apaga', () => {
+    const f = () => useFilters.getState();
+    expect(f().urgent).toBe(false);
+
+    f().setWhen('tomorrow');
+    f().toggleUrgent();
+    expect(f()).toMatchObject({ urgent: true, when: 'all' });
+
+    f().setWhen('weekend');
+    expect(f()).toMatchObject({ urgent: false, when: 'weekend' });
+
+    f().setWhen('all');
+    f().toggleUrgent();
+    f().setWhen('all');
+    expect(f().urgent).toBe(true);
+    f().toggleUrgent();
+    expect(f().urgent).toBe(false);
+  });
+});

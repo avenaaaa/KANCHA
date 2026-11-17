@@ -2,12 +2,12 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 16 de octubre de 2026 (Sprint 6).
+> Corte del documento: 16 de noviembre de 2026 (Sprint 8).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Al 16 de octubre están ejecutados los casos de
-HU-01, HU-03, HU-04 y HU-05 (registro, publicación, búsqueda por radio y postulación), además de las
-reglas de honor y de pagos como funciones puras.
+se automatiza cuando exista el código que prueba). Al 16 de noviembre están ejecutados los casos de
+las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32 y KAN-37. Siguen sin
+ejecutar las pruebas de rendimiento y las unitarias pendientes de la sección 4.4.
 
 ---
 
@@ -29,11 +29,11 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 15-nov |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 16-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **84 del backend y 26 de la app, todas pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 38 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **83 ejecutadas contra PostGIS real, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 27 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **85 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas · se ejecutan en el Sprint 8 |
 | **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 16 de 17 controles verificados; S-11 parcial |
 
@@ -63,11 +63,11 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 15 de noviembre de 2026 |
+| Fecha | 16 de noviembre de 2026 |
 | Archivos de prueba del backend | 17 (8 unitarios y 9 de integración) |
-| Casos del backend | 167 ejecutados · 167 pasan · 0 fallan (84 unitarias, 83 de integración) |
-| Cobertura de `services/` y `utils/` | 98,91 % de líneas · 91,46 % de ramas · 98,5 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 26 ejecutados · 26 pasan · el CI los corre en cada push desde el 15-nov |
+| Casos del backend | 172 ejecutados · 172 pasan · 0 fallan (87 unitarias, 85 de integración) |
+| Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,61 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
+| Casos de la app (Jest + React Native Testing Library) | 27 ejecutados · 27 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -136,6 +136,12 @@ Casos agregados el 15 de noviembre (Sprint 8, tras la auditoría de cierre):
 | U-76 a U-78 | `errorHandler` | Un error de negocio sale con su código; Zod sale como 422; un error inesperado sale como 500 genérico sin filtrar el mensaje interno | KAN-31 |
 | U-79 | `matching.service` · `decideRejection` | Solo el organizador rechaza, y solo una postulación pendiente | KAN-32 |
 
+Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
+
+| IDs | Módulo | Qué prueban | Origen |
+|---|---|---|---|
+| U-80 a U-82 | `matching.service` · `urgentWindow` | Sin el filtro no cambia nada; con el filtro exige exactamente 1 cupo libre y un inicio dentro de 2 h; si además viene un horario, manda el límite que termina antes | KAN-37 |
+
 ### 4.3 Pruebas de la app
 
 | ID | Componente | Caso | Resultado |
@@ -153,6 +159,7 @@ Casos agregados el 15 de noviembre (Sprint 8, tras la auditoría de cierre):
 | M-23, M-24 | `lib/status.ts` · `matchPollInterval` | El detalle se refresca solo mientras hay algo que esperar, y no en los demás casos (DEF-16) | Pasa |
 | M-25 | `authStore` + `queryClient` | Al salir y al entrar con otra cuenta no queda ningún dato de la anterior (DEF-15) | Pasa |
 | M-26 | `filterStore` | El filtro de nivel parte vacío, se activa y se quita al tocarlo de nuevo | Pasa |
+| M-27 | `filterStore` | "Falta uno" se activa y se apaga; activarlo limpia el día elegido y elegir un día lo apaga (KAN-37) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -213,6 +220,8 @@ exista.
 | CN-36 | HU-09 | Límite | Forzar en la base una retención mayor que lo cobrado | La base lo rechaza (CHECK) | Cubierto (integración) |
 | CN-37 | KAN-32 | Equivalencia | Rechazar una postulación ya aprobada, o dos veces la misma | 409 | Cubierto (U-79 e integración) |
 | CN-38 | KAN-32 | Límite | Aprobar y rechazar la misma postulación a la vez | Una gana, la otra recibe 409 y los cupos calzan | Cubierto (integración) |
+| CN-39 | KAN-37 | Equivalencia | Filtro "Falta uno" con tres partidos: 1 cupo libre en 1 h; 2 cupos libres en 1 h; 1 cupo libre en 3 h | Solo aparece el primero; sin el filtro aparecen los tres | Cubierto (U-80, U-81 e integración) |
+| CN-40 | KAN-37 | Límite | Partido que empieza en 1 h 59 min y otro en 2 h 01 min; `urgent=quizas` | Aparece el primero y no el segundo; 422 | Cubierto (integración) |
 
 ---
 
@@ -301,7 +310,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12 |
 | HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
 | HU-03 | Publicar partido | U-23 a U-30 | CN-04 a CN-06 | I-03 | S-05 |
-| HU-04 | Buscar partidos cercanos | M-14 a M-16, M-26 | CN-07 a CN-10, CN-34 | I-04 | S-04 |
+| HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46, M-22 a M-24 | CN-11, CN-12, CN-35 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10, U-69, U-70, M-17 | CN-13 a CN-17 | I-09 | S-05, S-14 |
 | HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
@@ -310,6 +319,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-10 | Notificación de cupo | — | — | — | — · fuera de alcance desde el 8-nov |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
+| KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27 | CN-39, CN-40 | I-04 | S-04 |
 
 ---
 
@@ -366,4 +376,4 @@ Las capturas del CI en verde, los reportes de cobertura y los resultados de k6 s
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 15 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 16 de noviembre de 2026*

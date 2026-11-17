@@ -1,4 +1,5 @@
 import type { Participation } from '@prisma/client';
+import { env } from '../config/env.js';
 import { matchRepository } from '../repositories/match.repository.js';
 import {
   participationRepository,
@@ -82,6 +83,21 @@ export function decideApproval(
   };
 }
 
+/**
+ * KAN-37: el filtro "Falta uno". Un partido es urgente si le falta exactamente un
+ * jugador y empieza dentro de la ventana (2 h por defecto): es el "falta uno" de
+ * última hora que Kancha existe para resolver. Si además viene un rango de horario,
+ * manda el límite que termine antes.
+ */
+export function urgentWindow(
+  q: Pick<NearbyQuery, 'urgent' | 'to'>,
+  now: Date = new Date(),
+): { to: Date | null; slotsLeft: number | null } {
+  if (!q.urgent) return { to: q.to ?? null, slotsLeft: null };
+  const limit = new Date(now.getTime() + env.URGENT_WINDOW_HOURS * 3_600_000);
+  return { to: q.to && q.to < limit ? q.to : limit, slotsLeft: 1 };
+}
+
 /** HU-04: partidos abiertos, futuros y con cupo dentro del radio, del más cercano al más lejano. */
 export async function findNearby(q: NearbyQuery, now: Date = new Date()): Promise<MatchSummary[]> {
   const rows = await matchRepository.findNearby({
@@ -91,7 +107,7 @@ export async function findNearby(q: NearbyQuery, now: Date = new Date()): Promis
     sports: q.sport ?? null,
     level: q.level ?? null,
     from: q.from ?? null,
-    to: q.to ?? null,
+    ...urgentWindow(q, now),
     now,
   });
   return rows.map(toMatchSummary);
