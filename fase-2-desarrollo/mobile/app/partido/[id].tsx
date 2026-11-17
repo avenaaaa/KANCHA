@@ -1,4 +1,4 @@
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
@@ -21,6 +21,8 @@ import type { MatchDetail, Participant } from '@/api/types';
 import { RequireAuth } from '@/components/RequireAuth';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SportBadge } from '@/components/SportBadge';
+import { FadeIn } from '@/components/ui/FadeIn';
+import { SPORT_COVER } from '@/theme/sportImages';
 import { SlotBar } from '@/components/SlotBar';
 import { HonorBadge } from '@/components/HonorBadge';
 import { Avatar } from '@/components/Avatar';
@@ -104,13 +106,15 @@ function MatchDetailView() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} tintColor={colors.accent} />}
       >
         <View style={s.hero}>
-          <SportBadge sport={m.sport} size={56} />
-          <View style={{ flex: 1, gap: 6 }}>
+          <Image source={SPORT_COVER[m.sport]} style={s.heroPhoto} resizeMode="cover" accessibilityElementsHidden importantForAccessibility="no" />
+          <View style={s.heroScrim} />
+          <FadeIn style={s.heroText}>
+            <SportBadge sport={m.sport} size={44} />
             <Text style={s.h1}>{m.title}</Text>
-            <Text style={s.muted}>
+            <Text style={s.heroMeta}>
               {sportLabel(m.sport)} · {levelLabel(m.level)}
             </Text>
-          </View>
+          </FadeIn>
         </View>
 
         <View style={[s.facts, narrow && { flexDirection: 'column' }]}>
@@ -429,7 +433,11 @@ function StatusLine({ tone, text }: { tone: 'muted' | 'warning' | 'success'; tex
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  hero: { flexDirection: 'row', gap: spacing.md, alignItems: 'center', marginTop: spacing.sm },
+  hero: { minHeight: 230, borderRadius: radius.card, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: colors.surface },
+  heroPhoto: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.scrim },
+  heroText: { padding: spacing.lg, gap: spacing.sm },
+  heroMeta: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.text },
   h1: { ...type.display, color: colors.text },
   h2: { ...type.h2, color: colors.text },
   muted: { ...type.body, color: colors.textMuted },

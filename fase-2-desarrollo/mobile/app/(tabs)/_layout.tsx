@@ -22,6 +22,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: 'shift',
         // DESIGN.md §7: el estado activo usa el naranja en el texto.
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,

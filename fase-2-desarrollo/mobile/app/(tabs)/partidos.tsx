@@ -73,9 +73,10 @@ function Section({ title, matches, rate = false }: { title: string; matches: MyM
   return (
     <View style={{ gap: spacing.sm + 4 }}>
       <Text style={s.h2}>{title}</Text>
-      {matches.map((m) => (
+      {matches.map((m, i) => (
         <MatchCard
           key={m.id}
+          index={i}
           match={m}
           // El organizador va al detalle: ahí registra la asistencia y también califica.
           onPress={() => router.push(rate && m.role !== 'ORGANIZER' ? `/calificar/${m.id}` : `/partido/${m.id}`)}

@@ -8,6 +8,7 @@ import { type } from '@/theme/typography';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { AuthHero } from '@/components/AuthHero';
+import { SPORT_PLAYER } from '@/theme/sportImages';
 import { login } from '@/api/hooks';
 import { ApiRequestError, errorMessage } from '@/api/client';
 import { useAuth } from '@/store/authStore';
@@ -91,7 +92,7 @@ export default function LoginScreen() {
       >
         <View style={wide ? s.heroWide : undefined}>
           <AuthHero
-            photo={require('../../assets/img/hero-futbol.png')}
+            photo={SPORT_PLAYER.FUTBOL}
             lines={['Nos', 'falta', 'uno.']}
             size={wide ? 150 : 88}
             caption="Encuentra el partido al que le falta alguien, cerca de ti. Fútbol, pádel o básquet."

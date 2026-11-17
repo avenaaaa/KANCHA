@@ -244,9 +244,9 @@ export default function MapScreen() {
           </View>
           <ScrollView ref={listRef} contentContainerStyle={s.panelList}>
             {status}
-            {matches.map((m) => (
+            {matches.map((m, i) => (
               <View key={m.id} onLayout={(e) => rowY.current.set(m.id, e.nativeEvent.layout.y)}>
-                <MatchCard match={m} selected={m.id === selectedId} onPress={() => open(m)} />
+                <MatchCard match={m} index={i} selected={m.id === selectedId} onPress={() => open(m)} />
               </View>
             ))}
           </ScrollView>
@@ -305,9 +305,9 @@ export default function MapScreen() {
             contentContainerStyle={s.carousel}
             onMomentumScrollEnd={onCarouselSettle}
             getItemLayout={(_, index) => ({ length: CARD_WIDTH + spacing.sm, offset: (CARD_WIDTH + spacing.sm) * index, index })}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <View style={{ width: CARD_WIDTH }}>
-                <MatchCard match={item} selected={item.id === selectedId} onPress={() => open(item)} />
+                <MatchCard match={item} index={index} selected={item.id === selectedId} onPress={() => open(item)} />
               </View>
             )}
           />

@@ -45,7 +45,7 @@ export function AuthHero({ lines, size, caption, photo }: AuthHeroProps) {
 
 const s = StyleSheet.create({
   wrap: { gap: spacing.md },
-  photo: { position: 'absolute', right: -spacing.lg, top: 0, width: '85%', height: '78%', opacity: 0.42 },
+  photo: { position: 'absolute', right: -spacing.lg, top: 0, width: '72%', height: '82%', opacity: 0.5 },
   brand: { marginBottom: spacing.lg },
   line: { fontFamily: fonts.display, color: colors.text, textTransform: 'uppercase' },
   lineup: { width: '100%', marginTop: spacing.sm },

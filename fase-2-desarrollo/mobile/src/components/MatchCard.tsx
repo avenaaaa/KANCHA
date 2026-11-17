@@ -15,6 +15,8 @@ interface MatchCardProps {
   match: MatchSummary;
   onPress: () => void;
   selected?: boolean;
+  /** Posición en la lista: escalona la entrada. */
+  index?: number;
   /** Línea extra bajo la barra (por ejemplo, el estado en "Mis partidos"). */
   footer?: React.ReactNode;
 }
@@ -23,11 +25,11 @@ interface MatchCardProps {
  * Carta de partido. La hora va en Anton arriba a la derecha: es lo segundo que se
  * mira después del deporte. Abajo, cuánto falta para completar el partido.
  */
-export function MatchCard({ match, onPress, selected = false, footer }: MatchCardProps) {
+export function MatchCard({ match, onPress, selected = false, index = 0, footer }: MatchCardProps) {
   const when = formatWhen(match.startsAt);
   const cut = when.lastIndexOf(' ');
   return (
-    <FadeIn>
+    <FadeIn index={index}>
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
