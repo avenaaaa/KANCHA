@@ -8,20 +8,18 @@ interface SportBadgeProps {
   size?: number;
 }
 
-/** Ícono del deporte en su círculo. Mismo tamaño y trazo para los tres (DESIGN.md §5). */
+/** Ícono del deporte en una baldosa naranja. Mismo tamaño y trazo para los tres. */
 export function SportBadge({ sport, size = 40 }: SportBadgeProps) {
   return (
-    <View style={[s.circle, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Icon name={sport} size={Math.round(size * 0.55)} color={colors.text} />
+    <View style={[s.circle, { width: size, height: size, borderRadius: size * 0.3 }]}>
+      <Icon name={sport} size={Math.round(size * 0.58)} color={colors.onAccent} strokeWidth={2} />
     </View>
   );
 }
 
 const s = StyleSheet.create({
   circle: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },

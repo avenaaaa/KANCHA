@@ -430,7 +430,7 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
   hero: { flexDirection: 'row', gap: spacing.md, alignItems: 'center', marginTop: spacing.sm },
-  h1: { ...type.h1, color: colors.text, lineHeight: 34 },
+  h1: { ...type.display, color: colors.text },
   h2: { ...type.h2, color: colors.text },
   muted: { ...type.body, color: colors.textMuted },
   caption: { ...type.caption, fontSize: 13, lineHeight: 18, color: colors.textMuted },

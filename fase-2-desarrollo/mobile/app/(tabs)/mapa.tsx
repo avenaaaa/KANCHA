@@ -24,6 +24,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
+import { Brand } from '@/components/Logo';
 import { useNearbyMatches } from '@/api/hooks';
 import { SKILL_LEVELS } from '@/theme/sports';
 import { errorMessage } from '@/api/client';
@@ -220,7 +221,7 @@ export default function MapScreen() {
         <View style={{ flex: 1 }}>
           {map}
           <View style={[s.wideTop, { paddingTop: insets.top + spacing.md }]} pointerEvents="box-none">
-            <Text style={s.brand}>KANCHA</Text>
+            <Brand />
             {locateButton}
           </View>
           {pilotNote ? (
@@ -261,7 +262,7 @@ export default function MapScreen() {
 
       <View style={[s.top, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
         <View style={s.topRow} pointerEvents="box-none">
-          <Text style={s.brand}>KANCHA</Text>
+          <Brand />
           {locateButton}
         </View>
         {filters}
@@ -321,7 +322,6 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.md, gap: spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { fontFamily: fonts.display, fontSize: 24, letterSpacing: 2, color: colors.bronze },
   roundBtn: {
     width: 44,
     height: 44,
@@ -414,7 +414,7 @@ const s = StyleSheet.create({
     gap: spacing.md,
   },
   panelHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
-  panelTitle: { ...type.h2, color: colors.text },
+  panelTitle: { ...type.display, fontSize: 24, lineHeight: 30, color: colors.text },
   panelSub: { ...type.caption, fontSize: 13, color: colors.textMuted },
   publishSmall: { minHeight: 44, paddingHorizontal: spacing.md },
   panelList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm + 4 },

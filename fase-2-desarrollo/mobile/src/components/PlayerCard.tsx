@@ -27,13 +27,20 @@ export function PlayerCard({ user }: { user: User }) {
       </View>
 
       <View style={s.statsRow}>
+        {user.honorScore === null ? (
+          <View style={s.stat}>
+            <HonorBadge score={null} />
+            <Text style={s.caption}>puntaje de honor</Text>
+          </View>
+        ) : (
+          <View style={[s.stat, s.statHonor]} accessible accessibilityLabel={`Honor ${user.honorScore.toFixed(1)} de 10`}>
+            <Text style={[s.statValue, s.onAccent]}>{user.honorScore.toFixed(1)}</Text>
+            <Text style={[s.caption, s.onAccent]}>puntaje de honor</Text>
+          </View>
+        )}
         <View style={s.stat}>
           <Text style={s.statValue}>{user.matchesPlayed}</Text>
           <Text style={s.caption}>{user.matchesPlayed === 1 ? 'partido jugado' : 'partidos jugados'}</Text>
-        </View>
-        <View style={[s.stat, s.statHonor]}>
-          <HonorBadge score={user.honorScore} size={user.honorScore === null ? 'sm' : 'lg'} />
-          <Text style={s.caption}>puntaje de honor</Text>
         </View>
       </View>
 
@@ -65,17 +72,18 @@ function Metric({ label, value }: { label: string; value: number | null }) {
 const s = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.lg, gap: spacing.lg },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  name: { ...type.h1, fontSize: 24, color: colors.text },
+  name: { ...type.display, fontSize: 28, lineHeight: 32, color: colors.text },
   sportRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   muted: { ...type.body, color: colors.textMuted },
   caption: { ...type.caption, color: colors.textMuted },
-  statsRow: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.hairline },
-  stat: { flex: 1, paddingVertical: spacing.md, gap: 4 },
-  statHonor: { borderLeftWidth: 1, borderLeftColor: colors.hairline, paddingLeft: spacing.md },
-  statValue: { fontFamily: fonts.bold, fontSize: 22, color: colors.text },
+  statsRow: { flexDirection: 'row', gap: spacing.sm },
+  stat: { flex: 1, padding: spacing.md, gap: 2, borderRadius: radius.tile, backgroundColor: colors.background, justifyContent: 'flex-end', minHeight: 96 },
+  statHonor: { backgroundColor: colors.accent },
+  statValue: { ...type.numeral, color: colors.text },
+  onAccent: { color: colors.onAccent },
   metricHead: { flexDirection: 'row', justifyContent: 'space-between' },
   metricLabel: { fontFamily: fonts.medium, fontSize: 14, color: colors.text },
   metricValue: { fontFamily: fonts.bold, fontSize: 13 },
-  track: { height: 6, borderRadius: 3, backgroundColor: colors.background, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 3 },
+  track: { height: 8, borderRadius: 4, backgroundColor: colors.background, overflow: 'hidden' },
+  fill: { height: 8, borderRadius: 4 },
 });

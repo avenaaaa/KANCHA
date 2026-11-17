@@ -32,5 +32,5 @@ export function HonorBadge({ score, size = 'sm' }: HonorBadgeProps) {
 
 const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  score: { fontFamily: fonts.bold, color: colors.accent },
+  score: { fontFamily: fonts.display, color: colors.accent, letterSpacing: 0.3 },
 });

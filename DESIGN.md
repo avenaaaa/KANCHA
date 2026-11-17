@@ -5,6 +5,13 @@
 
 ---
 
+> **Rediseño del 16 de noviembre de 2026 (KAN-33).** Por decisión del autor, la app se rediseñó sin
+> atenerse a este documento, conservando solo la paleta de la sección 2. Donde el código y este
+> documento difieran, manda el código: esquinas de 20 px en las cartas, Anton en títulos de pantalla y
+> en los números clave (hora, honor, partidos jugados), el isotipo junto al nombre, el deporte en una
+> baldosa naranja y el "Falta 1 »" visible en cada carta de partido. Las referencias fueron la
+> presentación de Fase 1 y un tablero de identidades deportivas en negro y naranja.
+
 ## 1. Identidad de Marca
 
 **Kancha** es una app mobile de deportes amateur que conecta jugadores para organizar partidos. Resuelve el problema de confianza y logística en el deporte informal.
