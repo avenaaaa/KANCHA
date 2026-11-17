@@ -104,6 +104,15 @@ describe.skipIf(!hasDb)('Cuentas · HU-01 (integración)', () => {
     expect([sinToken.status, alterado.status, caducado.status]).toEqual([401, 401, 401]);
   });
 
+  it('S-18 · una sesión cuyo usuario ya no existe → 401, no un usuario fantasma', async () => {
+    const email = uniqueEmail('s18');
+    const alta = await api().post('/api/v1/auth/register').send({ email, password: 'kancha2026', name: 'Fantasma', favoriteSport: 'PADEL' });
+    await prisma.user.delete({ where: { email } });
+
+    const me = await api().get('/api/v1/users/me').set('Authorization', `Bearer ${alta.body.token}`);
+    expect(me.status).toBe(401);
+  });
+
   it('S-06 / S-07 · el hash se guarda con bcrypt y nunca sale en la respuesta', async () => {
     const email = uniqueEmail('s07');
     const res = await api()

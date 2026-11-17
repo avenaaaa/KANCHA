@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { LA_FLORIDA, MAX_ACCURACY_M, PILOT_RADIUS_M } from '@/theme/geo';
-import { distanceMeters } from '@/lib/format';
+import { LA_FLORIDA, MAX_ACCURACY_M } from '@/theme/geo';
+import { insideComuna } from '@/lib/places';
 import type { LatLng } from '@/components/KanchaMap/types';
 
 export type OriginSource = 'locating' | 'gps' | 'pilot' | 'imprecise' | 'denied';
@@ -9,7 +9,8 @@ export type OriginSource = 'locating' | 'gps' | 'pilot' | 'imprecise' | 'denied'
 /** Decide desde dónde buscar con la posición que entregó el dispositivo (DEF-05). */
 export function resolveOrigin(here: LatLng, accuracyM: number | null): { origin: LatLng; source: OriginSource } {
   if (accuracyM !== null && accuracyM > MAX_ACCURACY_M) return { origin: LA_FLORIDA, source: 'imprecise' };
-  if (distanceMeters(here, LA_FLORIDA) > PILOT_RADIUS_M) return { origin: LA_FLORIDA, source: 'pilot' };
+  // El piloto es la comuna: se compara con su límite real, no con un radio.
+  if (!insideComuna(here)) return { origin: LA_FLORIDA, source: 'pilot' };
   return { origin: here, source: 'gps' };
 }
 

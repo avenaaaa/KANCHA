@@ -28,6 +28,7 @@ export function SportPicker({ value, onChange, error }: SportPickerProps) {
               onPress={() => onChange(sport.key)}
               accessibilityRole="radio"
               accessibilityState={{ checked: active }}
+              aria-checked={active}
               accessibilityLabel={sport.label}
               style={({ pressed }) => [
                 s.tile,

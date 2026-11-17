@@ -98,7 +98,14 @@ function Bar({ value, color }: { value: number; color: string }) {
 const s = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.card, overflow: 'hidden' },
   top: { height: 210, backgroundColor: colors.accent, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden' },
-  topNew: { backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.border },
+  // Sin honor el bloque es oscuro como la pantalla: el borde lo mantiene como parte de la carta.
+  topNew: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+  },
   photo: { position: 'absolute', right: -18, bottom: -6, width: '64%', height: '104%' },
   score: { fontFamily: fonts.display, fontSize: 92, lineHeight: 98, color: colors.onAccent, letterSpacing: -1 },
   scoreLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.onAccent },

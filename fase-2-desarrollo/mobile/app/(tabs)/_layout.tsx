@@ -6,6 +6,7 @@ import { fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
 import type { IconName } from '@/components/icons/paths';
 import { useAuth } from '@/store/authStore';
+import { useMe } from '@/api/hooks';
 
 const tabIcon =
   (name: IconName) =>
@@ -16,6 +17,8 @@ export default function TabsLayout() {
   // La barra dibuja dentro de su alto el margen del indicador de inicio del iPhone:
   // con un alto fijo, ese margen se comía el ícono y la etiqueta.
   const insets = useSafeAreaInsets();
+  // Valida la sesión guardada al entrar: si la API responde 401, el cliente cierra la sesión solo.
+  useMe(status === 'signedIn');
   if (status !== 'signedIn') return <Redirect href="/login" />;
 
   return (

@@ -117,6 +117,7 @@ export default function MapScreen() {
       onPress={toggleUrgent}
       accessibilityRole="button"
       accessibilityState={{ selected: urgent }}
+      aria-selected={urgent}
       accessibilityLabel="Falta uno"
       accessibilityHint={`Muestra solo los partidos a los que les falta un jugador y empiezan en ${URGENT_HOURS} horas o menos`}
       style={({ pressed }) => [s.urgentBtn, urgent && s.urgentBtnOn, pressed && { opacity: 0.85 }]}

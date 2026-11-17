@@ -25,6 +25,7 @@ export function Chip({ label, active, onPress, icon, floating = false, disabled 
       hitSlop={{ top: 4, bottom: 4 }}
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
+      aria-selected={active}
       style={({ pressed }) => [
         s.chip,
         { backgroundColor: floating ? colors.surfaceFloating : colors.surface },

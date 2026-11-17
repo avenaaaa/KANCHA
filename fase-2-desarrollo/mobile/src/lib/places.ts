@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import data from '@/data/laFlorida.json';
 
 /**
@@ -40,15 +41,22 @@ export function formatAddress(a: OsmAddress): string | null {
  * shortcut: una consulta por toque, sin caché; Nominatim admite 1 por segundo, cambiar a un geocodificador propio si hay muchos usuarios.
  */
 export async function reverseGeocode(p: { lat: number; lng: number }): Promise<string | null> {
+  // AbortSignal.timeout no existe en React Native: el límite de 6 s se arma a mano.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 6000);
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=es&lat=${p.lat}&lon=${p.lng}`,
-      { signal: AbortSignal.timeout(6000) },
+      // Nominatim pide que la app se identifique. Solo en el teléfono: en la web el navegador ya
+      // manda el suyo, y agregar el encabezado obligaría a una consulta previa que puede ser rechazada.
+      { signal: abort.signal, ...(Platform.OS === 'web' ? {} : { headers: { 'User-Agent': 'KanchaApp/1.0' } }) },
     );
     if (!res.ok) return null;
     const body = (await res.json()) as { address?: OsmAddress };
     return body.address ? formatAddress(body.address) : null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
