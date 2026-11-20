@@ -326,6 +326,7 @@ classDiagram
         +Int totalSlots
         +Int filledSlots
         +Int totalCost
+        +DateTime prioritizedAt
         +MatchStatus status
         +DateTime createdAt
         +DateTime updatedAt
@@ -477,11 +478,13 @@ classDiagram
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation
         +reject(participationId, actorId) Participation
+        +prioritize(matchId, actorId) Priority
     }
 
     class MatchService {
         <<service>>
         +assertFutureStart(startsAt, now) void
+        +checkCanPrioritize(match, actorId, now) AppError
         +publish(organizerId, input) MatchDetail
         +getDetail(id, viewerId) MatchDetail
         +listForUser(userId) MyMatch[]

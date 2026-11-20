@@ -40,7 +40,8 @@ permite las redes privadas.
 ### Cuentas de demostración
 
 La base arranca con datos de La Florida: 8 jugadores, 15 partidos con cupo (5 de fútbol, 5 de pádel
-y 5 de básquetbol; uno de cada deporte es un "falta uno" urgente que empieza en menos de 2 horas), un partido histórico con reseñas y un partido de pádel que terminó hace 3 horas,
+y 5 de básquetbol; uno de cada deporte es un "falta uno" urgente que empieza en menos de 2 horas, y el
+de pádel ya está destacado, así que quien se une entra gratis), un partido histórico con reseñas y un partido de pádel que terminó hace 3 horas,
 listo para registrar asistencia y calificar en vivo. Todas las cuentas usan la contraseña `kancha2026`.
 
 | Cuenta | Para qué sirve en la demo |
@@ -62,6 +63,7 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte, horario y nivel |
 | Falta uno | Con el botón "Falta uno" del mapa, ver solo los partidos urgentes: les falta un jugador y empiezan en 2 horas o menos |
+| Falta uno destacado | Si al organizador le faltan 1 o 2 jugadores y el partido empieza en 2 horas o menos, la app le ofrece destacarlo: va primero en "Falta uno" y quien se une entra gratis, como invitado. Probarlo: entrar como `diego@kancha.cl` y abrir su "Fútbol 5 · Falta uno ya" |
 | Comuna y canchas | El mapa dibuja el límite real de La Florida. Al publicar se elige una de las 36 canchas de la comuna tocando su pin (24 abiertas al público, 5 municipales y 7 privadas; un "$" marca las que se arriendan) o se marca un punto, y la dirección se completa sola |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe o rechace, y quedar confirmado sin sobreventa del último cupo |
 | HU-08 · Pagar | Pagar la parte del arriendo más un 10 % de servicio con Webpay Plus (Transbank, ambiente de Integración) y ver el comprobante |
