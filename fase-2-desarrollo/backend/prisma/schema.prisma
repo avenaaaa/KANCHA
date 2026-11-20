@@ -101,6 +101,9 @@ model Match {
   /// CLP como entero. Nunca punto flotante para dinero. 0 = partido gratuito.
   totalCost   Int         @default(0)
   status      MatchStatus @default(OPEN)
+  /// "Falta uno" destacado (KAN-41): cuándo lo destacó el organizador; null = no destacado.
+  /// Destacado, cada cupo que se aprueba entra gratis y el grupo cubre esa cuota fuera de la app.
+  prioritizedAt DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 

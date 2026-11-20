@@ -74,7 +74,8 @@ const PARTIDOS = [
   // KAN-37 · "Falta uno": uno urgente por deporte. Les falta 1 jugador y empiezan en menos de 2 horas
   // desde que se levanta la demo, así el botón "Falta uno" siempre tiene algo que mostrar.
   { title: 'Fútbol 5 · Falta uno ya',       sport: Sport.FUTBOL,     level: SkillLevel.MEDIO,        venue: 'Cancha Vicuña Mackenna',  calle: 'Av. Vicuña Mackenna', dx: 0.6,  dy: -0.5, slots: 10, filled: 9, cost: 30000, dia: 0, hora: '00:00', enHoras: 1.5 },
-  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1 },
+  // KAN-41: este ya está destacado (quien se une entra gratis); el de fútbol queda para mostrar "¿Lo destacas?".
+  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1, destacado: true },
   { title: 'Básquet 3x3 · Falta uno ya',    sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Multicancha San José',    calle: 'San José de la Estrella', dx: 1.5, dy: 1.1, slots: 6, filled: 5, cost: 0, dia: 0, hora: '00:00', enHoras: 1.75 },
 ];
 
@@ -112,13 +113,14 @@ async function main() {
     const [row] = await prisma.$queryRaw<{ id: string }[]>`
       INSERT INTO "Match"
         ("id","organizerId","title","sport","level","venueName","address","location",
-         "startsAt","durationMin","totalSlots","filledSlots","totalCost","status","createdAt","updatedAt")
+         "startsAt","durationMin","totalSlots","filledSlots","totalCost","status","prioritizedAt","createdAt","updatedAt")
       VALUES
         (gen_random_uuid(), ${organizer.id}, ${p.title}, ${p.sport}::"Sport", ${p.level}::"SkillLevel",
          ${p.venue}, ${`${p.calle}, La Florida`},
          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
          ${p.enHoras !== undefined ? enHoras(p.enHoras) : proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
-         ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus", NOW(), NOW())
+         ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus",
+         ${'destacado' in p && p.destacado ? new Date() : null}, NOW(), NOW())
       RETURNING "id";
     `;
     partidos.push({ ...p, id: row!.id, organizerId: organizer.id });

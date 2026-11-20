@@ -62,6 +62,7 @@ erDiagram
         int       totalSlots
         int       filledSlots
         int       totalCost "CLP entero"
+        datetime  prioritizedAt "null = no destacado (KAN-41)"
         enum      status
         datetime  createdAt
     }
@@ -139,6 +140,7 @@ erDiagram
 | `totalSlots` | INT | No | > 0 | Cupos totales |
 | `filledSlots` | INT | No | 0 ≤ x ≤ totalSlots | Cupos confirmados |
 | `totalCost` | INT | No | ≥ 0, CLP | Arriendo total. 0 = partido gratuito |
+| `prioritizedAt` | TIMESTAMP | Sí | null = no destacado | "Falta uno" destacado (KAN-41): cuándo lo destacó el organizador. Destacado, cada cupo que se aprueba entra gratis |
 | `status` | ENUM | No | OPEN \| FULL \| IN_PROGRESS \| FINISHED \| ARCHIVED \| CANCELLED | Estado del ciclo de vida |
 | `createdAt` | TIMESTAMP | No | default now() | Publicación |
 
@@ -295,6 +297,7 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`migrations/20261108200000_participation_asistencia/migration.sql`](../backend/prisma/migrations/20261108200000_participation_asistencia/migration.sql) | Columna `Participation.attended` para registrar la asistencia (KAN-30) |
 | [`migrations/20261115120000_cupos_montos_check/migration.sql`](../backend/prisma/migrations/20261115120000_cupos_montos_check/migration.sql) | `CHECK` de cupos (`filledSlots` entre 0 y `totalSlots`) y de montos (cuota, cobro, retención y comisión) |
 | [`migrations/20261115130000_participation_rechazada/migration.sql`](../backend/prisma/migrations/20261115130000_participation_rechazada/migration.sql) | Valor `REJECTED` en el tipo `PartStatus` (KAN-32) |
+| [`migrations/20261120180000_match_destacado/migration.sql`](../backend/prisma/migrations/20261120180000_match_destacado/migration.sql) | Columna `prioritizedAt` en `Match`: el "Falta uno" destacado (KAN-41) |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el

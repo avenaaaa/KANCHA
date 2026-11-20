@@ -97,6 +97,15 @@ export function useJoinMatch(matchId: string) {
   });
 }
 
+/** KAN-41: el organizador destaca su partido ("Falta uno" destacado). La regla la decide la API. */
+export function usePrioritizeMatch(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ matchId: string; prioritizedAt: string }>(`/matches/${matchId}/priority`, { method: 'PATCH' }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['matches'] }),
+  });
+}
+
 /** HU-08: inicia el pago y abre Webpay. Al volver, el partido muestra el nuevo estado. */
 export function useStartPayment(matchId: string) {
   const qc = useQueryClient();

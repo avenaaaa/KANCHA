@@ -133,6 +133,7 @@ export const openapi = {
           totalCost: { type: 'integer' },
           pricePerPlayer: { type: 'integer', description: 'ceil(totalCost / totalSlots)' },
           status: { type: 'string' },
+          priority: { type: 'boolean', description: '"Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro' },
           distanceM: { type: 'integer', description: 'Solo en /matches/nearby' },
           organizer: {
             type: 'object',
@@ -149,6 +150,8 @@ export const openapi = {
             properties: {
               role: { type: 'string', enum: ['ORGANIZER', 'PLAYER'] },
               myStatus: { type: 'string', nullable: true, description: 'Estado de mi postulación; null si organizo' },
+              myAmountDue: { type: 'integer', description: 'Cuota congelada de mi cupo; 0 si entré como invitado (KAN-41)' },
+              canPrioritize: { type: 'boolean', description: 'KAN-41: puedo destacarlo ahora' },
               pendingCount: { type: 'integer', description: 'Postulaciones por revisar (solo si organizo)' },
               ratingWindow: { $ref: '#/components/schemas/RatingWindow' },
             },
@@ -196,6 +199,20 @@ export const openapi = {
                       withinRetentionWindow: { type: 'boolean' },
                     },
                   },
+                  amountDue: {
+                    type: 'integer',
+                    nullable: true,
+                    description: 'Cuota congelada al aprobar; 0 si entró gratis como invitado de un partido destacado (KAN-41)',
+                  },
+                },
+              },
+              priorityOffer: {
+                type: 'object',
+                description: 'KAN-41: si el organizador puede destacarlo ahora y cuánto pone cada uno por el invitado',
+                properties: {
+                  canActivate: { type: 'boolean' },
+                  guestShare: { type: 'integer', description: 'Cuota del invitado, que cubre el grupo fuera de la app' },
+                  perPlayer: { type: 'integer', description: 'guestShare repartido entre los que ya están, hacia arriba' },
                 },
               },
               participants: { type: 'array', items: { type: 'object' } },
@@ -348,6 +365,28 @@ export const openapi = {
         responses: { 200: { description: 'Detalle', content: json('MatchDetail') }, 404: error({ code: 'MATCH_NOT_FOUND', message: 'El partido no existe' }) },
       },
     },
+    '/matches/{id}/priority': {
+      patch: {
+        tags: ['Partidos'],
+        summary: '"Falta uno" destacado (KAN-41)',
+        description:
+          'El organizador destaca su partido cuando le faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. ' +
+          'Aparece primero en la búsqueda y en "Falta uno"; quien se une entra aprobado y gratis, y el grupo cubre esa ' +
+          'cuota fuera de la app. Se decide con la fila del partido bloqueada.',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Partido destacado',
+            content: { 'application/json': { example: { matchId: '9b1c…', prioritizedAt: '2026-11-20T21:00:00.000Z' } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede destacar su partido' }),
+          409: {
+            ...error({ code: 'PRIORITY_TOO_EARLY', message: 'Se puede destacar desde 2 horas antes del partido' }),
+            description: 'PRIORITY_TOO_EARLY · PRIORITY_NOT_AVAILABLE (le faltan 0 o más de 2) · ALREADY_PRIORITY · MATCH_STARTED · MATCH_NOT_OPEN',
+          },
+        },
+      },
+    },
     '/matches/{id}/join': {
       post: {
         tags: ['Postulaciones'],
@@ -356,7 +395,7 @@ export const openapi = {
         parameters: [idParam],
         responses: {
           201: {
-            description: 'Postulación registrada como pendiente',
+            description: 'Postulación registrada como pendiente; en un partido destacado (KAN-41), aprobada y gratis',
             content: { 'application/json': { example: { participationId: '3f8a…', status: 'PENDING' } } },
           },
           409: {

@@ -39,6 +39,15 @@ export function calculateAmountDue(totalCost: number, totalSlots: number): numbe
 }
 
 /** Comisión de la plataforma sobre una cuota individual. */
+/**
+ * KAN-41: en un partido destacado el invitado entra gratis y el grupo cubre su cuota fuera de la app.
+ * Devuelve esa cuota y cuánto pone cada uno de los que ya están (redondeado hacia arriba, en CLP).
+ */
+export function guestShare(totalCost: number, totalSlots: number, filledSlots: number): { amount: number; perPlayer: number } {
+  const amount = calculateAmountDue(totalCost, totalSlots);
+  return { amount, perPlayer: filledSlots > 0 ? Math.ceil(amount / filledSlots) : amount };
+}
+
 export function calculateCommission(
   amount: number,
   rate: number = env.PLATFORM_COMMISSION_RATE,

@@ -31,9 +31,9 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 34 de la app, todas pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **86 ejecutadas contra PostGIS real, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **94 del backend y 35 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 42 casos, todos cubiertos |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **88 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
 | **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 17 de 18 controles verificados; S-11 parcial |
 
@@ -64,10 +64,10 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Dato | Valor |
 |---|---|
 | Fecha | 17 de noviembre de 2026 |
-| Archivos de prueba del backend | 17 (8 unitarios y 9 de integración) |
-| Casos del backend | 173 ejecutados · 173 pasan · 0 fallan (87 unitarias, 86 de integración) |
-| Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,66 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 34 ejecutados · 34 pasan · el CI los corre en cada push desde el 15-nov |
+| Archivos de prueba del backend | 18 (8 unitarios y 10 de integración) |
+| Casos del backend | 182 ejecutados · 182 pasan · 0 fallan (94 unitarias, 88 de integración) |
+| Cobertura de `services/` y `utils/` | 99,03 % de líneas · 91,31 % de ramas · 98,66 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
+| Casos de la app (Jest + React Native Testing Library) | 35 ejecutados · 35 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -142,6 +142,14 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 |---|---|---|---|
 | U-80 a U-82 | `matching.service` · `urgentWindow` | Sin el filtro no cambia nada; con el filtro exige exactamente 1 cupo libre y un inicio dentro de 2 h; si además viene un horario, manda el límite que termina antes | KAN-37 |
 
+Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
+
+| IDs | Módulo | Qué prueban | Origen |
+|---|---|---|---|
+| U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si faltan 1 o 2 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 3 faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41 |
+| U-88 | `payment.service` · `guestShare` | La cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros; en cancha gratis es 0 | KAN-41 |
+| U-89 | `matching.service` · `decideApproval` | Con el partido destacado, el cupo que se aprueba entra gratis (amountDue 0) | KAN-41 |
+
 ### 4.3 Pruebas de la app
 
 | ID | Componente | Caso | Resultado |
@@ -165,6 +173,7 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 | M-32 | `DragSheet` · `sheetSnap` | Al soltar el panel de partidos, un gesto rápido manda (hacia arriba abre, hacia abajo cierra) y si fue lento gana la posición más cercana (KAN-39) | Pasa |
 | M-33 | `UrgentButton` | "Falta uno" avisa a los lectores de pantalla si está encendido y responde al toque (KAN-37, KAN-39) | Pasa |
 | M-34 | `lib/places.ts` · `venuesForSport` | Las canchas se filtran por deporte; cada una tiene tipo (pública, municipal o privada), al menos un deporte e identificador único (KAN-40) | Pasa |
+| M-35 | `MatchCard` | Un partido destacado dice "Entra gratis" en vez de cuántos faltan, y lo anuncia a los lectores de pantalla (KAN-41) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -227,6 +236,8 @@ exista.
 | CN-38 | KAN-32 | Límite | Aprobar y rechazar la misma postulación a la vez | Una gana, la otra recibe 409 y los cupos calzan | Cubierto (integración) |
 | CN-39 | KAN-37 | Equivalencia | Filtro "Falta uno" con tres partidos: 1 cupo libre en 1 h; 2 cupos libres en 1 h; 1 cupo libre en 3 h | Solo aparece el primero; sin el filtro aparecen los tres | Cubierto (U-80, U-81 e integración) |
 | CN-40 | KAN-37 | Límite | Partido que empieza en 1 h 59 min y otro en 2 h 01 min; `urgent=quizas` | Aparece el primero y no el segundo; 422 | Cubierto (integración) |
+| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le faltan 2 y que empieza en 1,5 h; un jugador se une | Va primero en "Falta uno" aunque le falten dos; el jugador queda `APPROVED` con cuota 0 y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
+| CN-42 | KAN-41 | Límite | Destacar siendo otro usuario, dos veces, con 3 h de anticipación, con 3 faltantes, con un id inválido | 403; 409 `ALREADY_PRIORITY`, `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`; 422 | Cubierto (U-83 a U-87 e integración) |
 
 ---
 
@@ -363,6 +374,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 | KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
+| KAN-41 | "Falta uno" destacado | U-83 a U-89, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
 
 ---
 

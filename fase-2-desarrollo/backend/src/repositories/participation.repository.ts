@@ -24,6 +24,8 @@ export interface LockedMatch {
   totalCost: number;
   status: string;
   startsAt: Date;
+  /** KAN-41: null = no destacado. */
+  prioritizedAt: Date | null;
 }
 
 /**
@@ -43,6 +45,8 @@ export interface ApprovalTx {
     data: { status: PayStatus; retained?: number; commission?: number; authorizedAt?: Date },
   ): Promise<void>;
   updateSlots(matchId: string, filledSlots: number, status: MatchStatus): Promise<void>;
+  /** KAN-41: marca el partido como destacado. */
+  setPriority(matchId: string, at: Date): Promise<void>;
 }
 
 function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
@@ -54,7 +58,7 @@ function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
       // primera confirme, y entonces lee el filledSlots ya incrementado.
       const rows = await tx.$queryRaw<LockedMatch[]>`
         SELECT "id", "organizerId", "totalSlots", "filledSlots", "totalCost",
-               "status"::text AS "status", "startsAt"
+               "status"::text AS "status", "startsAt", "prioritizedAt"
         FROM "Match" WHERE "id" = ${matchId}
         FOR UPDATE;
       `;
@@ -83,6 +87,9 @@ function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
 
     async updateSlots(matchId, filledSlots, status) {
       await tx.match.update({ where: { id: matchId }, data: { filledSlots, status } });
+    },
+    async setPriority(matchId, at) {
+      await tx.match.update({ where: { id: matchId }, data: { prioritizedAt: at } });
     },
   };
 }

@@ -24,6 +24,7 @@ describe('matchPollInterval · refresco del detalle (DEF-16)', () => {
     status: null,
     payment: null,
     refundIfCancelled: null,
+    amountDue: null,
   };
   const partido = (v: Partial<MatchDetail['viewer']>, ratingWindow: RatingWindow = 'NOT_FINISHED') => ({
     ratingWindow,

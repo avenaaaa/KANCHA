@@ -38,6 +38,8 @@ export interface MatchSummary {
   totalCost: number;
   pricePerPlayer: number;
   status: string;
+  /** "Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro. */
+  priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;
 }
@@ -66,7 +68,11 @@ export interface MatchDetail extends MatchSummary {
     payment: { status: string; amount: number; retained: number; buyOrder: string; authorizedAt: string | null } | null;
     /** Si el cupo está pagado: qué se devolvería al cancelar ahora (HU-09). */
     refundIfCancelled: { refunded: number; retained: number; withinRetentionWindow: boolean } | null;
+    /** Cuota congelada al aprobar; 0 si entró gratis como invitado (KAN-41). */
+    amountDue: number | null;
   };
+  /** KAN-41: si el organizador puede destacarlo ahora y cuánto pone cada uno por el invitado. */
+  priorityOffer: { canActivate: boolean; guestShare: number; perPlayer: number };
   participants: Participant[];
 }
 
@@ -75,6 +81,10 @@ export interface MyMatch extends MatchSummary {
   myStatus: ParticipationStatus | null;
   pendingCount: number;
   ratingWindow: RatingWindow;
+  /** Cuota congelada de mi cupo: 0 si entré como invitado (KAN-41). */
+  myAmountDue: number;
+  /** KAN-41: puedo destacarlo ahora. */
+  canPrioritize: boolean;
 }
 
 /** GET /matches/:id/ratings/pending (HU-06). */

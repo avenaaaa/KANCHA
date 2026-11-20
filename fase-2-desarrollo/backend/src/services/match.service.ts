@@ -7,13 +7,15 @@ import {
 import { participationRepository } from '../repositories/participation.repository.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
 import type { CreateMatchInput } from '../schemas/match.schema.js';
-import { notFound, unprocessable } from '../utils/errors.js';
+import { env } from '../config/env.js';
+import { AppError, conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
 import { toNumberOrNull } from '../utils/db-errors.js';
 import { ratingWindow, type RatingWindow } from './honor.service.js';
 import {
   calculateAmountDue,
   calculateCommission,
   calculateRefund,
+  guestShare,
   type RefundBreakdown,
 } from './payment.service.js';
 
@@ -41,6 +43,8 @@ export interface MatchSummary {
   /** Cuota individual: ceil(totalCost / totalSlots). */
   pricePerPlayer: number;
   status: string;
+  /** "Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro. */
+  priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;
 }
@@ -66,7 +70,11 @@ export interface MatchDetail extends MatchSummary {
     payment: { status: string; amount: number; retained: number; buyOrder: string; authorizedAt: string | null } | null;
     /** Si el cupo está pagado: qué se devolvería al cancelar ahora (HU-09). */
     refundIfCancelled: RefundBreakdown | null;
+    /** Cuota congelada al aprobar; 0 si entró gratis como invitado (KAN-41). null si no tiene cupo. */
+    amountDue: number | null;
   };
+  /** KAN-41: si el organizador puede destacarlo ahora, y la cuota del invitado que cubre el grupo. */
+  priorityOffer: { canActivate: boolean; guestShare: number; perPlayer: number };
   participants: ParticipantView[];
 }
 
@@ -75,6 +83,37 @@ export interface MyMatch extends MatchSummary {
   myStatus: string | null;
   pendingCount: number;
   ratingWindow: RatingWindow;
+  /** Cuota congelada de mi cupo (0 si entré como invitado, KAN-41). */
+  myAmountDue: number;
+  /** KAN-41: el organizador puede destacarlo ahora. */
+  canPrioritize: boolean;
+}
+
+/** Faltan a lo más estos jugadores para poder destacar un partido (KAN-41). */
+export const MAX_PRIORITY_SLOTS = 2;
+
+/**
+ * KAN-41: ¿puede el organizador destacar su partido ahora? Solo si le faltan 1 o 2 jugadores, empieza
+ * dentro de la ventana de urgencia (URGENT_WINDOW_HOURS) y no está destacado. Devuelve el motivo si no.
+ */
+export function checkCanPrioritize(
+  match: { organizerId: string; status: string; startsAt: Date; totalSlots: number; filledSlots: number; prioritizedAt: Date | null },
+  actorId: string,
+  now: Date = new Date(),
+): AppError | null {
+  if (match.organizerId !== actorId) return forbidden('Solo el organizador puede destacar su partido');
+  if (match.prioritizedAt) return conflict('ALREADY_PRIORITY', 'El partido ya está destacado');
+  const untilStart = new Date(match.startsAt).getTime() - now.getTime();
+  if (untilStart <= 0) return conflict('MATCH_STARTED', 'El partido ya comenzó');
+  if (match.status !== 'OPEN') return conflict('MATCH_NOT_OPEN', 'El partido ya no recibe postulaciones');
+  const left = match.totalSlots - match.filledSlots;
+  if (left < 1 || left > MAX_PRIORITY_SLOTS) {
+    return conflict('PRIORITY_NOT_AVAILABLE', `Solo se destaca un partido al que le faltan 1 o ${MAX_PRIORITY_SLOTS} jugadores`);
+  }
+  if (untilStart > env.URGENT_WINDOW_HOURS * 3_600_000) {
+    return conflict('PRIORITY_TOO_EARLY', `Se puede destacar desde ${env.URGENT_WINDOW_HOURS} horas antes del partido`);
+  }
+  return null;
 }
 
 /** HU-03: "GIVEN que el horario ingresado ya pasó WHEN intento publicar THEN se rechaza". */
@@ -104,6 +143,7 @@ export function toMatchSummary(row: MatchRow | NearbyMatchRow): MatchSummary {
     totalCost: Number(row.totalCost),
     pricePerPlayer: calculateAmountDue(Number(row.totalCost), Number(row.totalSlots)),
     status: row.status,
+    priority: row.prioritizedAt != null,
     organizer: {
       id: row.organizerId,
       name: row.organizerName,
@@ -154,6 +194,11 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
       },
       refundIfCancelled:
         mine?.status === 'PAID' && payment ? calculateRefund(payment.amount, new Date(summary.startsAt)) : null,
+      amountDue: mine && (mine.status === 'APPROVED' || mine.status === 'PAID') ? mine.amountDue : null,
+    },
+    priorityOffer: {
+      canActivate: isOrganizer && checkCanPrioritize(toPriorityInput(row), viewerId) === null,
+      ...renameShare(guestShare(summary.totalCost, summary.totalSlots, summary.filledSlots)),
     },
     participants: visible.map((p) => ({
       participationId: p.id,
@@ -178,5 +223,20 @@ export async function listForUser(userId: string): Promise<MyMatch[]> {
     myStatus: r.myStatus,
     pendingCount: r.organizerId === userId ? Number(r.pendingCount) : 0,
     ratingWindow: ratingWindow(new Date(r.startsAt), Number(r.durationMin)),
+    myAmountDue: Number(r.myAmountDue ?? 0),
+    canPrioritize: r.organizerId === userId && checkCanPrioritize(toPriorityInput(r), userId) === null,
   }));
 }
+
+function toPriorityInput(r: MatchRow) {
+  return {
+    organizerId: r.organizerId,
+    status: r.status,
+    startsAt: new Date(r.startsAt),
+    totalSlots: Number(r.totalSlots),
+    filledSlots: Number(r.filledSlots),
+    prioritizedAt: r.prioritizedAt,
+  };
+}
+
+const renameShare = ({ amount, perPlayer }: { amount: number; perPlayer: number }) => ({ guestShare: amount, perPlayer });

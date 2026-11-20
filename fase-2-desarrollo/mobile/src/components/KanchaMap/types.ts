@@ -10,6 +10,8 @@ export interface MapMatch extends LatLng {
   id: string;
   sport: SportKey;
   slotsLeft: number;
+  /** "Falta uno" destacado (KAN-41): el pin late. */
+  priority?: boolean;
 }
 
 /** Cancha para elegir al publicar: pin propio, distinto del de los partidos. */

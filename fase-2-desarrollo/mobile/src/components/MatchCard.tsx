@@ -33,7 +33,7 @@ export function MatchCard({ match, onPress, selected = false, index = 0, footer 
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}`}
+      accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}${match.priority ? ', destacado: entra gratis' : ''}`}
       style={({ pressed }) => [s.card, selected && s.selected, pressed && s.pressed]}
     >
       <View style={s.top}>
@@ -80,7 +80,9 @@ export function MatchCard({ match, onPress, selected = false, index = 0, footer 
           Organiza {match.organizer.name.split(' ')[0]}
         </Text>
         <View style={[s.cta, match.slotsLeft <= 0 && s.ctaFull]}>
-          <Text style={[s.ctaText, match.slotsLeft <= 0 && s.ctaTextFull]}>{slotsCta(match.slotsLeft)}</Text>
+          <Text style={[s.ctaText, match.slotsLeft <= 0 && s.ctaTextFull]}>
+            {match.priority && match.slotsLeft > 0 ? 'Entra gratis' : slotsCta(match.slotsLeft)}
+          </Text>
           {match.slotsLeft > 0 && <Icon name="forward" size={13} color={colors.onAccent} strokeWidth={2.6} />}
         </View>
       </View>
