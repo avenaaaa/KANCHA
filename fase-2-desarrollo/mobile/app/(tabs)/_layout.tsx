@@ -6,7 +6,7 @@ import { fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
 import type { IconName } from '@/components/icons/paths';
 import { useAuth } from '@/store/authStore';
-import { useMe } from '@/api/hooks';
+import { useInbox, useMe } from '@/api/hooks';
 
 const tabIcon =
   (name: IconName) =>
@@ -19,6 +19,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   // Valida la sesión guardada al entrar: si la API responde 401, el cliente cierra la sesión solo.
   useMe(status === 'signedIn');
+  // HU-10: el contador de avisos sin leer en la pestaña.
+  const unread = useInbox(status === 'signedIn').data?.unread ?? 0;
   if (status !== 'signedIn') return <Redirect href="/login" />;
 
   return (
@@ -36,6 +38,16 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="mapa" options={{ title: 'Mapa', tabBarIcon: tabIcon('map') }} />
       <Tabs.Screen name="partidos" options={{ title: 'Mis partidos', tabBarIcon: tabIcon('calendar') }} />
+      <Tabs.Screen
+        name="avisos"
+        options={{
+          title: 'Avisos',
+          tabBarIcon: tabIcon('bell'),
+          tabBarBadge: unread > 0 ? (unread > 9 ? '9+' : unread) : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.onAccent, fontFamily: fonts.bold, fontSize: 11 },
+          tabBarAccessibilityLabel: unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos',
+        }}
+      />
       <Tabs.Screen name="perfil" options={{ title: 'Perfil', tabBarIcon: tabIcon('user') }} />
     </Tabs>
   );

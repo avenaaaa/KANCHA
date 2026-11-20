@@ -67,6 +67,7 @@ export const ICONS = {
   ],
   wallet: [{ d: 'M4 7.5H18.5A1.5 1.5 0 0 1 20 9V18A1.5 1.5 0 0 1 18.5 19.5H5.5A1.5 1.5 0 0 1 4 18V6A1.5 1.5 0 0 1 5.5 4.5H16.5M16 14H17' }],
   logout: [{ d: 'M14 4.5H18.5A1.5 1.5 0 0 1 20 6V18A1.5 1.5 0 0 1 18.5 19.5H14M10 8L6 12L10 16M6 12H15.5' }],
+  bell: [{ d: 'M6 16.5V11A6 6 0 0 1 18 11V16.5L19.5 18H4.5Z' }, { d: 'M10 20.5A2 2 0 0 0 14 20.5' }],
 } satisfies Record<string, IconShape[]>;
 
 export type IconName = keyof typeof ICONS;

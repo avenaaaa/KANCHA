@@ -2,7 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
 import { matchPollInterval } from '@/lib/status';
-import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
+import type {
+  AppNotification,
+  Inbox,
+  MatchDetail,
+  MatchSummary,
+  MyMatch,
+  NewMatch,
+  NotificationPreferences,
+  PendingRatings,
+  Session,
+  User,
+} from './types';
 import type { SkillLevelKey, SportKey } from '@/theme/sports';
 
 /** Hooks de datos. Las pantallas nunca llaman a fetch directamente. */
@@ -14,6 +25,8 @@ export const keys = {
   mine: ['matches', 'mine'] as const,
   user: (id: string) => ['users', id] as const,
   pending: (matchId: string) => ['matches', matchId, 'ratings', 'pending'] as const,
+  inbox: ['inbox'] as const,
+  notificationPrefs: ['notification-preferences'] as const,
 };
 
 export const login = (body: { email: string; password: string }) =>
@@ -202,5 +215,37 @@ export function useRateTeammate(matchId: string) {
       void qc.invalidateQueries({ queryKey: keys.match(matchId) });
       void qc.invalidateQueries({ queryKey: keys.user(body.ratedId) });
     },
+  });
+}
+
+/**
+ * HU-10: bandeja de avisos. Se vuelve a pedir cada 30 s: así un aviso llega en menos de 60 s
+ * aunque todavía no haya push (KAN-42).
+ */
+export function useInbox(enabled = true) {
+  return useQuery({ queryKey: keys.inbox, queryFn: () => api<Inbox>('/users/me/notifications'), enabled, refetchInterval: 30_000 });
+}
+
+export function useMarkRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' }),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.inbox }),
+  });
+}
+
+export function useNotificationPrefs() {
+  return useQuery({
+    queryKey: keys.notificationPrefs,
+    queryFn: () => api<NotificationPreferences>('/users/me/notification-preferences'),
+  });
+}
+
+export function useSaveNotificationPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: NotificationPreferences) =>
+      api<NotificationPreferences>('/users/me/notification-preferences', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: (saved) => qc.setQueryData(keys.notificationPrefs, saved),
   });
 }

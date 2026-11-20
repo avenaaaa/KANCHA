@@ -27,6 +27,7 @@ import { Icon } from '@/components/icons/Icon';
 import { Brand } from '@/components/Logo';
 import { UrgentButton } from '@/components/UrgentButton';
 import { DragSheet } from '@/components/ui/DragSheet';
+import { FaltaUnoBanner } from '@/components/FaltaUnoBanner';
 import { useNearbyMatches } from '@/api/hooks';
 import { SKILL_LEVELS } from '@/theme/sports';
 import { errorMessage } from '@/api/client';
@@ -238,6 +239,9 @@ export default function MapScreen() {
         </View>
 
         <View style={s.panel}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+            <FaltaUnoBanner />
+          </View>
           <View style={s.panelHead}>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={s.panelTitle}>Partidos con cupo</Text>
@@ -271,6 +275,7 @@ export default function MapScreen() {
           <Brand />
           {locateButton}
         </View>
+        <FaltaUnoBanner />
         {filters}
         {pilotNote ? (
           <View style={s.note} pointerEvents="none">

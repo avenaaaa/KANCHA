@@ -229,6 +229,24 @@ async function main() {
   }
   console.log('   1 partido recién terminado, listo para calificar (Camila, Lukas, Valentina e Ignacio)');
 
+  // HU-10: Camila acepta todos los avisos. Al arrancar, el barrido le avisa de los tres "Falta uno ya"
+  // (el de pádel, destacado, con "entras gratis") y a sus organizadores les ofrece destacarlos.
+  await prisma.notificationPreference.create({
+    data: {
+      userId: usuarios[1]!.id,
+      faltaUno: true,
+      nearby: true,
+      nudges: true,
+      sports: [Sport.FUTBOL, Sport.PADEL, Sport.BASQUETBOL],
+      days: [0, 1, 2, 3, 4, 5, 6],
+      fromHour: 8,
+      toHour: 24,
+      radiusKm: 10,
+      ...CENTRO,
+    },
+  });
+  console.log('   Camila con todos los avisos activados (HU-10)');
+
   console.log('✅ Seed completo. Todas las cuentas usan la contraseña: kancha2026');
   console.log('   Dos usuarios quedan sin reseñas a propósito, para ver "Sin calificaciones aún".');
 }

@@ -6,6 +6,7 @@ import { matchesRouter } from './matches.routes.js';
 import { participationsRouter } from './participations.routes.js';
 import { paymentsRouter } from './payments.routes.js';
 import { ratingsRouter } from './ratings.routes.js';
+import { notificationsRouter } from './notifications.routes.js';
 
 export const apiRouter = Router();
 
@@ -16,3 +17,4 @@ apiRouter.use(matchesRouter); // HU-03, HU-04, HU-05
 apiRouter.use(participationsRouter); // HU-05
 apiRouter.use(paymentsRouter); // HU-08, HU-09
 apiRouter.use(ratingsRouter); // HU-06, HU-07
+apiRouter.use(notificationsRouter); // HU-10

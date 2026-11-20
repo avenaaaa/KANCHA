@@ -36,6 +36,7 @@ export const openapi = {
     { name: 'Postulaciones', description: 'HU-05 · KAN-11' },
     { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
     { name: 'Calificaciones', description: 'HU-06 · KAN-12 · HU-07 · KAN-13 · Sistema de Honor' },
+    { name: 'Avisos', description: 'HU-10 · KAN-16 · avisos dentro de la app; "Falta uno" es el prioritario' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -219,6 +220,36 @@ export const openapi = {
             },
           },
         ],
+      },
+      NotificationPreferences: {
+        type: 'object',
+        description: 'Qué avisos acepta el usuario. Días 0 = domingo … 6 = sábado y horario [fromHour, toHour), en hora de Chile.',
+        required: ['faltaUno', 'nearby', 'nudges', 'sports', 'days', 'fromHour', 'toHour', 'radiusKm', 'lat', 'lng'],
+        properties: {
+          faltaUno: { type: 'boolean', description: 'Partidos urgentes o destacados cerca: los avisos prioritarios' },
+          nearby: { type: 'boolean', description: 'Partidos nuevos cerca, en mis días y horario' },
+          nudges: { type: 'boolean', description: 'Ánimo para volver a jugar, a lo más uno por semana' },
+          sports: { type: 'array', items: { $ref: '#/components/schemas/Sport' }, maxItems: 3 },
+          days: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 6 }, maxItems: 7 },
+          fromHour: { type: 'integer', minimum: 0, maximum: 23, example: 18 },
+          toHour: { type: 'integer', minimum: 1, maximum: 24, example: 23 },
+          radiusKm: { type: 'integer', minimum: 1, maximum: 20, example: 5 },
+          lat: { type: 'number', nullable: true, example: -33.5227 },
+          lng: { type: 'number', nullable: true, example: -70.5983 },
+        },
+      },
+      Notification: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          kind: { type: 'string', enum: ['FALTA_UNO', 'NEARBY_MATCH', 'JOIN_REQUEST', 'JOIN_APPROVED', 'PRIORITY_OFFER', 'NUDGE'] },
+          matchId: { type: 'string', format: 'uuid', nullable: true },
+          title: { type: 'string', example: '¡Falta uno cerca! Entras gratis' },
+          body: { type: 'string', example: 'Falta 1 jugador para Fútbol 5, a las 19:30 en Cancha Los Quillayes. Vas de invitado: no pagas.' },
+          read: { type: 'boolean' },
+          urgent: { type: 'boolean', description: '"Falta uno" sin leer con el partido abierto y sin empezar: va destacado' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
       },
     },
   },
@@ -625,6 +656,61 @@ export const openapi = {
           200: { description: 'Comprobante: pago aprobado o no completado', content: { 'text/html': {} } },
           404: error({ code: 'PAYMENT_NOT_FOUND', message: 'No encontramos este pago' }),
           422: error({ code: 'VALIDATION_ERROR', message: 'Falta el token de Webpay' }),
+        },
+      },
+    },
+    '/users/me/notifications': {
+      get: {
+        tags: ['Avisos'],
+        summary: 'Mi bandeja de avisos (HU-10)',
+        description: 'Los últimos 50. Los "Falta uno" sin leer van primero; el resto, del más nuevo al más viejo.',
+        responses: {
+          200: {
+            description: 'Cuántos no leí y la lista',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    unread: { type: 'integer' },
+                    notifications: { type: 'array', items: { $ref: '#/components/schemas/Notification' } },
+                  },
+                },
+              },
+            },
+          },
+          401: error({ code: 'UNAUTHORIZED', message: 'Falta el token de autenticación' }),
+        },
+      },
+    },
+    '/notifications/{id}/read': {
+      patch: {
+        tags: ['Avisos'],
+        summary: 'Marcar un aviso como leído (HU-10)',
+        parameters: [idParam],
+        responses: {
+          200: { description: 'El aviso, leído', content: json('Notification') },
+          404: error({ code: 'NOTIFICATION_NOT_FOUND', message: 'El aviso no existe' }),
+        },
+      },
+    },
+    '/users/me/notification-preferences': {
+      get: {
+        tags: ['Avisos'],
+        summary: 'Qué avisos acepto (HU-10)',
+        description: 'Sin preferencias guardadas, todo apagado y con el deporte favorito marcado.',
+        responses: { 200: { description: 'Preferencias', content: json('NotificationPreferences') } },
+      },
+      put: {
+        tags: ['Avisos'],
+        summary: 'Guardar qué avisos acepto (HU-10)',
+        description:
+          'Activar cualquier aviso exige ubicación y al menos un deporte; "partidos cerca" exige al menos un día. ' +
+          'La base repite con CHECK los límites de horario y radio.',
+        requestBody: { required: true, content: json('NotificationPreferences') },
+        responses: {
+          200: { description: 'Preferencias guardadas', content: json('NotificationPreferences') },
+          422: error({ code: 'VALIDATION_ERROR', message: 'Necesitamos tu ubicación para avisarte de partidos cerca' }),
         },
       },
     },
