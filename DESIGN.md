@@ -192,6 +192,16 @@ Las cartas de partidos van en un panel inferior que se desliza (KAN-39), para qu
 - Se arrastra hacia arriba o hacia abajo desde el asa o desde la fila de botones, o se alterna tocando el asa. Al soltar, un gesto rápido manda; si fue lento, queda en la posición más cercana.
 - Fondo `#1A1A1A` con esquinas superiores de 24 px y borde `#3A3A3A`, para que las cartas (`#2A2A2A`) resalten sobre él.
 
+### 4.8 Pines de canchas al publicar
+
+En "Publicar partido" el mapa muestra las canchas de La Florida como pines (KAN-40), distintos de los de partidos:
+
+- **Pin:** círculo de 32 px, fondo `#2A2A2A`, borde `#F0A500` de 2 px y el ícono del deporte en naranja. Si la cancha se arrienda, lleva una insignia "$" naranja.
+- **Elegido:** relleno `#F0A500`, ícono `#1A1A1A`, crece al 130 %.
+- Solo se ven las canchas del deporte elegido. La cancha ya elegida se ve siempre, aunque después se cambie de deporte.
+- Bajo el mapa, una tarjeta con el nombre y el tipo: "Abierta al público" en verde (`#2ECC71`), "Municipal · se arrienda" o "Privada · se arrienda" en naranja.
+- Una leyenda sobre el mapa explica los dos pines. El mapa abre encuadrado para que se vean todas las canchas.
+
 ---
 
 ## 5. Iconografía Multi-deporte

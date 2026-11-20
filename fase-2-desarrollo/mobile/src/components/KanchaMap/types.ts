@@ -12,6 +12,16 @@ export interface MapMatch extends LatLng {
   slotsLeft: number;
 }
 
+/** Cancha para elegir al publicar: pin propio, distinto del de los partidos. */
+export interface MapVenue extends LatLng {
+  id: string;
+  name: string;
+  /** Se arrienda: el pin lleva un "$". */
+  paid: boolean;
+  /** Ícono del pin; sin deporte, un pin genérico. */
+  sport?: SportKey;
+}
+
 /**
  * Contrato común del mapa. index.web.tsx lo implementa con MapLibre GL y
  * index.native.tsx con react-native-maps: las pantallas no saben cuál corre.
@@ -20,6 +30,8 @@ export interface KanchaMapProps {
   center: LatLng;
   zoom?: number;
   matches?: MapMatch[];
+  /** Canchas para elegir (pantalla Publicar). Comparten selectedId y onSelect con los partidos. */
+  venues?: MapVenue[];
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   userLocation?: LatLng | null;

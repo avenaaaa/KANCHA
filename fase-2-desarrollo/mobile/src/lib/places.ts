@@ -1,13 +1,41 @@
 import { Platform } from 'react-native';
 import data from '@/data/laFlorida.json';
+import type { SportKey } from '@/theme/sports';
 
 /**
- * La Florida según OpenStreetMap (relación 224590): el límite real de la comuna y
- * sus canchas con nombre. Se descargaron el 16-nov-2026 y viajan dentro de la app,
- * así el mapa no depende de un servicio externo para dibujarlos.
+ * La Florida: el límite real de la comuna (OpenStreetMap, relación 224590) y sus canchas. Las canchas
+ * salen de la Municipalidad (multicanchas recuperadas en 2024), de la Corporación de Deportes, de los
+ * sitios y fichas de reserva de cada club y de OpenStreetMap; se ubicaron con OpenStreetMap el
+ * 20-nov-2026. Viajan dentro de la app: el mapa no depende de un servicio externo para dibujarlas.
  */
 export const COMUNA = data.boundary as [number, number][]; // [lng, lat]
-export const VENUES = data.venues as { name: string; lat: number; lng: number }[];
+
+/** PUBLICA: espacio público de libre uso. MUNICIPAL y PRIVADA: se arriendan. */
+export type VenueKind = 'PUBLICA' | 'MUNICIPAL' | 'PRIVADA';
+
+export interface Venue {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  sports: SportKey[];
+  kind: VenueKind;
+  /** Dirección conocida; si no hay, se propone la del punto. */
+  address?: string;
+}
+
+export const VENUES = data.venues as Venue[];
+
+export const VENUE_KIND_LABEL: Record<VenueKind, string> = {
+  PUBLICA: 'Abierta al público',
+  MUNICIPAL: 'Municipal · se arrienda',
+  PRIVADA: 'Privada · se arrienda',
+};
+
+/** Canchas donde se juega ese deporte; sin deporte elegido, todas. */
+export function venuesForSport(sport: SportKey | null): Venue[] {
+  return sport ? VENUES.filter((v) => v.sports.includes(sport)) : VENUES;
+}
 
 /** ¿El punto cae dentro de la comuna? Trazado de rayos sobre el polígono. */
 export function insideComuna(p: { lat: number; lng: number }): boolean {
