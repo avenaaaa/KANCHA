@@ -210,6 +210,14 @@ Cuando a un partido le faltan 1 o 2 jugadores y empieza en 2 horas o menos, el o
 - **Para el jugador:** la carta del partido muestra "Entra gratis »" en el botón naranja en vez de "Falta 1"; el pin lleva borde blanco y late (en la web) con un halo naranja; el detalle lleva la insignia "Destacado · entra gratis" y el botón "Únete gratis".
 - **Invitado confirmado:** "Entraste como invitado: no pagas nada. Nos vemos en la cancha.", en verde y sin botón de pago.
 - **Invitado por confirmar** (novato o honor bajo 7): "Solicitud enviada. Como aún no tienes buen honor, el organizador te confirma; si te acepta, entras gratis.", en ámbar, como cualquier postulación pendiente.
+
+### 4.10 Avisos (HU-10)
+
+- **Pestaña "Avisos"** con ícono de campana entre "Mis partidos" y "Perfil". Los no leídos se cuentan en un globo naranja `#F0A500` con texto `#1A1A1A` ("9+" desde diez).
+- **"Falta uno" vigente:** tarjeta con borde `#F0A500` de 2 px y fondo naranja translúcido, título en Anton mayúscula naranja e ícono de reloj sobre círculo naranja. Va primero, antes que cualquier otro aviso; el de un partido destacado, primero entre ellos. Al leerse, o cuando su partido se llena o empieza, pasa a tarjeta normal.
+- **Sobre el mapa:** el primer "Falta uno" vigente aparece como franja naranja bajo el logo, con título en Anton y el texto del aviso en `#1A1A1A`. Tocarla abre el partido; la X la descarta. Las dos acciones lo marcan como leído.
+- **Demás avisos:** tarjeta `#2A2A2A` con borde `#3A3A3A`, ícono gris por tipo (pin, usuario, check, flecha, calendario) y un punto naranja mientras no se lean. Debajo, "hace 5 min".
+- **"Elegir avisos":** tres interruptores en tarjetas: "Falta uno" en la primera, con borde naranja y título en Anton; luego "Partidos cerca" (días como chips, horario con contadores) y "Ánimo para jugar". Si hay alguno activo aparecen los deportes y la distancia. Interruptor encendido: pista naranja y círculo blanco.
 - Con "reducir movimiento", el pin no late.
 
 ---

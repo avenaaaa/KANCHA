@@ -10,15 +10,16 @@
 **Objetivo del sprint.** Que el MVP esté listo para defenderse: revisado de punta a punta, corregido,
 con mejor presentación visual, desplegado como respaldo y con sus pruebas de rendimiento ejecutadas.
 
-Las nueve historias del MVP se terminaron en el Sprint 7, así que este sprint no compromete puntos
-de historia. El trabajo se mide en tareas.
+Las nueve historias del MVP se terminaron en el Sprint 7, así que este sprint no comprometió puntos
+de historia. El trabajo se mide en tareas. El 20 de noviembre el autor reincorporó HU-10 (8 puntos): su
+parte dentro de la app entra en este sprint y el push en Android (KAN-42) queda para el Sprint 9.
 
 | Dato | Valor |
 |---|---|
 | Duración | 14 días (10 – 23 de noviembre) |
 | Equipo | Lukas Guerrero, desarrollador único |
 | Compromiso | 8 tareas: auditoría y correcciones, rechazo de postulaciones, rediseño visual, despliegue, rendimiento, releases, prueba en teléfonos y documentación |
-| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno", y KAN-38, el límite real de la comuna con canchas existentes (16 de noviembre); KAN-39, el panel de partidos deslizable, KAN-40, las canchas como pines al publicar, y KAN-41, el "Falta uno" destacado (20 de noviembre) |
+| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno", y KAN-38, el límite real de la comuna con canchas existentes (16 de noviembre); KAN-39, el panel de partidos deslizable, KAN-40, las canchas como pines al publicar, KAN-41, el "Falta uno" destacado, y HU-10, los avisos (20 de noviembre) |
 
 El 15 de noviembre se acordó el orden de cierre, en tres etapas: (1) terminar de revisar y dejar todo
 implementado, (2) rediseñar la parte visual y (3) terminar la documentación y estudiar cómo se
@@ -42,6 +43,7 @@ presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda
 | [KAN-39](https://lukasguerrerokancha.atlassian.net/browse/KAN-39) | Tarea | Panel de partidos deslizable en el mapa y botón "Falta uno" destacado | En revisión · PR #23 a `develop` · agregada el 20-nov · evidencia `evidencias/sprint-08/17` a `19` |
 | [KAN-40](https://lukasguerrerokancha.atlassian.net/browse/KAN-40) | Tarea | Canchas de La Florida como pines al publicar: públicas, municipales y pagadas | En revisión · PR #24 a `develop` · agregada el 20-nov · evidencia `evidencias/sprint-08/20` y `21` |
 | [KAN-41](https://lukasguerrerokancha.atlassian.net/browse/KAN-41) | Tarea | "Falta uno" destacado: el invitado entra gratis | En revisión · PR #25 a `develop` · agregada el 20-nov · evidencia `evidencias/sprint-08/22` a `24` |
+| [KAN-16](https://lukasguerrerokancha.atlassian.net/browse/KAN-16) | Historia | HU-10 — Avisos de partidos cercanos y de "Falta uno" (8 pts) | En revisión · PR a `develop` sobre la rama de KAN-41 · reincorporada el 20-nov · evidencia `evidencias/sprint-08/25` a `27` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | Listo · PR #17 y PR #18 integrados a `develop` el 17-nov · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
 | [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | En revisión · PR #22 a `develop` · las cinco cumplen |
@@ -64,6 +66,7 @@ Desglose técnico de lo hecho:
 | KAN-39 | — | Panel inferior deslizable con las cartas (cerrado al inicio, se abre con un pin o con "Falta uno") · "Falta uno" amarillo de 60 px con animación constante mientras está apagado |
 | KAN-40 | — | 36 canchas investigadas (24 públicas, 5 municipales y 7 privadas) como pines en el mapa de Publicar, filtradas por deporte, con "$" en las que se arriendan |
 | KAN-41 | `PATCH /matches/:id/priority` con la fila bloqueada · columna `prioritizedAt` · destacados primero y dentro de "Falta uno" · el invitado entra con cuota 0: al tiro con honor 7 o más, y si no lo aprueba el organizador | Aviso "¿Lo destacas?" al organizador con lo que pone cada uno · "Entra gratis" en la carta, pin que late, "Únete gratis" |
+| KAN-16 (HU-10) | Tablas `NotificationPreference` y `Notification` con `UNIQUE (userId, kind, matchId)` y `CHECK` · 4 endpoints · avisos por evento (publicar, destacar, postular, aprobar) y barrido cada 5 min (urgentes, "¿Lo destacas?", ánimo para jugar) · reparto con un solo `INSERT … SELECT` y `ST_DWithin` · el invitado sin buen honor queda pendiente (KAN-41) | Pestaña "Avisos" con contador · "Falta uno" vigente destacado en la bandeja y sobre el mapa · pantalla "Elegir avisos" con días, horario, deportes y distancia |
 
 ## 3. Scrumboard
 
@@ -109,6 +112,7 @@ teléfonos y de los formatos de la entrega.
 | 17 nov | Noche del 16 al 17. Rediseño visual (KAN-33, PR #17). Límite real de la comuna, canchas existentes y dirección automática (KAN-38, PR #18), con la carta de jugador nueva, fotos por deporte y transiciones. Revisión de incidencias: la demo caía fuera de la comuna (DEF-20), sesión sin usuario tras regenerar los datos (DEF-21), dirección que no habría funcionado en teléfonos (DEF-22) y estado de los chips para lectores de pantalla en la web. 173 pruebas del backend y 31 de la app; publicar un partido eligiendo una cancha, verificado en la app de punta a punta | Merge de los PR #16, #17 y #18, en ese orden. Documentos de la entrega (KAN-23) | Tres PR encadenados sin integrar (IMP-16) |
 | 18–19 nov | Sin avance registrado en el repositorio | — | — |
 | 20 nov | "Falta uno" destacado (KAN-41): el organizador al que le faltan 1 o 2 jugadores a 2 h o menos lo destaca y el invitado entra gratis; probado de punta a punta en la app, con 182 pruebas del backend y 35 de la app. Canchas de La Florida investigadas (36: multicanchas recuperadas por la Municipalidad, recintos municipales y clubes pagados) y elegibles como pines al publicar (KAN-40). Panel de partidos deslizable y "Falta uno" amarillo, grande y animado (KAN-39), probados en la app con mouse y con eventos táctiles. Pruebas de rendimiento R-01 a R-05 con k6 (KAN-35): las cinco cumplen, con p95 de 19 ms en la búsqueda y de 45 ms con 10.000 partidos. Lista de todo lo pendiente para el cierre. Épica KAN-3 cerrada en Jira (sus tres hijos estaban en Listo). PR #19 de `develop` a `main` con el CI en verde (KAN-36). `DESARROLLO.md` §8 corregido: Supabase por el Session pooler, regla de reescritura de la web y `NODE_VERSION` | Merge del PR #19 y releases. Crear las cuentas de Supabase y Render (KAN-34) | Las tareas que quedan dependen de cuentas, teléfonos y formatos que solo tiene el autor |
+| 20 nov (tarde) | HU-10 reincorporada (KAN-16, 8 pts) y push en Android separado en KAN-42. Verificación del invitado del "Falta uno" destacado por su honor (KAN-41). Avisos dentro de la app: preferencias, bandeja, "Falta uno" sobre el mapa y barrido periódico, probados de punta a punta en `docker compose` (destacar, unirse como novato, aprobar). 196 pruebas del backend en seis corridas seguidas y 38 de la app. Se corrigió I-04, que fallaba a veces con un destacado de otra ejecución en la base de pruebas | Merge de los PR #23, #24, #25 y el de HU-10. Despliegue (KAN-34) | El push en Android necesita la cuenta de Expo del autor |
 
 ## 6. Registro de impedimentos
 
