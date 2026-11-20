@@ -13,3 +13,4 @@ matchesRouter.post('/matches', authenticate, validate(createMatchSchema), matche
 matchesRouter.get('/matches/nearby', authenticate, validate(nearbyQuerySchema, 'query'), matchesController.nearby);
 matchesRouter.get('/matches/:id', authenticate, validate(idParamSchema, 'params'), matchesController.detail);
 matchesRouter.post('/matches/:id/join', authenticate, validate(idParamSchema, 'params'), matchesController.join);
+matchesRouter.patch('/matches/:id/priority', authenticate, validate(idParamSchema, 'params'), matchesController.prioritize);

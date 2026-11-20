@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertFutureStart, toMatchSummary } from '../../src/services/match.service.js';
+import { assertFutureStart, checkCanPrioritize, toMatchSummary } from '../../src/services/match.service.js';
 import { createMatchSchema, nearbyQuerySchema } from '../../src/schemas/match.schema.js';
 import { AppError } from '../../src/utils/errors.js';
 import type { MatchRow } from '../../src/repositories/match.repository.js';
@@ -104,6 +104,7 @@ describe('toMatchSummary', () => {
     filledSlots: 12,
     totalCost: 42000,
     status: 'OPEN',
+    prioritizedAt: null,
     organizerId: 'u1',
     organizerName: 'Lukas',
     organizerHonor: null,
@@ -117,5 +118,43 @@ describe('toMatchSummary', () => {
 
   it('U-36 · mantiene null el honor de un organizador sin reseñas', () => {
     expect(toMatchSummary(fila).organizer.honorScore).toBeNull();
+  });
+});
+
+describe('checkCanPrioritize · "Falta uno" destacado (KAN-41)', () => {
+  const ahora = new Date('2026-11-20T18:00:00Z');
+  const enHoras = (h: number) => new Date(ahora.getTime() + h * 3_600_000);
+  const partido = {
+    organizerId: 'organizador',
+    status: 'OPEN',
+    startsAt: enHoras(1),
+    totalSlots: 10,
+    filledSlots: 9,
+    prioritizedAt: null as Date | null,
+  };
+  const codigo = (e: AppError | null) => e?.code ?? null;
+
+  it('U-83 · el organizador puede destacar si le faltan 1 o 2 jugadores y empieza en 2 h o menos', () => {
+    expect(checkCanPrioritize(partido, 'organizador', ahora)).toBeNull();
+    expect(checkCanPrioritize({ ...partido, filledSlots: 8 }, 'organizador', ahora)).toBeNull();
+    expect(checkCanPrioritize({ ...partido, startsAt: enHoras(2) }, 'organizador', ahora)).toBeNull();
+  });
+
+  it('U-84 · solo el organizador destaca su partido', () => {
+    expect(checkCanPrioritize(partido, 'otro', ahora)?.statusCode).toBe(403);
+  });
+
+  it('U-85 · no se destaca si faltan 3 o más jugadores', () => {
+    expect(codigo(checkCanPrioritize({ ...partido, filledSlots: 7 }, 'organizador', ahora))).toBe('PRIORITY_NOT_AVAILABLE');
+  });
+
+  it('U-86 · no se destaca antes de la ventana de 2 horas', () => {
+    expect(codigo(checkCanPrioritize({ ...partido, startsAt: enHoras(2.1) }, 'organizador', ahora))).toBe('PRIORITY_TOO_EARLY');
+  });
+
+  it('U-87 · no se destaca dos veces, ni un partido ya iniciado o cerrado', () => {
+    expect(codigo(checkCanPrioritize({ ...partido, prioritizedAt: ahora }, 'organizador', ahora))).toBe('ALREADY_PRIORITY');
+    expect(codigo(checkCanPrioritize({ ...partido, startsAt: enHoras(-0.1) }, 'organizador', ahora))).toBe('MATCH_STARTED');
+    expect(codigo(checkCanPrioritize({ ...partido, status: 'FULL' }, 'organizador', ahora))).toBe('MATCH_NOT_OPEN');
   });
 });

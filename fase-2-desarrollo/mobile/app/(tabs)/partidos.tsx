@@ -100,6 +100,17 @@ function RateFooter({ organizer }: { organizer: boolean }) {
 
 function Footer({ m }: { m: MyMatch }) {
   if (m.role === 'ORGANIZER') {
+    // KAN-41: el aviso "¿lo destacas?" llega dentro de la app, en la carta del partido.
+    if (m.canPrioritize) {
+      return (
+        <View style={s.footer}>
+          <Text style={[s.footerText, { color: colors.accent }]}>
+            {m.slotsLeft === 1 ? 'Te falta 1 jugador' : `Te faltan ${m.slotsLeft} jugadores`} · Destácalo
+          </Text>
+          <Icon name="forward" size={14} color={colors.accent} strokeWidth={2.4} />
+        </View>
+      );
+    }
     if (m.pendingCount === 0) return null;
     return (
       <View style={s.footer}>
@@ -110,7 +121,8 @@ function Footer({ m }: { m: MyMatch }) {
       </View>
     );
   }
-  const st = playerStatus(m.myStatus, m.pricePerPlayer > 0);
+  // La cuota congelada manda: un invitado de un partido destacado no paga (KAN-41).
+  const st = playerStatus(m.myStatus, m.myAmountDue > 0);
   const color = st.tone === 'success' ? colors.success : st.tone === 'warning' ? colors.warning : colors.textMuted;
   return (
     <View style={s.footer}>

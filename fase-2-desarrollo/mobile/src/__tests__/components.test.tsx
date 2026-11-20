@@ -27,6 +27,7 @@ const partido: MatchSummary = {
   totalCost: 24000,
   pricePerPlayer: 6000,
   status: 'OPEN',
+  priority: false,
   organizer: { id: 'u1', name: 'Diego Cáceres', honorScore: null },
   distanceM: 2428,
 };
@@ -76,6 +77,13 @@ describe('MatchCard (DESIGN.md §4.2)', () => {
     expect(screen.getByText(/Pádel Bellavista, a 2,4 km/)).toBeTruthy();
     expect(screen.getByText('3/4')).toBeTruthy();
     expect(screen.getByText(/\$6\.000/)).toBeTruthy();
+  });
+
+  it('M-35 · un partido destacado dice "Entra gratis" en vez de cuántos faltan (KAN-41)', async () => {
+    await render(<MatchCard match={{ ...partido, priority: true }} onPress={() => undefined} />);
+    expect(screen.getByText('Entra gratis')).toBeTruthy();
+    expect(screen.queryByText('Falta 1')).toBeNull();
+    expect(screen.getByRole('button', { name: /destacado: entra gratis/ })).toBeTruthy();
   });
 
   it('M-13 · tocar la carta abre el partido', async () => {

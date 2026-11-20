@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBuyOrder,
   calculateAmountDue,
+  guestShare,
   calculateCommission,
   calculateRefund,
   decideCancellation,
@@ -163,5 +164,13 @@ describe('decideCancellation (HU-09)', () => {
       platformCommission: 330,
       venueAmount: 2970,
     });
+  });
+});
+
+describe('guestShare · cuota del invitado de un partido destacado (KAN-41)', () => {
+  it('U-88 · la cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros', () => {
+    expect(guestShare(30000, 10, 9)).toEqual({ amount: 3000, perPlayer: 334 });
+    expect(guestShare(20000, 4, 3)).toEqual({ amount: 5000, perPlayer: 1667 });
+    expect(guestShare(0, 6, 5)).toEqual({ amount: 0, perPlayer: 0 });
   });
 });

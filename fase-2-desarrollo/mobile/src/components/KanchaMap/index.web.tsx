@@ -24,6 +24,9 @@ const CSS = `
   transition:transform .16s ease-out}
 .kancha-pin:focus-visible{outline:2px solid ${colors.text};outline-offset:3px}
 .kancha-pin[data-selected="true"]{transform:scale(1.3)}
+.kancha-pin[data-priority="true"]{border-color:${colors.text};animation:kancha-latido 1.5s ease-out infinite}
+@keyframes kancha-latido{0%{box-shadow:0 0 0 0 ${colors.accentGlow},0 0 0 0 ${colors.accent}}
+  70%{box-shadow:0 0 0 14px rgba(0,0,0,0),0 0 0 6px rgba(0,0,0,0)}100%{box-shadow:0 0 0 0 rgba(0,0,0,0),0 0 0 0 rgba(0,0,0,0)}}
 .kancha-pin__gap{position:absolute;top:-8px;right:-10px;min-width:24px;height:20px;padding:0 5px;border-radius:10px;
   background:${colors.background};border:1px solid ${colors.accent};color:${colors.text};
   font-family:${fonts.bold},sans-serif;font-size:12px;line-height:18px;text-align:center;box-sizing:border-box}
@@ -41,7 +44,7 @@ const CSS = `
 .kancha-map .maplibregl-ctrl-attrib{background:${colors.scrim};color:${colors.textMuted}}
 .kancha-map .maplibregl-ctrl-attrib a{color:${colors.textMuted}}
 .kancha-map .maplibregl-ctrl-attrib-button{filter:invert(1)}
-@media (prefers-reduced-motion: reduce){.kancha-pin,.kancha-venue{transition:none}}
+@media (prefers-reduced-motion: reduce){.kancha-pin,.kancha-venue{transition:none;animation:none}}
 `;
 
 function ensureCss() {
@@ -75,8 +78,12 @@ function updatePin(root: HTMLElement, m: MapMatch, selected: boolean) {
   const btn = root.firstElementChild as HTMLElement | null;
   if (!btn) return;
   btn.dataset['selected'] = String(selected);
-  root.style.zIndex = selected ? '3' : '1';
-  btn.setAttribute('aria-label', `Partido con ${m.slotsLeft} ${m.slotsLeft === 1 ? 'cupo libre' : 'cupos libres'}`);
+  btn.dataset['priority'] = String(Boolean(m.priority));
+  root.style.zIndex = selected ? '3' : m.priority ? '2' : '1';
+  btn.setAttribute(
+    'aria-label',
+    `Partido con ${m.slotsLeft} ${m.slotsLeft === 1 ? 'cupo libre' : 'cupos libres'}${m.priority ? ', destacado: entra gratis' : ''}`,
+  );
   btn.setAttribute('aria-pressed', String(selected));
   const gap = btn.querySelector('.kancha-pin__gap');
   if (gap) gap.textContent = `\u2212${m.slotsLeft}`;

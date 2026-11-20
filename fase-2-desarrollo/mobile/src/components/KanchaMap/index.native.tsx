@@ -38,7 +38,7 @@ const regionFor = (lat: number, lng: number, zoom: number): Region => {
 function NativePin({ match, selected }: { match: MapMatch; selected: boolean }) {
   return (
     <View style={[s.pinWrap, selected && { transform: [{ scale: 1.3 }] }]}>
-      <View style={s.pin}>
+      <View style={[s.pin, match.priority && s.pinPriority]}>
         <Icon name={match.sport} size={20} color={colors.onAccent} strokeWidth={2} />
       </View>
       <View style={s.gap}>
@@ -165,6 +165,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // KAN-41: el destacado se distingue con un borde claro (en la web además late).
+  pinPriority: { borderColor: colors.text, borderWidth: 3 },
   gap: {
     position: 'absolute',
     top: 2,

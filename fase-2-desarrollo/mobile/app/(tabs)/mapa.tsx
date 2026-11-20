@@ -85,7 +85,7 @@ export default function MapScreen() {
 
   const open = (m: MatchSummary) => router.push(`/partido/${m.id}`);
   const mapMatches = useMemo(
-    () => matches.map((m) => ({ id: m.id, lat: m.lat, lng: m.lng, sport: m.sport, slotsLeft: m.slotsLeft })),
+    () => matches.map((m) => ({ id: m.id, lat: m.lat, lng: m.lng, sport: m.sport, slotsLeft: m.slotsLeft, priority: m.priority })),
     [matches],
   );
 
