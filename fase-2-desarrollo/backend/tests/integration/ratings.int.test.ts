@@ -1,40 +1,8 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { prisma } from '../../src/config/prisma.js';
-import { api, dbReady, northOf, publishMatch, registerUser } from './helpers.js';
+import { HORA, MIN, api, auth, dbReady, partidoJugado, registerUser, type Jugador } from './helpers.js';
 
 const hasDb = await dbReady();
-
-const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-const MIN = 60_000;
-const HORA = 60 * MIN;
-
-type Jugador = Awaited<ReturnType<typeof registerUser>>;
-
-/**
- * Partido gratis con organizador y dos jugadores aprobados. Se publica en el
- * futuro (la API no acepta otra cosa) y luego se mueve en la base para que haya
- * terminado hace `terminoHace` ms; con `null` queda sin terminar.
- */
-async function partidoJugado(metros: number, terminoHace: number | null) {
-  const organizador = await registerUser('Organizador');
-  const a = await registerUser('Jugador A');
-  const b = await registerUser('Jugador B');
-  const partido = await publishMatch(organizador.token, { ...northOf(metros), totalSlots: 4, filledSlots: 1, totalCost: 0 });
-
-  for (const j of [a, b]) {
-    const join = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(j.token));
-    const ok = await api().patch(`/api/v1/participations/${join.body.participationId}/approve`).set(auth(organizador.token));
-    if (ok.status !== 200) throw new Error(`No se pudo aprobar: ${ok.status} ${JSON.stringify(ok.body)}`);
-  }
-
-  if (terminoHace !== null) {
-    await prisma.match.update({
-      where: { id: partido.id },
-      data: { startsAt: new Date(Date.now() - terminoHace - HORA), durationMin: 60 },
-    });
-  }
-  return { id: partido.id, organizador, a, b };
-}
 
 const calificar = (matchId: string, quien: Jugador, a: Jugador, nota = { punctuality: 5, conduct: 5 }) =>
   api()

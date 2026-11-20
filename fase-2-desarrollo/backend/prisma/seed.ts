@@ -13,8 +13,11 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// Centro aproximado de La Florida
-const CENTRO = { lat: -33.5228, lng: -70.5983 };
+// Punto interior de La Florida. El anterior (Vicuña Mackenna con Vespucio) está pegado al borde
+// poniente de la comuna: la mitad de los partidos de la demo caía en La Granja o San Joaquín.
+const CENTRO = { lat: -33.5425, lng: -70.585 };
+/** Los desplazamientos se achican para que los 15 partidos queden dentro del límite real de la comuna. */
+const ESCALA = 0.7;
 
 /** Desplaza un punto en kilómetros. Suficiente para datos de demostración. */
 function offset(lat: number, lng: number, dxKm: number, dyKm: number) {
@@ -67,9 +70,20 @@ const PARTIDOS = [
   { title: 'Básquet 5x5 · Liga amateur',     sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Polideportivo La Florida', calle: 'Av. La Florida', dx: -1.3, dy: 0.5, slots: 10, filled: 8,  cost: 32000, dia: 1, hora: '20:30' },
   { title: 'Básquet 3x3 · Principiantes',    sport: Sport.BASQUETBOL, level: SkillLevel.PRINCIPIANTE, venue: 'Multicancha Trinidad',   calle: 'Av. Trinidad', dx: 2.2,  dy: 2.1,  slots: 6,  filled: 2,  cost: 0,     dia: 1, hora: '17:00' },
   { title: 'Básquet 5x5 · Tarde de cancha', sport: Sport.BASQUETBOL, level: SkillLevel.MEDIO,        venue: 'Gimnasio Bellavista',    calle: 'Av. Bellavista', dx: -0.4, dy: -2.8, slots: 10, filled: 7,  cost: 28000, dia: 3, hora: '18:00' },
+
+  // KAN-37 · "Falta uno": uno urgente por deporte. Les falta 1 jugador y empiezan en menos de 2 horas
+  // desde que se levanta la demo, así el botón "Falta uno" siempre tiene algo que mostrar.
+  { title: 'Fútbol 5 · Falta uno ya',       sport: Sport.FUTBOL,     level: SkillLevel.MEDIO,        venue: 'Cancha Vicuña Mackenna',  calle: 'Av. Vicuña Mackenna', dx: 0.6,  dy: -0.5, slots: 10, filled: 9, cost: 30000, dia: 0, hora: '00:00', enHoras: 1.5 },
+  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1 },
+  { title: 'Básquet 3x3 · Falta uno ya',    sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Multicancha San José',    calle: 'San José de la Estrella', dx: 1.5, dy: 1.1, slots: 6, filled: 5, cost: 0, dia: 0, hora: '00:00', enHoras: 1.75 },
 ];
 
 async function main() {
+  // El seed BORRA todo antes de sembrar. En producción solo corre si la demo lo pide.
+  if (process.env['NODE_ENV'] === 'production' && process.env['DEMO_MODE'] !== 'true') {
+    console.log('⏭️  Seed omitido: NODE_ENV=production sin DEMO_MODE=true. No se tocó ningún dato.');
+    return;
+  }
   console.log('🟠 Sembrando datos de demostración de Kancha…');
 
   await prisma.rating.deleteMany();
@@ -93,7 +107,7 @@ async function main() {
   const partidos = [];
   for (const [i, p] of PARTIDOS.entries()) {
     const organizer = usuarios[i % usuarios.length]!;
-    const { lat, lng } = offset(CENTRO.lat, CENTRO.lng, p.dx, p.dy);
+    const { lat, lng } = offset(CENTRO.lat, CENTRO.lng, p.dx * ESCALA, p.dy * ESCALA);
 
     const [row] = await prisma.$queryRaw<{ id: string }[]>`
       INSERT INTO "Match"
@@ -103,13 +117,13 @@ async function main() {
         (gen_random_uuid(), ${organizer.id}, ${p.title}, ${p.sport}::"Sport", ${p.level}::"SkillLevel",
          ${p.venue}, ${`${p.calle}, La Florida`},
          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-         ${proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
+         ${p.enHoras !== undefined ? enHoras(p.enHoras) : proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
          ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus", NOW(), NOW())
       RETURNING "id";
     `;
     partidos.push({ ...p, id: row!.id, organizerId: organizer.id });
   }
-  console.log(`   ${partidos.length} partidos creados (4 por deporte)`);
+  console.log(`   ${partidos.length} partidos creados (5 por deporte, uno de ellos urgente)`);
 
   // Historial: un partido ya terminado con reseñas, para que el honor no salga vacío.
   const [historico] = await prisma.$queryRaw<{ id: string }[]>`
@@ -133,6 +147,7 @@ async function main() {
         userId: u.id,
         status: PartStatus.PAID,
         amountDue: 3000,
+        attended: true, // asistencia ya cerrada por el organizador (KAN-30)
       },
     });
   }
@@ -175,12 +190,8 @@ async function main() {
       orderBy: { createdAt: 'desc' },
       select: { punctuality: true, conduct: true },
     });
-    const attended = await prisma.participation.count({
-      where: { userId: u.id, status: PartStatus.PAID },
-    });
-    const noShow = await prisma.participation.count({
-      where: { userId: u.id, status: PartStatus.NO_SHOW },
-    });
+    const attended = await prisma.participation.count({ where: { userId: u.id, attended: true } });
+    const noShow = await prisma.participation.count({ where: { userId: u.id, attended: false } });
     const h = calculateHonor(ratings, { attended, noShow });
     await prisma.user.update({
       where: { id: u.id },

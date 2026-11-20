@@ -17,6 +17,9 @@ jobs:
           POSTGRES_USER: kancha
           POSTGRES_PASSWORD: kancha
           POSTGRES_DB: kancha_test
+          # Hora de Chile, no UTC: así la prueba I-03b puede detectar el desfase de DEF-04.
+          TZ: America/Santiago
+          PGTZ: America/Santiago
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
@@ -42,9 +45,16 @@ jobs:
       - run: npm run build
       # Carga la app compilada en Node real: detecta dependencias que no cargan como ESM (las pruebas no lo ven).
       - run: node --input-type=module -e "await import('./dist/app.js')"
-      - run: npm test
+      # Con cobertura: el umbral de vitest.config.ts (80 % de líneas) hace fallar el job si baja.
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend
+          path: fase-2-desarrollo/backend/coverage
 
   mobile:
+    # El nombre no se cambia: la regla de protección de main y develop exige este check por su nombre.
     name: App Expo (tipos y build web)
     runs-on: ubuntu-latest
     defaults:
@@ -59,12 +69,29 @@ jobs:
           cache-dependency-path: fase-2-desarrollo/mobile/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npm test
       - run: npx expo export --platform web
 
   docker:
+    # El nombre no se cambia: la regla de protección de main y develop exige este check por su nombre.
     name: Imagenes Docker
     needs: [backend, mobile]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - run: docker compose build
+      # Lo mismo que hará el profesor: levantar todo desde cero y comprobar que responde.
+      - run: docker compose up -d --wait
+      - name: La API responde y la base está conectada
+        run: curl -fsS http://localhost:3000/api/v1/health
+      - name: Los datos de demostración cargaron (login con una cuenta de demo)
+        run: >
+          curl -fsS -X POST http://localhost:3000/api/v1/auth/login
+          -H 'Content-Type: application/json'
+          -d '{"email":"camila@kancha.cl","password":"kancha2026"}' -o /dev/null
+      - name: La web responde
+        run: curl -fsS http://localhost:8080 -o /dev/null
+      - if: failure()
+        run: docker compose logs --tail 80
+      - if: always()
+        run: docker compose down -v

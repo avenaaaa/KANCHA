@@ -105,8 +105,8 @@ export const openapi = {
           level: { $ref: '#/components/schemas/Level' },
           venueName: { type: 'string', example: 'Pádel Bellavista' },
           address: { type: 'string', example: 'Av. Vicuña Mackenna 7110, La Florida' },
-          lat: { type: 'number', example: -33.5228 },
-          lng: { type: 'number', example: -70.5983 },
+          lat: { type: 'number', example: -33.5425 },
+          lng: { type: 'number', example: -70.585 },
           startsAt: { type: 'string', format: 'date-time', description: 'Debe ser futura (si no, 422 MATCH_IN_PAST)' },
           durationMin: { type: 'integer', minimum: 30, maximum: 240, default: 60 },
           totalSlots: { type: 'integer', minimum: 2, maximum: 30, example: 4 },
@@ -158,7 +158,7 @@ export const openapi = {
                 properties: {
                   isOrganizer: { type: 'boolean' },
                   participationId: { type: 'string', nullable: true },
-                  status: { type: 'string', nullable: true, description: 'Incluye CANCELLED si el jugador perdió el cupo' },
+                  status: { type: 'string', nullable: true, description: 'Incluye CANCELLED si el jugador perdió el cupo y REJECTED si el organizador no lo aceptó' },
                   payment: {
                     type: 'object',
                     nullable: true,
@@ -222,6 +222,7 @@ export const openapi = {
         responses: {
           200: { description: 'Sesión iniciada', content: json('AuthResult') },
           401: error({ code: 'INVALID_CREDENTIALS', message: 'El correo o la contraseña no son correctos' }),
+          429: error({ code: 'TOO_MANY_REQUESTS', message: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.' }),
         },
       },
     },
@@ -264,11 +265,19 @@ export const openapi = {
         summary: 'Partidos con cupo cerca de un punto (HU-04)',
         description: 'ST_DWithin sobre el índice GIST idx_match_location. Ordena por distancia.',
         parameters: [
-          { name: 'lat', in: 'query', required: true, schema: { type: 'number' }, example: -33.5228 },
-          { name: 'lng', in: 'query', required: true, schema: { type: 'number' }, example: -70.5983 },
+          { name: 'lat', in: 'query', required: true, schema: { type: 'number' }, example: -33.5425 },
+          { name: 'lng', in: 'query', required: true, schema: { type: 'number' }, example: -70.585 },
           { name: 'radius', in: 'query', schema: { type: 'integer', default: 5000, minimum: 500, maximum: 20000 }, description: 'Metros' },
           { name: 'sport', in: 'query', schema: { type: 'string' }, description: 'Uno o varios separados por coma: FUTBOL,PADEL' },
           { name: 'level', in: 'query', schema: { $ref: '#/components/schemas/Level' } },
+          {
+            name: 'urgent',
+            in: 'query',
+            schema: { type: 'string', enum: ['true', 'false'] },
+            description:
+              'Filtro "Falta uno" (KAN-37): solo partidos a los que les falta exactamente 1 jugador y que empiezan ' +
+              'en 2 horas o menos (URGENT_WINDOW_HOURS)',
+          },
           { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
           { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
         ],
@@ -306,7 +315,12 @@ export const openapi = {
         parameters: [idParam],
         responses: {
           201: { description: 'Postulación registrada como pendiente' },
-          409: error({ code: 'ALREADY_JOINED', message: 'Ya postulaste a este partido' }),
+          409: {
+            ...error({ code: 'ALREADY_JOINED', message: 'Ya postulaste a este partido' }),
+            description:
+              'ALREADY_JOINED si ya postuló · CANCELLED_PAID_SLOT si canceló un cupo ya pagado en este partido ' +
+              '(su pago conserva el reembolso y la retención) · MATCH_FULL, MATCH_STARTED u OWN_MATCH',
+          },
         },
       },
     },
@@ -387,6 +401,60 @@ export const openapi = {
           200: { description: 'Postulación aprobada. El partido pasa a FULL si era el último cupo' },
           403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede aprobar postulaciones' }),
           409: error({ code: 'MATCH_FULL', message: 'El partido ya no tiene cupos disponibles' }),
+        },
+      },
+    },
+    '/participations/{id}/reject': {
+      patch: {
+        tags: ['Postulaciones'],
+        summary: 'El organizador rechaza una postulación pendiente (KAN-32)',
+        description:
+          'Solo postulaciones PENDING: quedan REJECTED y no ocupan cupo. El jugador puede volver a postular. ' +
+          'Usa el mismo bloqueo de fila que la aprobación.',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Postulación rechazada',
+            content: { 'application/json': { example: { participationId: '3f8a…', status: 'REJECTED' } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede rechazar postulaciones' }),
+          409: error({ code: 'PARTICIPATION_NOT_PENDING', message: 'Esta postulación ya fue procesada' }),
+        },
+      },
+    },
+    '/participations/{id}/attendance': {
+      patch: {
+        tags: ['Calificaciones'],
+        summary: 'El organizador registra la asistencia de un confirmado (KAN-30)',
+        description:
+          'Solo cuando el partido terminó y una sola vez por jugador. "Asistió" (true) suma un partido jugado; ' +
+          '"no se presentó" (false) deja la participación en NO_SHOW y la saca de las calificaciones. En ambos ' +
+          'casos el honor se recalcula en la misma transacción.',
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { type: 'object', required: ['attended'], properties: { attended: { type: 'boolean' } } },
+              example: { attended: true },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Asistencia registrada, con el honor ya recalculado',
+            content: {
+              'application/json': {
+                example: {
+                  participationId: '3f8a…',
+                  attended: true,
+                  honor: { attendanceRate: 100, punctualityRate: null, fairPlayRate: null, honorScore: 10 },
+                },
+              },
+            },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo el organizador registra la asistencia' }),
+          409: error({ code: 'ATTENDANCE_ALREADY_SET', message: 'La asistencia de este jugador ya está registrada' }),
         },
       },
     },

@@ -48,6 +48,8 @@ export interface MatchSummary {
 export interface ParticipantView {
   participationId: string;
   status: string;
+  /** Asistencia cerrada por el organizador (KAN-30): null mientras no se registre. */
+  attended: boolean | null;
   user: { id: string; name: string; favoriteSport: string; honorScore: number | null; matchesPlayed: number };
 }
 
@@ -156,6 +158,7 @@ export async function getDetail(id: string, viewerId: string): Promise<MatchDeta
     participants: visible.map((p) => ({
       participationId: p.id,
       status: p.status,
+      attended: p.attended,
       user: {
         id: p.user.id,
         name: p.user.name,

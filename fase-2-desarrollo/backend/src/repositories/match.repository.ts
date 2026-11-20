@@ -70,6 +70,8 @@ export interface NearbyFilter {
   level: LevelValue | null;
   from: Date | null;
   to: Date | null;
+  /** Cupos libres exactos que debe tener el partido, o null para cualquiera (KAN-37). */
+  slotsLeft: number | null;
   now: Date;
 }
 
@@ -118,6 +120,7 @@ export const matchRepository = {
         AND (${f.level}::text IS NULL OR m."level"::text = ${f.level}::text)
         AND (${iso(f.from)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') >= ${iso(f.from)}::timestamptz)
         AND (${iso(f.to)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') <= ${iso(f.to)}::timestamptz)
+        AND (${f.slotsLeft}::int IS NULL OR m."totalSlots" - m."filledSlots" = ${f.slotsLeft}::int)
         AND ST_DWithin(m."location", ST_MakePoint(${f.lng}, ${f.lat})::geography, ${f.radiusM})
       ORDER BY "distanceM" ASC, m."startsAt" ASC
       LIMIT 100;

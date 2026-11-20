@@ -1,11 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { HonorBadge } from '@/components/HonorBadge';
 import { SlotBar } from '@/components/SlotBar';
 import { SportFilter } from '@/components/SportFilter';
 import { MatchCard } from '@/components/MatchCard';
 import { RatingPicker } from '@/components/RatingPicker';
-import type { MatchSummary } from '@/api/types';
+import { PlayerCard } from '@/components/PlayerCard';
+import type { MatchSummary, User } from '@/api/types';
 
 const partido: MatchSummary = {
   id: 'm1',
@@ -51,11 +52,11 @@ describe('SlotBar', () => {
 describe('SportFilter (DESIGN.md §4.4)', () => {
   it('M-10 · muestra los tres deportes en orden Fútbol → Pádel → Básquet', async () => {
     await render(<SportFilter active={['FUTBOL', 'PADEL', 'BASQUETBOL']} onToggle={() => undefined} />);
-    const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityState?.selected);
-    expect(labels).toEqual([true, true, true]);
-    expect(screen.getByText('Fútbol')).toBeTruthy();
-    expect(screen.getByText('Pádel')).toBeTruthy();
-    expect(screen.getByText('Básquet')).toBeTruthy();
+    const chips = screen.getAllByRole('button');
+    expect(chips.map((b) => b.props.accessibilityState?.selected)).toEqual([true, true, true]);
+    // El orden se comprueba de verdad: el texto de cada chip, en la posición en que se dibuja.
+    const texto = (i: number) => within(chips[i]!).getByText(/Fútbol|Pádel|Básquet/).props.children;
+    expect([texto(0), texto(1), texto(2)]).toEqual(['Fútbol', 'Pádel', 'Básquet']);
   });
 
   it('M-11 · tocar un chip avisa qué deporte cambió', async () => {
@@ -91,5 +92,38 @@ describe('RatingPicker (HU-06)', () => {
     expect(screen.getByRole('button', { name: '4' }).props.accessibilityState).toMatchObject({ selected: true });
     await fireEvent.press(screen.getByText('2'));
     expect(onChange).toHaveBeenCalledWith(2);
+  });
+});
+
+describe('PlayerCard (HU-02)', () => {
+  const jugador: User = {
+    id: 'u2',
+    name: 'Valentina Soto',
+    email: 'valentina@kancha.cl',
+    favoriteSport: 'FUTBOL',
+    matchesPlayed: 0,
+    honorScore: null,
+    attendanceRate: null,
+    punctualityRate: null,
+    fairPlayRate: null,
+    createdAt: '2026-11-01T12:00:00.000Z',
+  };
+
+  it('M-18 · sin reseñas dice "Sin calificaciones aún" y nunca muestra el correo', async () => {
+    await render(<PlayerCard user={jugador} />);
+    expect(screen.getAllByText('Sin calificaciones aún').length).toBeGreaterThan(0);
+    expect(screen.queryByText('0.0')).toBeNull();
+    expect(screen.queryByText('valentina@kancha.cl')).toBeNull();
+  });
+
+  it('M-19 · con reseñas muestra honor, partidos jugados y las tres métricas', async () => {
+    await render(
+      <PlayerCard user={{ ...jugador, matchesPlayed: 12, honorScore: 8.8, attendanceRate: 100, punctualityRate: 75, fairPlayRate: 92 }} />,
+    );
+    expect(screen.getByText('8.8')).toBeTruthy();
+    expect(screen.getByText('12')).toBeTruthy();
+    expect(screen.getByText('100 %')).toBeTruthy();
+    expect(screen.getByText('75 %')).toBeTruthy();
+    expect(screen.getByText('92 %')).toBeTruthy();
   });
 });

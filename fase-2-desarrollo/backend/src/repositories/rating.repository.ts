@@ -10,10 +10,21 @@ export interface RosterRow {
   members: { id: string; name: string; honorScore: Prisma.Decimal | null }[];
 }
 
-/** Operaciones dentro de la transacción que guarda una reseña y recalcula el honor (HU-07). */
+/** Participación cuya asistencia cierra el organizador (KAN-30). */
+export interface AttendanceRow {
+  userId: string;
+  status: string;
+  attended: boolean | null;
+  match: { organizerId: string; startsAt: Date; durationMin: number };
+}
+
+/** Operaciones dentro de la transacción que guarda una reseña o una asistencia y recalcula el honor (HU-07). */
 export interface RatingTx {
   lockUser(userId: string): Promise<void>;
   insertRating(data: { matchId: string; raterId: string; ratedId: string; punctuality: number; conduct: number }): Promise<void>;
+  /** Cierra la asistencia solo si seguía abierta; false si otro cierre llegó antes. */
+  closeAttendance(participationId: string, attended: boolean): Promise<boolean>;
+  addMatchPlayed(userId: string): Promise<void>;
   lastRatings(userId: string, limit: number): Promise<RatingSample[]>;
   attendance(userId: string): Promise<AttendanceSample>;
   updateHonor(userId: string, honor: HonorBreakdown): Promise<void>;
@@ -30,6 +41,17 @@ function ratingTx(tx: Prisma.TransactionClient): RatingTx {
     async insertRating(data) {
       await tx.rating.create({ data });
     },
+    async closeAttendance(participationId, attended) {
+      // La condición attended = null hace el cierre atómico: nunca suma dos veces el mismo partido.
+      const { count } = await tx.participation.updateMany({
+        where: { id: participationId, attended: null, status: { in: ['APPROVED', 'PAID'] } },
+        data: attended ? { attended } : { attended, status: 'NO_SHOW' },
+      });
+      return count === 1;
+    },
+    async addMatchPlayed(userId) {
+      await tx.user.update({ where: { id: userId }, data: { matchesPlayed: { increment: 1 } } });
+    },
     lastRatings: (userId, limit) =>
       tx.rating.findMany({
         where: { ratedId: userId },
@@ -39,8 +61,8 @@ function ratingTx(tx: Prisma.TransactionClient): RatingTx {
       }),
     async attendance(userId) {
       const [attended, noShow] = await Promise.all([
-        tx.participation.count({ where: { userId, status: 'PAID' } }),
-        tx.participation.count({ where: { userId, status: 'NO_SHOW' } }),
+        tx.participation.count({ where: { userId, attended: true } }),
+        tx.participation.count({ where: { userId, attended: false } }),
       ]);
       return { attended, noShow };
     },
@@ -71,10 +93,23 @@ export const ratingRepository = {
     return rows.map((r) => r.ratedId);
   },
 
+  findForAttendance(participationId: string): Promise<AttendanceRow | null> {
+    return prisma.participation.findUnique({
+      where: { id: participationId },
+      select: {
+        userId: true,
+        status: true,
+        attended: true,
+        match: { select: { organizerId: true, startsAt: true, durationMin: true } },
+      },
+    });
+  },
+
   async archive(matchId: string): Promise<void> {
     await prisma.match.update({ where: { id: matchId }, data: { status: 'ARCHIVED' } });
   },
 
+  /** También la usa el cierre de asistencia (KAN-30): ambos recalculan el honor con la fila bloqueada. */
   inRatingTransaction<T>(fn: (tx: RatingTx) => Promise<T>): Promise<T> {
     return prisma.$transaction((tx) => fn(ratingTx(tx)));
   },

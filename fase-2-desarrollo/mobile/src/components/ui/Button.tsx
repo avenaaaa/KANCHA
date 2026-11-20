@@ -76,7 +76,7 @@ export function Button({
 
 const s = StyleSheet.create({
   base: {
-    minHeight: 52,
+    minHeight: 56,
     borderRadius: radius.button,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -86,7 +86,7 @@ const s = StyleSheet.create({
   secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent', minHeight: 44, paddingHorizontal: spacing.sm },
   disabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.97 }] },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: { ...type.button },
 });

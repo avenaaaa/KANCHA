@@ -9,6 +9,7 @@ sequenceDiagram
     U->>APP: Abre la pestaña Mapa
     APP->>APP: expo-location solicita permiso
     APP-->>U: Permiso concedido
+    APP->>APP: resolveOrigin · precisión peor que 1 km o a más de 6 km del centro → La Florida (DEF-05)
     APP->>API: GET /matches/nearby?lat&lng&radius=5000&sport
     API->>API: middleware auth valida JWT
     API->>API: middleware validate (Zod) valida query

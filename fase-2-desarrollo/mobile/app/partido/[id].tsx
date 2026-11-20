@@ -1,18 +1,28 @@
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
-import { formatCLP, formatTime, formatDay, slotsCta } from '@/lib/format';
-import { useApproveParticipation, useCancelParticipation, useJoinMatch, useMatch, useStartPayment } from '@/api/hooks';
+import { formatCLP, formatTime, formatDay, plural, slotsCta } from '@/lib/format';
+import {
+  useApproveParticipation,
+  useCancelParticipation,
+  useJoinMatch,
+  useMatch,
+  useRecordAttendance,
+  useRejectParticipation,
+  useStartPayment,
+} from '@/api/hooks';
 import { confirmAction } from '@/lib/confirm';
 import { errorMessage } from '@/api/client';
 import type { MatchDetail, Participant } from '@/api/types';
 import { RequireAuth } from '@/components/RequireAuth';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SportBadge } from '@/components/SportBadge';
+import { FadeIn } from '@/components/ui/FadeIn';
+import { SPORT_COVER } from '@/theme/sportImages';
 import { SlotBar } from '@/components/SlotBar';
 import { HonorBadge } from '@/components/HonorBadge';
 import { Avatar } from '@/components/Avatar';
@@ -33,15 +43,29 @@ function MatchDetailView() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { data: m, isLoading, isError, error, refetch } = useMatch(id);
+  const { data: m, isLoading, isError, error, refetch, isRefetching } = useMatch(id);
   const join = useJoinMatch(id);
   const approve = useApproveParticipation(id);
+  const reject = useRejectParticipation(id);
   const pay = useStartPayment(id);
   const cancel = useCancelParticipation(id);
+  const attendance = useRecordAttendance(id);
+
+  // "No vino" baja el honor del jugador y no se puede corregir después: se confirma antes.
+  async function onNoShow(p: Participant) {
+    const ok = await confirmAction(
+      `¿${p.user.name} no se presentó?`,
+      'Su asistencia bajará y ya no podrá calificar ni ser calificado en este partido. No se puede deshacer.',
+      'No se presentó',
+    );
+    if (ok) attendance.mutate({ participationId: p.participationId, attended: false });
+  }
 
   async function onCancel() {
     if (!m?.viewer.participationId) return;
-    if (await confirmAction('Cancelar mi cupo', cancelMessage(m), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
+    // El reembolso depende de la hora: se vuelve a pedir para no prometer el 100 % con un dato viejo.
+    const fresh = (await refetch()).data ?? m;
+    if (await confirmAction('Cancelar mi cupo', cancelMessage(fresh), 'Cancelar cupo')) cancel.mutate(m.viewer.participationId);
   }
 
   if (isLoading || !m) {
@@ -68,22 +92,29 @@ function MatchDetailView() {
   }
 
   const start = new Date(m.startsAt);
-  const confirmed = m.participants.filter((p) => p.status === 'APPROVED' || p.status === 'PAID');
+  const confirmed = m.participants.filter((p) => p.status === 'APPROVED' || p.status === 'PAID' || p.status === 'NO_SHOW');
+  // KAN-30: terminado el partido, el organizador cierra la asistencia de cada confirmado.
+  const closeAttendance = m.viewer.isOrganizer && m.ratingWindow !== 'NOT_FINISHED';
   const pending = m.participants.filter((p) => p.status === 'PENDING');
   const narrow = width < 640;
 
   return (
     <View style={[s.screen, { paddingTop: insets.top }]}>
       <ScreenHeader />
-      <ScrollView contentContainerStyle={[s.body, { paddingBottom: 220 + insets.bottom }]}>
+      <ScrollView
+        contentContainerStyle={[s.body, { paddingBottom: 220 + insets.bottom }]}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} tintColor={colors.accent} />}
+      >
         <View style={s.hero}>
-          <SportBadge sport={m.sport} size={56} />
-          <View style={{ flex: 1, gap: 6 }}>
+          <Image source={SPORT_COVER[m.sport]} style={s.heroPhoto} resizeMode="cover" accessibilityElementsHidden importantForAccessibility="no" />
+          <View style={s.heroScrim} />
+          <FadeIn style={s.heroText}>
+            <SportBadge sport={m.sport} size={44} />
             <Text style={s.h1}>{m.title}</Text>
-            <Text style={s.muted}>
+            <Text style={s.heroMeta}>
               {sportLabel(m.sport)} · {levelLabel(m.level)}
             </Text>
-          </View>
+          </FadeIn>
         </View>
 
         <View style={[s.facts, narrow && { flexDirection: 'column' }]}>
@@ -108,11 +139,11 @@ function MatchDetailView() {
 
         <View style={s.block}>
           <Text style={s.sectionLabel}>Organiza</Text>
-          <View style={s.personRow}>
+          <PlayerLink userId={m.organizer.id} name={m.organizer.name}>
             <Avatar name={m.organizer.name} />
             <Text style={s.personName}>{m.organizer.name}</Text>
             <HonorBadge score={m.organizer.honorScore} />
-          </View>
+          </PlayerLink>
         </View>
 
         {m.viewer.isOrganizer && (
@@ -122,16 +153,26 @@ function MatchDetailView() {
             </Text>
             {pending.map((p) => (
               <PersonRow key={p.participationId} p={p}>
-                <Button
-                  label="Aprobar"
-                  onPress={() => approve.mutate(p.participationId)}
-                  loading={approve.isPending && approve.variables === p.participationId}
-                  disabled={m.slotsLeft === 0}
-                  style={s.approveBtn}
-                />
+                <View style={s.attendance}>
+                  <Button
+                    label="Aprobar"
+                    onPress={() => approve.mutate(p.participationId)}
+                    loading={approve.isPending && approve.variables === p.participationId}
+                    disabled={m.slotsLeft === 0}
+                    style={s.approveBtn}
+                  />
+                  <Button
+                    label="Rechazar"
+                    variant="secondary"
+                    onPress={() => reject.mutate(p.participationId)}
+                    loading={reject.isPending && reject.variables === p.participationId}
+                    style={s.approveBtn}
+                  />
+                </View>
               </PersonRow>
             ))}
             {approve.isError && <Text style={s.error}>{errorMessage(approve.error)}</Text>}
+            {reject.isError && <Text style={s.error}>{errorMessage(reject.error)}</Text>}
           </View>
         )}
 
@@ -139,12 +180,44 @@ function MatchDetailView() {
           <Text style={s.sectionLabel}>
             {confirmed.length === 0 ? 'Aún no hay confirmados por Kancha' : `Confirmados por Kancha (${confirmed.length})`}
           </Text>
+          {closeAttendance && confirmed.some((p) => p.attended === null) && (
+            <Text style={s.caption}>El partido terminó: marca quién asistió. Suma partidos jugados y cuenta en el honor.</Text>
+          )}
           {confirmed.map((p) => (
-            <PersonRow key={p.participationId} p={p} />
+            <PersonRow key={p.participationId} p={p}>
+              {p.status === 'NO_SHOW' ? (
+                <Text style={s.caption}>No se presentó</Text>
+              ) : closeAttendance && p.attended === null ? (
+                <View style={s.attendance}>
+                  <Button
+                    label="Asistió"
+                    onPress={() => attendance.mutate({ participationId: p.participationId, attended: true })}
+                    loading={attendance.isPending && attendance.variables?.participationId === p.participationId && attendance.variables.attended}
+                    style={s.approveBtn}
+                  />
+                  <Button
+                    label="No vino"
+                    variant="secondary"
+                    onPress={() => void onNoShow(p)}
+                    loading={attendance.isPending && attendance.variables?.participationId === p.participationId && !attendance.variables.attended}
+                    style={s.approveBtn}
+                  />
+                </View>
+              ) : closeAttendance && p.attended ? (
+                <View style={s.attended}>
+                  <Icon name="check" size={16} color={colors.success} strokeWidth={2} />
+                  <Text style={[s.caption, { color: colors.success }]}>Asistió</Text>
+                </View>
+              ) : undefined}
+            </PersonRow>
           ))}
-          <Text style={s.caption}>
-            Los otros {Math.max(0, m.filledSlots - confirmed.length)} cupos ocupados son jugadores que el organizador ya tenía.
-          </Text>
+          {attendance.isError && <Text style={s.error}>{errorMessage(attendance.error)}</Text>}
+          {m.filledSlots > confirmed.length && (
+            <Text style={s.caption}>
+              {plural(m.filledSlots - confirmed.length, 'cupo ocupado por un jugador', 'cupos ocupados por jugadores')} que el
+              organizador ya tenía.
+            </Text>
+          )}
         </View>
       </ScrollView>
 
@@ -178,17 +251,34 @@ function Fact({ icon, title, text }: { icon: 'clock' | 'pin' | 'wallet'; title: 
   );
 }
 
+/** Fila que abre la carta pública del jugador (HU-02). */
+function PlayerLink({ userId, name, fill = false, children }: { userId: string; name: string; fill?: boolean; children: React.ReactNode }) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/jugador/${userId}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver la carta de ${name}`}
+      style={({ pressed }) => [s.personRow, fill && { flex: 1 }, pressed && { opacity: 0.85 }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 function PersonRow({ p, children }: { p: Participant; children?: React.ReactNode }) {
   return (
     <View style={s.personRow}>
-      <Avatar name={p.user.name} />
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={s.personName}>{p.user.name}</Text>
-        <Text style={s.caption}>
-          {p.user.matchesPlayed === 1 ? '1 partido jugado' : `${p.user.matchesPlayed} partidos jugados`}
-        </Text>
-      </View>
-      {children ?? <HonorBadge score={p.user.honorScore} />}
+      <PlayerLink userId={p.user.id} name={p.user.name} fill>
+        <Avatar name={p.user.name} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={s.personName}>{p.user.name}</Text>
+          <Text style={s.caption}>
+            {p.user.matchesPlayed === 1 ? '1 partido jugado' : `${p.user.matchesPlayed} partidos jugados`}
+          </Text>
+        </View>
+        {children ? null : <HonorBadge score={p.user.honorScore} />}
+      </PlayerLink>
+      {children}
     </View>
   );
 }
@@ -251,19 +341,19 @@ function JoinCta({
     }
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="success" text="Partido jugado. Tienes 48 horas para calificar a tus compañeros." />
+        <StatusLine tone="success" text="Partido jugado. Puedes calificar a tus compañeros hasta 48 horas después del término." />
         <Button label="Calificar a mis compañeros" onPress={() => router.push(`/calificar/${m.id}`)} forward />
       </View>
     );
   }
 
   if (m.viewer.isOrganizer) {
-    return <StatusLine tone="muted" text="Organizas este partido. Aprueba las postulaciones desde aquí." />;
+    return <StatusLine tone="muted" text="Organizas este partido. Aprueba o rechaza las postulaciones desde aquí." />;
   }
   if (status === 'PENDING') {
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="warning" text="Postulación enviada. Te confirmamos cuando el organizador la apruebe." />
+        <StatusLine tone="warning" text="Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe." />
         {errorText}
         {cancelButton}
       </View>
@@ -305,13 +395,17 @@ function JoinCta({
       </View>
     );
   }
+  // Quien canceló un cupo ya pagado no vuelve a postular a este partido (la API responde 409).
+  if (status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED')) {
+    return <StatusLine tone="muted" text={`${cancelledText(payment)} Ya no puedes volver a postular a este partido.`} />;
+  }
   return (
     <View style={{ gap: spacing.sm }}>
+      {status === 'REJECTED' ? (
+        <StatusLine tone="muted" text="El organizador no aceptó tu postulación. Si aún hay cupo, puedes postular de nuevo." />
+      ) : null}
       {status === 'CANCELLED' && payment?.status === 'FAILED' ? (
         <StatusLine tone="muted" text="Tu pago no se completó y el cupo quedó libre. Si aún hay lugar, puedes postular de nuevo." />
-      ) : null}
-      {status === 'CANCELLED' && payment && (payment.status === 'RETAINED' || payment.status === 'REFUNDED') ? (
-        <StatusLine tone="muted" text={cancelledText(payment)} />
       ) : null}
       {errorText}
       <Button
@@ -339,8 +433,12 @@ function StatusLine({ tone, text }: { tone: 'muted' | 'warning' | 'success'; tex
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { paddingHorizontal: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  hero: { flexDirection: 'row', gap: spacing.md, alignItems: 'center', marginTop: spacing.sm },
-  h1: { ...type.h1, color: colors.text, lineHeight: 34 },
+  hero: { minHeight: 230, borderRadius: radius.card, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: colors.surface },
+  heroPhoto: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.scrim },
+  heroText: { padding: spacing.lg, gap: spacing.sm },
+  heroMeta: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.text },
+  h1: { ...type.display, color: colors.text },
   h2: { ...type.h2, color: colors.text },
   muted: { ...type.body, color: colors.textMuted },
   caption: { ...type.caption, fontSize: 13, lineHeight: 18, color: colors.textMuted },
@@ -360,7 +458,9 @@ const s = StyleSheet.create({
   sectionLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.textMuted },
   personRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md - 4, minHeight: 48 },
   personName: { fontFamily: fonts.medium, fontSize: 15, color: colors.text, flexShrink: 1 },
-  approveBtn: { minHeight: 40, paddingHorizontal: spacing.md },
+  approveBtn: { minHeight: 44, paddingHorizontal: spacing.md },
+  attended: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  attendance: { flexDirection: 'row', gap: spacing.sm },
   error: { ...type.caption, fontSize: 13, color: colors.error },
   ctaBar: {
     position: 'absolute',

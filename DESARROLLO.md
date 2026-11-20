@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.4 — 16 de octubre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.8 — 17 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -40,6 +40,7 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 | Estilos | StyleSheet de RN + tokens de `DESIGN.md` | — | Libre |
 | Mapa (móvil) | `react-native-maps` | incluido en Expo Go | Libre |
 | Mapa (web) | `maplibre-gl` + tiles oscuros de OpenFreeMap / CARTO | 5.x | Libre, sin API key |
+| Geodatos | Límite de La Florida y canchas con nombre, de OpenStreetMap, empaquetados en la app (`mobile/src/data/laFlorida.json`) · dirección de un punto con Nominatim | — | Libre (ODbL), sin API key |
 | Geolocalización | `expo-location` | — | Libre |
 | Notificaciones push | `expo-notifications` + Expo Push API | — | Libre |
 | Tipografías | Anton + Roboto vía `@expo-google-fonts` | — | Libre |
@@ -299,6 +300,7 @@ model Participation {
   userId    String
   status    PartStatus @default(PENDING)
   amountDue Int        // totalCost / totalSlots, calculado al confirmar
+  attended  Boolean?   // null sin cerrar · true asistió · false no se presentó (KAN-30)
   joinedAt  DateTime   @default(now())
 
   match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
@@ -391,16 +393,18 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | Método | Ruta | HU | Auth | Descripción |
 |---|---|---|---|---|
 | POST | `/auth/register` | HU-01 | — | Crea cuenta con `honorScore = null` · **implementado** |
-| POST | `/auth/login` | HU-01 | — | Devuelve el JWT de acceso (7 días) · **implementado**. El refresh token está pendiente |
+| POST | `/auth/login` | HU-01 | — | Devuelve el JWT de acceso (7 días) · **implementado**. 429 tras 10 contraseñas erradas por IP en 15 min (S-12). El refresh token queda fuera del MVP |
 | GET | `/users/me` | HU-01, HU-02 | ✔ | Perfil propio completo · **implementado** |
 | GET | `/users/me/matches` | HU-05 | ✔ | Partidos que organizo o a los que postulé, con mi estado y las postulaciones por revisar · **implementado** |
-| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública · versión básica implementada |
-| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push |
+| GET | `/users/:id` | HU-02 | ✔ | Carta de jugador pública: honor, partidos jugados y métricas, sin correo · **implementado** (pantalla `/jugador/[id]` en la app) |
+| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **fuera de alcance**: HU-10 salió del MVP el 8 de noviembre |
 | POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
-| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=` · **implementado** |
+| GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
-| POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING` · **implementado** |
+| POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING`. 409 `CANCELLED_PAID_SLOT` si canceló un cupo ya pagado en ese partido · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
+| PATCH | `/participations/:id/reject` | KAN-32 | ✔ org | Organizador rechaza una postulación pendiente → `REJECTED`. No mueve cupos; el jugador puede volver a postular · **implementado** |
+| PATCH | `/participations/:id/attendance` | KAN-30 | ✔ org | Con el partido terminado, el organizador marca `{ attended }`: asistió suma `matchesPlayed`, no se presentó deja `NO_SHOW`. Una vez por jugador; recalcula el honor · **implementado** |
 | DELETE | `/participations/:id` | HU-09 | ✔ | Cancela; si estaba pagado reembolsa por Transbank y retiene el 50 % si faltan < 12 h (al recinto, menos la comisión) · **implementado** |
 | POST | `/payments/:participationId/init` | HU-08 | ✔ | Crea transacción Webpay por la cuota + 10 %, devuelve `checkoutPath` · **implementado** |
 | GET | `/payments/:id/webpay` | HU-08 | — | Página que envía `token_ws` a Transbank por POST · **implementado** |
@@ -423,9 +427,10 @@ Todos los errores salen del `errorHandler` con la misma forma. Sin excepciones.
 ### 5.2 Reglas de negocio que van en `services/`, no en controladores
 
 ```
-honor.service.ts     honorScore = promedio ponderado de las últimas 20 calificaciones
-                     ((punctuality + conduct) / 2), redondeado a 1 decimal.
-                     Con 0 calificaciones → null (nunca 0: un novato no es un mal jugador).
+honor.service.ts     honorScore = promedio de las señales disponibles (asistencia, puntualidad y
+                     juego limpio), en escala 0–10 y redondeado a 1 decimal. Puntualidad y juego
+                     limpio salen de las últimas 20 reseñas recibidas.
+                     Sin ninguna señal → null (nunca 0: un novato no es un mal jugador).
                      Ventana de reseña: 48 h desde que termina el partido. Cumplido el plazo el
                      partido pasa a archivado y el endpoint de calificación responde 409. (HU-06)
 
@@ -433,12 +438,16 @@ honor.service.ts     honorScore = promedio ponderado de las últimas 20 califica
                      dos fuentes distintas, no todas de la reseña:
                        punctualityRate  ← promedio del campo punctuality de las reseñas recibidas
                        fairPlayRate     ← promedio del campo conduct de las reseñas recibidas
-                       attendanceRate   ← NO se califica: se calcula del historial de participaciones
-                                          = PAID / (PAID + NO_SHOW), en las participaciones cerradas
+                       attendanceRate   ← NO se califica: se calcula de la asistencia registrada
+                                          = asistió / (asistió + no se presentó), según
+                                            Participation.attended (KAN-30)
                      honorScore es el agregado de las tres en escala 0–10, y es el ÚNICO número de
                      reputación del producto: el badge naranja de la carta. El mockup de Fase 1
                      mostraba además un "rating 4.8" en escala 1–5; se elimina por redundante.
-                     matchesPlayed se incrementa al cerrar una participación como asistida.
+                     matchesPlayed se incrementa al cerrar una participación como asistida:
+                     lo hace el organizador con PATCH /participations/:id/attendance, una sola
+                     vez por jugador y con el partido terminado. El cierre es atómico
+                     (attended IS NULL) y recalcula el honor con la fila bloqueada. (KAN-30)
 
 payment.service.ts   amountDue   = ceil(totalCost / totalSlots)
                      commission  = round(amountDue * 0.10)
@@ -448,6 +457,21 @@ payment.service.ts   amountDue   = ceil(totalCost / totalSlots)
 matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      totalSlots → status = FULL. Todo dentro de una transacción
                      Prisma con bloqueo de fila, para evitar sobreventa de cupos.
+                     Rechazar usa el mismo bloqueo y no mueve cupos. (KAN-32)
+                     Quien canceló un cupo ya pagado no vuelve a postular a ese partido:
+                     su pago conserva el reembolso y la retención. Quien perdió el cupo
+                     sin pagar, o fue rechazado, sí puede.
+                     Filtro "Falta uno" (KAN-37): con urgent=true la búsqueda por radio deja
+                     solo los partidos a los que les falta exactamente 1 jugador y que
+                     empiezan dentro de URGENT_WINDOW_HOURS (2 h). La regla vive en
+                     urgentWindow(); la app solo envía el parámetro.
+
+Pago y cancelación a la vez (auditoría de cierre, KAN-31)
+                     Cancelar cierra un pago iniciado (FAILED). Un pago aprobado se registra
+                     con el partido bloqueado; si el cupo ya se canceló, se devuelve completo.
+                     El reembolso a Transbank es el último paso de la transacción, y cada
+                     llamada a Transbank tiene 8 s. Si la respuesta del commit se pierde,
+                     se consulta el estado real antes de dar el pago por perdido.
 ```
 
 ---
@@ -458,54 +482,26 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
 
 ### 6.1 `docker-compose.yml`
 
-```yaml
-services:
-  db:
-    image: postgis/postgis:16-3.4
-    container_name: kancha-db
-    environment:
-      POSTGRES_USER: kancha
-      POSTGRES_PASSWORD: kancha
-      POSTGRES_DB: kancha
-    ports: ["5432:5432"]
-    volumes: [kancha-db-data:/var/lib/postgresql/data]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kancha -d kancha"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+El archivo real es [`docker-compose.yml`](docker-compose.yml), en la raíz. Aquí va solo lo que hay que saber de él:
 
-  api:
-    build: ./fase-2-desarrollo/backend
-    container_name: kancha-api
-    environment:
-      DATABASE_URL: postgresql://kancha:kancha@db:5432/kancha
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-prod}
-      TBK_ENV: integration
-      PORT: 3000
-    ports: ["3000:3000"]
-    depends_on:
-      db: { condition: service_healthy }
-    command: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/server.js"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/v1/health"]
-      interval: 10s
-      retries: 5
+| Servicio | Imagen | Puerto | Arranque |
+|---|---|---|---|
+| `db` | `postgis/postgis:16-3.4` | 5432, solo en el propio equipo (`127.0.0.1` y `::1`) | Volumen `kancha-db-data`; `pg_isready` cada 5 s |
+| `api` | Build de `fase-2-desarrollo/backend` | 3000 | Espera a la base sana, aplica `prisma migrate deploy`, carga los datos de demostración e inicia la API. `GET /health` cada 10 s |
+| `web` | Build de `fase-2-desarrollo/mobile` (nginx) | 8080 | Espera a la API sana |
 
-  web:
-    build: ./fase-2-desarrollo/mobile
-    container_name: kancha-web
-    environment:
-      EXPO_PUBLIC_API_URL: http://localhost:3000/api/v1
-    ports: ["8080:80"]
-    depends_on:
-      api: { condition: service_healthy }
-
-volumes:
-  kancha-db-data:
-```
+- **`DEMO_MODE: "true"`** en el servicio `api`. Es lo que autoriza al seed a borrar y recargar los datos de
+  demostración en cada arranque, y a la API a aceptar la clave JWT de ejemplo. Solo este archivo lo define:
+  en un despliegue real el seed no toca nada y la API se niega a arrancar con esa clave.
+- **La base no se publica en la red.** Usa la clave de ejemplo `kancha`, así que solo escucha en el propio
+  equipo. Van los dos loopback porque en Windows `localhost` se resuelve primero por IPv6.
+- **Migraciones versionadas, nunca `db push`:** la base de la demo, la del CI y la de la nube tienen el mismo esquema.
 
 ### 6.2 `fase-2-desarrollo/backend/Dockerfile` (multi-stage)
+
+El arranque de la imagen es `npx prisma migrate deploy && node dist/server.js`: las migraciones se aplican
+también fuera de compose (Render usa esta imagen directamente). El seed de demostración solo lo agrega
+`docker-compose.yml`. El extracto de abajo es ilustrativo; el archivo real manda.
 
 ```dockerfile
 FROM node:22-alpine AS builder
@@ -559,8 +555,8 @@ http://localhost:3000/api/v1/health → { "status": "ok", "db": "connected" }
 ```
 
 El `seed.ts` debe dejar la demo lista: ~8 usuarios con distintos puntajes de honor,
-~12 partidos reales de La Florida (fútbol, pádel y básquet, **los tres con igual presencia**
-según `DESIGN.md`) repartidos en un radio de 5 km, y calificaciones previas para que el
+~15 partidos reales de La Florida (fútbol, pádel y básquet, **los tres con igual presencia**
+según `DESIGN.md`) repartidos en un radio de 5 km, uno urgente por deporte para el botón "Falta uno", y calificaciones previas para que el
 Sistema de Honor se vea funcionando desde el primer segundo.
 
 ---
@@ -584,7 +580,7 @@ Sistema de Honor se vea funcionando desde el primer segundo.
 ```
 main       producción · protegida · solo por Pull Request · CI obligatorio en verde
 develop    integración de sprints
-feat/HU-04-mapa-geolocalizado      una rama por historia de usuario
+feat/KAN-10-mapa   una rama por historia, nombrada con su issue de Jira (CLAUDE.md §6)
 fix/...    correcciones
 ```
 
@@ -603,61 +599,23 @@ chore(docker): add healthcheck to api service
 
 ### 7.4 `.github/workflows/ci.yml`
 
-```yaml
-name: CI
-on:
-  push:    { branches: [main, develop] }
-  pull_request: { branches: [main, develop] }
+El archivo real es [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Corre en cada push y en cada
+Pull Request a `main` y `develop`, con tres jobs:
 
-jobs:
-  backend:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgis/postgis:16-3.4
-        env: { POSTGRES_USER: kancha, POSTGRES_PASSWORD: kancha, POSTGRES_DB: kancha_test }
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
-    defaults: { run: { working-directory: ./fase-2-desarrollo/backend } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: fase-2-desarrollo/backend/package-lock.json }
-      - run: npm ci
-      - run: npx prisma migrate deploy
-        env: { DATABASE_URL: postgresql://kancha:kancha@localhost:5432/kancha_test }
-      - run: npm run lint
-      - run: npm test -- --coverage
-        env: { DATABASE_URL: postgresql://kancha:kancha@localhost:5432/kancha_test }
-      - uses: actions/upload-artifact@v4
-        with: { name: coverage-backend, path: fase-2-desarrollo/backend/coverage }
+| Job | Qué hace | Falla si… |
+|---|---|---|
+| `backend` | PostgreSQL + PostGIS en hora de Chile · `npm ci` · `prisma migrate deploy` · lint · build · carga la app compilada en Node · `npm test -- --coverage` · sube el informe de cobertura | Falla una prueba, hay un error de lint o de tipos, o la cobertura de `services/` y `utils/` baja del 80 % |
+| `mobile` | `npm ci` · `tsc --noEmit` · `npm test` (Jest) · `expo export --platform web` | Hay un error de tipos, falla una prueba de la app o no compila el build web |
+| `docker` | `docker compose build` · `docker compose up -d --wait` · consulta `/health` · entra con una cuenta de demo · pide la web · `docker compose down -v` | El stack no levanta desde cero, la base no conecta o los datos de demostración no cargan |
 
-  mobile:
-    runs-on: ubuntu-latest
-    defaults: { run: { working-directory: ./fase-2-desarrollo/mobile } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: fase-2-desarrollo/mobile/package-lock.json }
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npm test
-      - run: npx expo export --platform web
-
-  docker:
-    needs: [backend, mobile]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker compose build
-```
+El job `docker` hace lo mismo que hará el profesor con `git clone` y `docker compose up`.
+La base del CI corre en hora de Chile, no en UTC, para que las pruebas de fechas puedan detectar un desfase de zona horaria (DEF-04).
 
 ### 7.5 GitHub Projects
 
-Tablero `Kancha MVP` con columnas `Backlog → Sprint actual → En progreso → En revisión → Terminado`.
-Un issue por HU, etiquetado con su épica (`E1`…`E10`) y su sprint. El tablero es la evidencia visual
-de Scrum para la competencia C2; mantenlo sincronizado con Jira, no lo dejes atrasado.
+No se usa. El tablero del proyecto es Jira (proyecto `KAN`, board 2), que es la fuente de verdad del
+estado de sprints e historias. Mantener un segundo tablero en GitHub duplicaría la información; cada
+commit y cada Pull Request referencian su issue de Jira, y eso enlaza el código con el tablero.
 
 ### 7.6 Releases
 
@@ -665,6 +623,13 @@ Al cierre de cada sprint, un tag y un release con notas:
 `v0.5.0 — Sprint 5: Registro y publicación de partidos (HU-01, HU-03)`.
 Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0` (27 de septiembre de
 2026), con el esqueleto del Sprint 3 y el ambiente del Sprint 4.
+
+| Tag | Contenido | Estado al 8-nov |
+|---|---|---|
+| `v0.3.0` | Esqueleto, ambiente, Docker y CI (sprints 3 y 4) | Publicado |
+| `v0.6.0` | Registro, publicación, mapa y postulación (HU-01, HU-03 a HU-05) | Pendiente: el incremento está en `main` desde el PR #4 |
+| `v0.7.0` | Pago, retención, calificación, honor, carta y asistencia (HU-02, HU-06 a HU-09, KAN-30) | Pendiente: se publica al llevar `develop` a `main` |
+| `v1.0.0` | MVP congelado para la defensa | Sprint 9 |
 
 ---
 
@@ -676,6 +641,18 @@ Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0`
 | API | **Render** — Web Service, runtime Docker | Conectar el repo, root `./fase-2-desarrollo/backend`. Variables: `DATABASE_URL`, `JWT_SECRET`, `TBK_ENV=integration` |
 | Web | **Render Static Site** o Vercel | Build: `npx expo export --platform web`, publish dir: `dist`. Var: `EXPO_PUBLIC_API_URL` = URL de la API |
 | App móvil | **Expo Go + QR** | `npx expo start --tunnel` → el profesor escanea y la app corre en su propio celular |
+
+Variables que la API necesita en la nube, además de `DATABASE_URL`:
+
+| Variable | Valor en Render | Para qué |
+|---|---|---|
+| `JWT_SECRET` | Una clave propia (`openssl rand -base64 32`) | Con la clave de ejemplo la API se niega a arrancar en producción |
+| `TRUST_PROXY` | `1` | Render pone un proxy delante: sin esto la IP y el `https` del cliente se pierden |
+| `TBK_RETURN_URL` | `https://<api>/api/v1/payments/return` | Dirección pública a la que Transbank devuelve al jugador |
+| `CORS_ORIGINS` | La URL del sitio web | Limita qué sitios pueden llamar a la API |
+| `DEMO_MODE` | No se define | Así el seed nunca borra la base de la nube. Los datos de demostración se cargan una vez, a mano |
+
+Al 15 de noviembre el despliegue aún no se hizo: es trabajo del Sprint 8 y requiere crear las cuentas.
 
 > Ninguno de estos servicios pide tarjeta de crédito en su tier gratuito.
 > Supabase pausa proyectos tras ~1 semana sin uso: entra al dashboard la semana de la defensa.
@@ -699,8 +676,8 @@ const tx = new WebpayPlus.Transaction(new Options(
 ```
 
 Las tarjetas y credenciales de prueba (VISA que siempre aprueba, RUT `11.111.111-1`, clave `123`)
-están en la documentación oficial de Transbank Developers. **Confírmalas al inicio del Sprint 7**
-y déjalas anotadas en `fase-2-desarrollo/docs/credenciales-prueba.md` para tenerlas a mano el día de la defensa.
+están en la documentación oficial de Transbank Developers. Se confirmaron en el Sprint 7 con el pago
+y el reembolso reales en Integración (`fase-2-desarrollo/docs/evidencias/sprint-07/`).
 
 ### Flujo (HU-08)
 
@@ -763,10 +740,10 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **3** | 01–14 sep | **Hecho.** Modelo ER, diagramas UML y esqueleto local: backend con `honor.service` y `payment.service` probados, app Expo, `docker-compose.yml` y `schema.prisma` |
 | **4** | 15–28 sep | **Hecho.** Ambiente de desarrollo, repositorio público en GitHub, migraciones e índice GIST, arranque en Docker corregido y CI activo (KAN-24). HU-01 y HU-03 no se iniciaron |
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
-| **6** | 13–26 oct | HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
-| **7** | 27 oct–09 nov | HU-08, HU-09. Integración con Transbank Integración sobre `payment.service`, retención por deserción |
-| **8** | 10–23 nov | HU-02, HU-06, HU-07. Carta de jugador, calificación y recálculo de honor sobre `honor.service`. Despliegue en Render + Supabase |
-| **9** | 24 nov–07 dic | HU-10 push. **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
+| **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
+| **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
+| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) y límite real de la comuna con canchas existentes y dirección automática (KAN-38). **Pendiente:** documentación de cierre (KAN-23), despliegue en Render + Supabase (KAN-34), pruebas de rendimiento con k6 (KAN-35), `develop` a `main` y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
+| **9** | 24 nov–07 dic | **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y
 > las historias se corrieron un sprint. El plan quedó sin holgura: los sprints 8 y 9 combinan desarrollo,
@@ -775,6 +752,11 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 >
 > **Replanificación del 16 de octubre de 2026.** El Sprint 5 cerró sin incremento por la carga laboral
 > de la práctica. HU-01 y HU-03 se sumaron al Sprint 6, que concentra el recorrido central de la demo.
+>
+> **Replanificación del 8 de noviembre de 2026.** HU-02, HU-06 y HU-07 se terminaron dentro del Sprint 7
+> y se movieron a ese sprint en Jira. HU-10 (*Could*) salió del alcance del MVP, como preveía el riesgo
+> de la §15: el MVP cierra con 9 historias y 47 puntos. El Sprint 8 queda para despliegue, rendimiento
+> y seguridad, y el Sprint 9 para el cierre de pruebas y la defensa.
 
 ---
 
@@ -787,17 +769,22 @@ falle al arrancar si falta una, en vez de fallar a mitad de la demo.
 # Base de datos
 DATABASE_URL=postgresql://kancha:kancha@db:5432/kancha
 
-# Autenticación
-JWT_SECRET=cambiar-por-cadena-larga-aleatoria
+# Autenticación. En producción real la clave de ejemplo impide arrancar.
+JWT_SECRET=cambiar-esta-clave-por-una-larga-y-aleatoria
 JWT_EXPIRES_IN=7d
 
 # Servidor
 PORT=3000
 NODE_ENV=development
 API_BASE_URL=http://localhost:3000
+TRUST_PROXY=0            # saltos de proxy delante de la API: 0 en local, 1 en Render
+CORS_ORIGINS=            # orígenes web permitidos, separados por coma; vacío = cualquiera
+LOGIN_RATE_LIMIT=10      # contraseñas erradas por IP cada 15 min (S-12)
+REGISTER_RATE_LIMIT=20   # cuentas nuevas por IP cada hora (S-12)
+# DEMO_MODE=true solo lo define docker-compose.yml (ver §6.1)
 
 # Transbank — en 'integration' el SDK usa sus propias credenciales de prueba;
-# commerce code y api key solo se completan al pasar a producción.
+# con TBK_ENV=production, commerce code y api key son obligatorios.
 TBK_ENV=integration
 TBK_COMMERCE_CODE=
 TBK_API_KEY=
@@ -808,6 +795,9 @@ TBK_RETURN_URL=
 PLATFORM_COMMISSION_RATE=0.10
 RETENTION_WINDOW_HOURS=12
 RETENTION_RATE=0.50
+RATING_WINDOW_HOURS=48
+URGENT_WINDOW_HOURS=2
+HONOR_SAMPLE_SIZE=20
 
 # Frontend (Expo expone solo las variables con prefijo EXPO_PUBLIC_)
 EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
@@ -827,7 +817,7 @@ Una Historia de Usuario está terminada solo cuando cumple **todo** esto:
 - [ ] Funciona en web **y** en móvil vía Expo Go
 - [ ] `docker compose up` sigue levantando todo sin intervención manual
 - [ ] CI en verde en el Pull Request
-- [ ] Rama mergeada a `develop` y el issue cerrado en GitHub Projects y Jira
+- [ ] Rama mergeada a `develop` y el issue cerrado en Jira
 - [ ] Captura o GIF guardado en `fase-2-desarrollo/docs/evidencias/`
 
 ---
@@ -849,7 +839,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 3. **Publicar (1 min)** — desde otra cuenta publicas un partido de pádel 4/4 con 1 cupo libre en La Florida
 4. **Descubrir (1 min)** — el pin aparece en el mapa oscuro; filtras por deporte; el radio de 5 km funciona
 5. **Unirse y pagar (1,5 min)** — postulas, el organizador aprueba, pagas tu parte con la tarjeta de prueba de Transbank, el cupo pasa a "Confirmado y pagado"
-6. **Honor (1 min)** — terminado el partido, calificas puntualidad y conducta; el puntaje del perfil se recalcula en vivo
+6. **Honor (1 min)** — en el partido de pádel que terminó hace 3 horas (viene en los datos de demo), el organizador marca quién asistió y cada jugador califica puntualidad y conducta; el puntaje de la carta se recalcula en vivo
 7. **Cierre técnico (30 s)** — muestras GitHub: CI en verde, los releases de cada sprint, cobertura de pruebas, y el `docker compose up` que ellos mismos pueden correr
 
 > Haz una copia de seguridad de la base de datos con el seed cargado (`pg_dump`) y guárdala en `fase-2-desarrollo/docs/`.
@@ -865,7 +855,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 | PostGIS no disponible en el hosting gratis elegido | Alto | Supabase y Neon lo soportan; verifícalo en Sprint 3, no en Sprint 8 |
 | El mapa nativo se comporta distinto al web | Medio | Interfaz `KanchaMap` común; probar en ambos desde el primer día del Sprint 6 |
 | Sprint 7 (pagos con Transbank) se desborda | Alto | Las funciones de cálculo ya existen y están probadas: el riesgo es la integración con Webpay, que se empieza el primer día del sprint |
-| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | HU-10 es *Could* y es la primera candidata a salir del alcance si el Sprint 8 no cierra |
+| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | Mitigado el 8-nov: HU-10 (*Could*) salió del alcance y las historias del Sprint 8 se terminaron en el Sprint 7 |
 | Trabajo en solitario, sin revisor de código | Medio | Pull Requests a ti mismo + CI obligatorio: la disciplina reemplaza al revisor |
 | Deuda de documentación al final | Alto | Cada release de sprint incluye su documentación; no la dejes para el Sprint 9 |
 

@@ -33,6 +33,16 @@ export function formatDay(d: Date, now: Date = new Date()): string {
   return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]}`;
 }
 
+/** "hoy a las 20:00", "mañana a las 20:00" o "el sáb 18 oct a las 20:00": se lee bien tras "hasta". */
+export function formatDeadline(d: Date, now: Date = new Date()): string {
+  const day = formatDay(d, now);
+  const when = day === 'Hoy' || day === 'Mañana' ? day.toLowerCase() : `el ${day}`;
+  return `${when} a las ${formatTime(d)}`;
+}
+
+/** "1 cupo libre", "3 cupos libres". */
+export const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
 /** "Hoy 20:00", "Mañana 18:30", "sáb 18 oct 20:00". */
 export function formatWhen(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);
@@ -73,14 +83,4 @@ export function whenRange(when: When, now: Date = new Date()): { from?: string; 
     default:
       return {};
   }
-}
-
-/** Distancia aproximada en metros entre dos puntos (haversine). Solo para la UI. */
-export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6_371_000;
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { fonts, type } from '@/theme/typography';
 import { SKILL_LEVELS, type SkillLevelKey, type SportKey } from '@/theme/sports';
 import { LA_FLORIDA } from '@/theme/geo';
 import { formatCLP, formatDay } from '@/lib/format';
+import { VENUES, insideComuna, reverseGeocode } from '@/lib/places';
 import { usePublishMatch } from '@/api/hooks';
 import { ApiRequestError, errorMessage } from '@/api/client';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -77,6 +78,35 @@ function PublishForm() {
   };
   // Hoy no se ofrecen horarios que ya pasaron o que empiezan en menos de 30 minutos.
   const timeAvailable = (hhmm: string) => startsAt(dayOffset, hhmm).getTime() > Date.now() + 30 * 60_000;
+
+  // Marcar un punto propone su dirección. Si llega una respuesta vieja, se descarta.
+  const [locating, setLocating] = useState(false);
+  const lookup = useRef(0);
+  function pick(p: LatLng) {
+    if (!insideComuna(p)) {
+      setErrors((e) => ({ ...e, location: 'Ese punto está fuera de La Florida. Marca uno dentro del límite naranja.' }));
+      return false;
+    }
+    setPicked(p);
+    fix('location');
+    const id = ++lookup.current;
+    setLocating(true);
+    void reverseGeocode(p).then((found) => {
+      if (id !== lookup.current) return;
+      setLocating(false);
+      if (found) {
+        setAddress(found);
+        fix('address');
+      }
+    });
+    return true;
+  }
+
+  function chooseVenue(v: (typeof VENUES)[number]) {
+    if (!pick(v)) return;
+    setVenueName(v.name);
+    fix('venueName');
+  }
 
   function chooseSport(next: SportKey) {
     setSport(next);
@@ -152,17 +182,26 @@ function PublishForm() {
         </Section>
 
         <Section title="¿Dónde?">
+          <Text style={s.lead}>Elige una cancha de La Florida o marca otro punto en el mapa.</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsScroll}>
+            {VENUES.map((v) => (
+              <Chip key={v.name} label={v.name} icon="pin" active={venueName === v.name} onPress={() => chooseVenue(v)} />
+            ))}
+          </ScrollView>
           <TextField label="Cancha o recinto" value={venueName} onChangeText={(v) => (setVenueName(v), fix('venueName'))} error={errors['venueName']} placeholder="Ej.: Complejo Walker Martínez" maxLength={80} />
-          <TextField label="Dirección" value={address} onChangeText={(v) => (setAddress(v), fix('address'))} error={errors['address']} placeholder="Calle, número y comuna" maxLength={160} />
-          <View style={[s.mapBox, !!errors['location'] && !picked && { borderColor: colors.error }]}>
-            <KanchaMap center={LA_FLORIDA} zoom={13} picked={picked} onPick={(p) => (setPicked(p), fix('location'))} />
+          <TextField label={locating ? 'Dirección (buscando…)' : 'Dirección'} value={address} onChangeText={(v) => (setAddress(v), fix('address'))} error={errors['address']} placeholder="Calle, número y comuna" maxLength={160} />
+          <View style={[s.mapBox, !!errors['location'] && { borderColor: colors.error }]}>
+            <KanchaMap center={picked ?? LA_FLORIDA} zoom={picked ? 15.5 : 11.6} picked={picked} onPick={(p) => {
+              // Mover el pin a mano deja de ser la cancha elegida de la lista.
+              if (pick(p) && VENUES.some((v) => v.name === venueName)) setVenueName('');
+            }} />
             {!picked && (
               <View style={s.mapHint} pointerEvents="none">
                 <Text style={s.mapHintText}>Toca el mapa para marcar la cancha</Text>
               </View>
             )}
           </View>
-          {errors['location'] && !picked ? <Text style={s.error}>{errors['location']}</Text> : null}
+          {errors['location'] ? <Text style={s.error}>{errors['location']}</Text> : null}
         </Section>
 
         <Section title="¿Cuándo?">
@@ -199,6 +238,7 @@ function PublishForm() {
             keyboardType="number-pad"
             placeholder="0 si es gratis"
             maxLength={7}
+            error={errors['totalCost']}
           />
           <Text style={s.lead}>
             {totalCost === 0
@@ -212,6 +252,8 @@ function PublishForm() {
         <View style={{ width: '100%', maxWidth: 720, gap: spacing.sm }}>
           {publish.isError && !(publish.error instanceof ApiRequestError && publish.error.status === 422) ? (
             <Text style={s.error}>{errorMessage(publish.error)}</Text>
+          ) : Object.keys(errors).length > 0 ? (
+            <Text style={s.error}>Revisa los datos marcados antes de publicar.</Text>
           ) : null}
           <Button label="Publicar partido" onPress={submit} loading={publish.isPending} forward />
         </View>

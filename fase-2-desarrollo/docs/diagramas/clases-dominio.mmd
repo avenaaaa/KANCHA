@@ -42,6 +42,7 @@ classDiagram
         +UUID userId
         +PartStatus status
         +Int amountDue
+        +Boolean attended
         +DateTime joinedAt
         +DateTime updatedAt
     }
@@ -102,6 +103,7 @@ classDiagram
         PAID
         CANCELLED
         NO_SHOW
+        REJECTED
     }
 
     class PayStatus {

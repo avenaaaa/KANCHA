@@ -22,6 +22,8 @@ export const paymentsController = {
     const form = await paymentService.getCheckoutForm(id);
     const nonce = randomBytes(16).toString('base64');
     res
+      // Lleva el token de Webpay: ni el navegador ni un proxy deben guardar esta página.
+      .set('Cache-Control', 'no-store')
       .set(
         'Content-Security-Policy',
         `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; form-action ${new URL(form.formUrl).origin}`,
@@ -35,6 +37,7 @@ export const paymentsController = {
     const input = (req.method === 'GET' ? req.query : req.body) as WebpayReturn;
     const result = await paymentService.finishPayment(input);
     res
+      .set('Cache-Control', 'no-store')
       .set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
       .type('html')
       .send(resultPage(result));

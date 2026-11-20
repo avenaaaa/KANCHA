@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SPORTS, type SportKey } from '@/theme/sports';
+import { SPORTS, type SkillLevelKey, type SportKey } from '@/theme/sports';
 import type { When } from '@/lib/format';
 import type { RadiusOption } from '@/theme/geo';
 
@@ -10,7 +10,14 @@ interface FilterState {
   sports: SportKey[];
   when: When;
   radius: RadiusOption;
+  /** null = todos los niveles. */
+  level: SkillLevelKey | null;
+  /** "Falta uno" (KAN-37): solo partidos a los que les falta 1 jugador y que empiezan pronto. */
+  urgent: boolean;
   toggleSport: (sport: SportKey) => void;
+  /** Tocar el nivel ya elegido lo quita. */
+  toggleLevel: (level: SkillLevelKey) => void;
+  toggleUrgent: () => void;
   setWhen: (when: When) => void;
   setRadius: (radius: RadiusOption) => void;
 }
@@ -19,6 +26,8 @@ export const useFilters = create<FilterState>((set) => ({
   sports: ALL,
   when: 'all',
   radius: 5_000,
+  level: null,
+  urgent: false,
 
   toggleSport: (sport) =>
     set(({ sports }) => {
@@ -26,6 +35,9 @@ export const useFilters = create<FilterState>((set) => ({
       // Apagar el último deporte vuelve a mostrar los tres: un mapa vacío por filtro no sirve.
       return { sports: next.length === 0 ? ALL : ALL.filter((s) => next.includes(s)) };
     }),
-  setWhen: (when) => set({ when }),
+  toggleLevel: (level) => set((state) => ({ level: state.level === level ? null : level })),
+  // "Falta uno" y un día concreto no conviven: urgente es "ahora", así que activar uno limpia el otro.
+  toggleUrgent: () => set((state) => ({ urgent: !state.urgent, when: 'all' })),
+  setWhen: (when) => set((state) => ({ when, urgent: when === 'all' ? state.urgent : false })),
   setRadius: (radius) => set({ radius }),
 }));

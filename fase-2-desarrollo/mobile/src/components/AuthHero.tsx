@@ -1,13 +1,17 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import { colors } from '@/theme/colors';
 import { fonts } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { SlotBar } from './SlotBar';
+import { Brand } from './Logo';
+import { FadeIn } from './ui/FadeIn';
 
 interface AuthHeroProps {
   lines: string[];
   size: number;
   caption?: string;
+  /** Recorte en blanco y negro detrás del titular. Es decorativo: los lectores de pantalla lo saltan. */
+  photo?: ImageSourcePropType;
 }
 
 /**
@@ -15,17 +19,20 @@ interface AuthHeroProps {
  * gráfico (DESIGN.md §8) y, debajo, una alineación con el último cupo vacío.
  * Es la premisa del proyecto dibujada: nos falta uno.
  */
-export function AuthHero({ lines, size, caption }: AuthHeroProps) {
+export function AuthHero({ lines, size, caption, photo }: AuthHeroProps) {
   return (
     <View style={s.wrap}>
-      <Text style={s.brand} accessibilityRole="header">
-        KANCHA
-      </Text>
+      {photo ? (
+        <Image source={photo} style={s.photo} resizeMode="contain" accessibilityElementsHidden importantForAccessibility="no" />
+      ) : null}
+      <View style={s.brand}>
+        <Brand size={26} />
+      </View>
       <View accessible accessibilityLabel={lines.join(' ')}>
-        {lines.map((line) => (
-          <Text key={line} style={[s.line, { fontSize: size, lineHeight: size * 1.02 }]}>
-            {line}
-          </Text>
+        {lines.map((line, i) => (
+          <FadeIn key={line} index={i * 2}>
+            <Text style={[s.line, { fontSize: size, lineHeight: size * 1.02 }]}>{line}</Text>
+          </FadeIn>
         ))}
       </View>
       <View style={[s.lineup, { maxWidth: size * 3.4 }]}>
@@ -38,7 +45,8 @@ export function AuthHero({ lines, size, caption }: AuthHeroProps) {
 
 const s = StyleSheet.create({
   wrap: { gap: spacing.md },
-  brand: { fontFamily: fonts.display, fontSize: 24, letterSpacing: 2, color: colors.bronze, marginBottom: spacing.lg },
+  photo: { position: 'absolute', right: -spacing.lg, top: 0, width: '72%', height: '82%', opacity: 0.5 },
+  brand: { marginBottom: spacing.lg },
   line: { fontFamily: fonts.display, color: colors.text, textTransform: 'uppercase' },
   lineup: { width: '100%', marginTop: spacing.sm },
   caption: { fontFamily: fonts.medium, fontSize: 16, lineHeight: 23, color: colors.textMuted, maxWidth: 420 },

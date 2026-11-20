@@ -48,6 +48,11 @@ export const nearbyQuerySchema = z
     level: levelSchema.optional(),
     from: z.coerce.date().optional(),
     to: z.coerce.date().optional(),
+    /** KAN-37: "Falta uno". Solo partidos a los que les falta 1 jugador y que empiezan pronto. */
+    urgent: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((v) => v === 'true'),
   })
   .refine((q) => !q.from || !q.to || q.from <= q.to, {
     path: ['to'],

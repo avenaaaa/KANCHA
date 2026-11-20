@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
 import { openCheckout } from '@/lib/checkout';
+import { matchPollInterval } from '@/lib/status';
 import type { MatchDetail, MatchSummary, MyMatch, NewMatch, PendingRatings, Session, User } from './types';
-import type { SportKey } from '@/theme/sports';
+import type { SkillLevelKey, SportKey } from '@/theme/sports';
 
 /** Hooks de datos. Las pantallas nunca llaman a fetch directamente. */
 
@@ -25,11 +26,19 @@ export function useMe(enabled = true) {
   return useQuery({ queryKey: keys.me, queryFn: () => api<User>('/users/me'), enabled });
 }
 
+/** HU-02: carta pública de un jugador. La API omite el correo si no es el propio. */
+export function usePlayer(id: string) {
+  return useQuery({ queryKey: keys.user(id), queryFn: () => api<User>(`/users/${id}`) });
+}
+
 export interface NearbyParams {
   lat: number;
   lng: number;
   radius: number;
   sports: SportKey[];
+  level?: SkillLevelKey | null;
+  /** "Falta uno" (KAN-37): qué es urgente lo decide la API. */
+  urgent?: boolean;
   from?: string;
   to?: string;
 }
@@ -46,6 +55,8 @@ export function useNearbyMatches(p: NearbyParams | null) {
       });
       // Con los tres deportes activos no se filtra: así entran deportes futuros sin tocar la app.
       if (p!.sports.length > 0 && p!.sports.length < 3) q.set('sport', p!.sports.join(','));
+      if (p!.level) q.set('level', p!.level);
+      if (p!.urgent) q.set('urgent', 'true');
       if (p!.from) q.set('from', p!.from);
       if (p!.to) q.set('to', p!.to);
       return api<{ matches: MatchSummary[]; count: number }>(`/matches/nearby?${q.toString()}`);
@@ -54,8 +65,13 @@ export function useNearbyMatches(p: NearbyParams | null) {
   });
 }
 
+/** El detalle se vuelve a pedir solo mientras hay algo que esperar (ver matchPollInterval). */
 export function useMatch(id: string) {
-  return useQuery({ queryKey: keys.match(id), queryFn: () => api<MatchDetail>(`/matches/${id}`) });
+  return useQuery({
+    queryKey: keys.match(id),
+    queryFn: () => api<MatchDetail>(`/matches/${id}`),
+    refetchInterval: (query) => matchPollInterval(query.state.data),
+  });
 }
 
 export function useMyMatches() {
@@ -112,6 +128,32 @@ export function useCancelParticipation(matchId: string) {
       void qc.invalidateQueries({ queryKey: keys.match(matchId) });
       void qc.invalidateQueries({ queryKey: ['matches'] });
     },
+  });
+}
+
+/** KAN-32: el organizador rechaza una postulación pendiente. */
+export function useRejectParticipation(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (participationId: string) =>
+      api<{ participationId: string; status: string }>(`/participations/${participationId}/reject`, { method: 'PATCH' }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.match(matchId) });
+      void qc.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+}
+
+/** KAN-30: el organizador marca "asistió" o "no se presentó" al terminar el partido. */
+export function useRecordAttendance(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { participationId: string; attended: boolean }) =>
+      api<{ attended: boolean }>(`/participations/${v.participationId}/attendance`, {
+        method: 'PATCH',
+        body: JSON.stringify({ attended: v.attended }),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.match(matchId) }),
   });
 }
 

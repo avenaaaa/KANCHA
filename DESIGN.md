@@ -5,6 +5,16 @@
 
 ---
 
+> **Rediseño del 16 de noviembre de 2026 (KAN-33).** Por decisión del autor, la app se rediseñó sin
+> atenerse a este documento, conservando solo la paleta de la sección 2. Donde el código y este
+> documento difieran, manda el código: esquinas de 20 px en las cartas, Anton en títulos de pantalla y
+> en los números clave (hora, honor, partidos jugados), el isotipo junto al nombre, el deporte en una
+> baldosa naranja y el "Falta 1 »" visible en cada carta de partido. Después se sumaron fotografía en blanco
+> y negro por deporte (portada del partido, carta de jugador y pantallas de entrada), la carta de
+> jugador como carta coleccionable con el honor sobre naranja y transiciones entre pantallas. Las
+> referencias fueron la
+> presentación de Fase 1 y un tablero de identidades deportivas en negro y naranja.
+
 ## 1. Identidad de Marca
 
 **Kancha** es una app mobile de deportes amateur que conecta jugadores para organizar partidos. Resuelve el problema de confianza y logística en el deporte informal.
@@ -160,7 +170,18 @@ El Sistema de Honor es el "Perfil de Confianza" del jugador. Mide tres métricas
 
 > **Nota de origen de los datos.** Puntualidad y Juego Limpio provienen de la calificación mutua post-partido (HU-06: los campos `punctuality` y `conduct`). La Tasa de Asistencia **no se califica**: se calcula del historial de participaciones del jugador. Ver `DESARROLLO.md` §5.2. Cuando el jugador no tiene reseñas, las tres barras muestran "Sin calificaciones aún" en vez de cero.
 
-**Visualización en card de partido:** ícono de escudo con puntaje numérico del 1–10 en naranja.
+**Visualización en card de partido:** ícono de escudo con puntaje numérico del 0–10 en naranja (un usuario sin reseñas muestra "Sin calificaciones aún", nunca 0).
+
+### 4.6 Filtro "Falta uno" (partidos urgentes)
+
+Botón del mapa que deja a la vista solo los partidos urgentes: les falta exactamente un jugador y empiezan en 2 horas o menos (la regla está en `DESARROLLO.md` §5.2). No es el CTA de la §4.3: aquel une al jugador a un partido; este filtra el mapa.
+
+- **Ubicación:** en el celular, justo sobre la barra horizontal de partidos, a la izquierda de "Publicar". En pantallas anchas, bajo los filtros del panel y sobre la lista.
+- **Forma:** píldora de 44 px de alto, texto "Falta uno" en Roboto Bold 15px.
+- **Inactivo:** fondo `#2A2A2A` al 94 % (superficie flotante sobre el mapa), borde y texto `#F0A500`, ícono ">>".
+- **Activo:** fondo `#F0A500`, texto `#1A1A1A`, ícono de visto.
+- Con el filtro activo el contador dice "N partidos necesitan un jugador en 2 h o menos". Si no hay ninguno, se muestra un mensaje propio con el botón "Ver todos los partidos", nunca una lista vacía.
+- Urgente significa ahora: activar "Falta uno" vuelve el horario a "Cuando sea", y elegir un día lo apaga.
 
 ---
 

@@ -23,6 +23,16 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
 
+  // JSON mal formado o cuerpo demasiado grande (los lanza express.json): es un error
+  // de quien llama, no un 500 nuestro.
+  const status = (err as { status?: unknown } | null)?.status;
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    res.status(status).json({
+      error: { code: 'BAD_REQUEST', message: 'No se pudo leer la petición', details: null },
+    });
+    return;
+  }
+
   logger.error({ err }, 'Error no controlado');
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Error interno del servidor', details: null },

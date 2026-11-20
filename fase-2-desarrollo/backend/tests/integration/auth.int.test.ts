@@ -53,10 +53,47 @@ describe.skipIf(!hasDb)('Cuentas · HU-01 (integración)', () => {
     expect(me.body).toMatchObject({ email, favoriteSport: 'BASQUETBOL', honorScore: null });
   });
 
-  it('I-02b · contraseña incorrecta → 401 sin revelar si el correo existe', async () => {
-    const res = await api().post('/api/v1/auth/login').send({ email: uniqueEmail('nadie'), password: 'x' });
-    expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_CREDENTIALS');
+  it('I-02b · correo inexistente y contraseña incorrecta dan el mismo 401: no se revela si el correo existe', async () => {
+    const email = uniqueEmail('i02b');
+    await api().post('/api/v1/auth/register').send({ email, password: 'kancha2026', name: 'Existe', favoriteSport: 'FUTBOL' });
+
+    const claveErrada = await api().post('/api/v1/auth/login').send({ email, password: 'no-es-la-clave' });
+    const noExiste = await api().post('/api/v1/auth/login').send({ email: uniqueEmail('nadie'), password: 'no-es-la-clave' });
+
+    expect(claveErrada.status).toBe(401);
+    expect(noExiste.status).toBe(401);
+    expect(claveErrada.body).toEqual(noExiste.body);
+    expect(claveErrada.body.error.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('I-16 · una ruta que no existe responde 404 ROUTE_NOT_FOUND con el formato único de error', async () => {
+    const res = await api().get('/api/v1/no-existe');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatchObject({ code: 'ROUTE_NOT_FOUND', details: null });
+  });
+
+  it('I-16 · un JSON mal formado es un 400 del cliente, no un 500', async () => {
+    const res = await api().post('/api/v1/auth/login').set('Content-Type', 'application/json').send('{"email": ');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('I-16 · un recurso que no existe da 404 y un id que no es UUID da 422', async () => {
+    const { token } = (await api()
+      .post('/api/v1/auth/register')
+      .send({ email: uniqueEmail('i16'), password: 'kancha2026', name: 'Curioso', favoriteSport: 'FUTBOL' })).body as { token: string };
+    const get = (path: string) => api().get(`/api/v1${path}`).set('Authorization', `Bearer ${token}`);
+    const NADIE = '00000000-0000-4000-8000-000000000000';
+
+    const partido = await get(`/matches/${NADIE}`);
+    expect(partido.status).toBe(404);
+    expect(partido.body.error.code).toBe('MATCH_NOT_FOUND');
+
+    const usuario = await get(`/users/${NADIE}`);
+    expect(usuario.status).toBe(404);
+    expect(usuario.body.error.code).toBe('USER_NOT_FOUND');
+
+    expect((await get('/matches/no-es-un-uuid')).status).toBe(422);
   });
 
   it('S-01 · sin token, con token alterado y con token vencido → 401', async () => {
@@ -65,6 +102,15 @@ describe.skipIf(!hasDb)('Cuentas · HU-01 (integración)', () => {
     const alterado = await api().get('/api/v1/users/me').set('Authorization', 'Bearer abc.def.ghi');
     const caducado = await api().get('/api/v1/users/me').set('Authorization', `Bearer ${vencido}`);
     expect([sinToken.status, alterado.status, caducado.status]).toEqual([401, 401, 401]);
+  });
+
+  it('S-18 · una sesión cuyo usuario ya no existe → 401, no un usuario fantasma', async () => {
+    const email = uniqueEmail('s18');
+    const alta = await api().post('/api/v1/auth/register').send({ email, password: 'kancha2026', name: 'Fantasma', favoriteSport: 'PADEL' });
+    await prisma.user.delete({ where: { email } });
+
+    const me = await api().get('/api/v1/users/me').set('Authorization', `Bearer ${alta.body.token}`);
+    expect(me.status).toBe(401);
   });
 
   it('S-06 / S-07 · el hash se guarda con bcrypt y nunca sale en la respuesta', async () => {

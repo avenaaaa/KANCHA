@@ -42,11 +42,13 @@ export interface MatchSummary {
   distanceM?: number;
 }
 
-export type ParticipationStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'NO_SHOW';
+export type ParticipationStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED' | 'NO_SHOW' | 'REJECTED';
 
 export interface Participant {
   participationId: string;
   status: ParticipationStatus;
+  /** Asistencia cerrada por el organizador (KAN-30): null mientras no se registre. */
+  attended: boolean | null;
   user: { id: string; name: string; favoriteSport: SportKey; honorScore: number | null; matchesPlayed: number };
 }
 

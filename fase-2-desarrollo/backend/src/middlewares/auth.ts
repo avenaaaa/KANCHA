@@ -24,7 +24,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     return;
   }
   try {
-    req.user = jwt.verify(header.slice(7), env.JWT_SECRET) as JwtPayload;
+    req.user = jwt.verify(header.slice(7), env.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
     next();
   } catch {
     next(unauthorized('Token inválido o expirado'));

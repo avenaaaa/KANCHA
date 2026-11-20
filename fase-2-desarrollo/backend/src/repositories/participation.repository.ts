@@ -5,6 +5,7 @@ export interface ParticipantRow {
   id: string;
   status: PartStatus;
   joinedAt: Date;
+  attended: boolean | null;
   user: {
     id: string;
     name: string;
@@ -35,7 +36,12 @@ export interface ApprovalTx {
   lockMatch(matchId: string): Promise<LockedMatch | null>;
   markApproved(participationId: string, amountDue: number): Promise<Participation>;
   markParticipation(participationId: string, status: PartStatus): Promise<void>;
-  markPayment(paymentId: string, data: { status: PayStatus; retained?: number; commission?: number }): Promise<void>;
+  /** Pago de la participación, leído dentro de la transacción (tras el bloqueo del partido). */
+  findPayment(participationId: string): Promise<{ id: string; status: string; amount: number; token: string | null } | null>;
+  markPayment(
+    paymentId: string,
+    data: { status: PayStatus; retained?: number; commission?: number; authorizedAt?: Date },
+  ): Promise<void>;
   updateSlots(matchId: string, filledSlots: number, status: MatchStatus): Promise<void>;
 }
 
@@ -65,6 +71,12 @@ function approvalTx(tx: Prisma.TransactionClient): ApprovalTx {
       await tx.participation.update({ where: { id: participationId }, data: { status } });
     },
 
+    findPayment: (participationId) =>
+      tx.payment.findUnique({
+        where: { participationId },
+        select: { id: true, status: true, amount: true, token: true },
+      }),
+
     async markPayment(paymentId, data) {
       await tx.payment.update({ where: { id: paymentId }, data });
     },
@@ -85,22 +97,27 @@ export const participationRepository = {
     return prisma.participation.findUnique({ where: { matchId_userId: { matchId, userId } } });
   },
 
-  /** Volver a postular tras perder el cupo reutiliza la fila: UNIQUE (matchId, userId) no admite otra. */
-  reopen(participationId: string): Promise<Participation> {
-    return prisma.participation.update({
-      where: { id: participationId },
+  /**
+   * Volver a postular tras perder el cupo reutiliza la fila: UNIQUE (matchId, userId) no admite otra.
+   * Solo reabre lo que sigue cancelado o rechazado; null si otra petición ya la reabrió.
+   */
+  async reopen(participationId: string): Promise<Participation | null> {
+    const { count } = await prisma.participation.updateMany({
+      where: { id: participationId, status: { in: ['CANCELLED', 'REJECTED'] } },
       data: { status: 'PENDING', amountDue: 0, joinedAt: new Date() },
     });
+    return count === 1 ? prisma.participation.findUnique({ where: { id: participationId } }) : null;
   },
 
   findByMatch(matchId: string): Promise<ParticipantRow[]> {
     return prisma.participation.findMany({
-      where: { matchId, status: { in: ['PENDING', 'APPROVED', 'PAID'] } },
+      where: { matchId, status: { in: ['PENDING', 'APPROVED', 'PAID', 'NO_SHOW'] } },
       orderBy: { joinedAt: 'asc' },
       select: {
         id: true,
         status: true,
         joinedAt: true,
+        attended: true,
         user: {
           select: { id: true, name: true, favoriteSport: true, honorScore: true, matchesPlayed: true },
         },
@@ -109,7 +126,7 @@ export const participationRepository = {
   },
 
   inApprovalTransaction<T>(fn: (tx: ApprovalTx) => Promise<T>): Promise<T> {
-    // 15 s: una cancelación pagada reembolsa por Transbank dentro de la transacción (HU-09).
+    // 15 s: una cancelación pagada espera a Transbank (hasta 8 s) antes de confirmar (HU-09).
     return prisma.$transaction((tx) => fn(approvalTx(tx)), { timeout: 15_000 });
   },
 };

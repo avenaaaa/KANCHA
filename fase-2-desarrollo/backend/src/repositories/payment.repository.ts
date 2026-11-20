@@ -29,7 +29,10 @@ export const paymentRepository = {
     });
   },
 
-  /** Un reintento tras un pago fallido reutiliza la fila: hay un solo pago por participación (UNIQUE). */
+  /**
+   * Un reintento tras un pago fallido reutiliza la fila: hay un solo pago por participación (UNIQUE).
+   * Nunca pisa un pago cobrado: quien canceló un cupo pagado no puede volver a postular (matching.service).
+   */
   upsertInitiated(data: {
     participationId: string;
     amount: number;
@@ -56,7 +59,6 @@ export const paymentRepository = {
         status: true,
         matchId: true,
         match: { select: { startsAt: true } },
-        payment: { select: { id: true, status: true, amount: true, token: true } },
       },
     });
   },
@@ -77,11 +79,8 @@ export const paymentRepository = {
     return prisma.payment.findUnique({ where: { participationId } });
   },
 
-  /** Pago aprobado y cupo pagado en la misma transacción: nunca queda uno sin el otro. */
-  async markAuthorized(payment: Pick<Payment, 'id' | 'participationId'>, at: Date): Promise<void> {
-    await prisma.$transaction([
-      prisma.payment.update({ where: { id: payment.id }, data: { status: 'AUTHORIZED', authorizedAt: at } }),
-      prisma.participation.update({ where: { id: payment.participationId }, data: { status: 'PAID' } }),
-    ]);
+  /** Lo cobrado se devolvió completo: el cupo se canceló mientras el jugador pagaba. */
+  async markRefunded(id: string): Promise<void> {
+    await prisma.payment.update({ where: { id }, data: { status: 'REFUNDED', retained: 0 } });
   },
 };

@@ -1,9 +1,11 @@
 import type { Participation } from '@prisma/client';
+import { env } from '../config/env.js';
 import { matchRepository } from '../repositories/match.repository.js';
 import {
   participationRepository,
   type LockedMatch,
 } from '../repositories/participation.repository.js';
+import { paymentRepository } from '../repositories/payment.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
 import { isUniqueViolation } from '../utils/db-errors.js';
 import { calculateAmountDue } from './payment.service.js';
@@ -81,6 +83,21 @@ export function decideApproval(
   };
 }
 
+/**
+ * KAN-37: el filtro "Falta uno". Un partido es urgente si le falta exactamente un
+ * jugador y empieza dentro de la ventana (2 h por defecto): es el "falta uno" de
+ * última hora que Kancha existe para resolver. Si además viene un rango de horario,
+ * manda el límite que termine antes.
+ */
+export function urgentWindow(
+  q: Pick<NearbyQuery, 'urgent' | 'to'>,
+  now: Date = new Date(),
+): { to: Date | null; slotsLeft: number | null } {
+  if (!q.urgent) return { to: q.to ?? null, slotsLeft: null };
+  const limit = new Date(now.getTime() + env.URGENT_WINDOW_HOURS * 3_600_000);
+  return { to: q.to && q.to < limit ? q.to : limit, slotsLeft: 1 };
+}
+
 /** HU-04: partidos abiertos, futuros y con cupo dentro del radio, del más cercano al más lejano. */
 export async function findNearby(q: NearbyQuery, now: Date = new Date()): Promise<MatchSummary[]> {
   const rows = await matchRepository.findNearby({
@@ -90,10 +107,19 @@ export async function findNearby(q: NearbyQuery, now: Date = new Date()): Promis
     sports: q.sport ?? null,
     level: q.level ?? null,
     from: q.from ?? null,
-    to: q.to ?? null,
+    ...urgentWindow(q, now),
     now,
   });
   return rows.map(toMatchSummary);
+}
+
+/**
+ * Quien perdió el cupo sin haber pagado (pago fallido, cancelación o rechazo) puede
+ * volver a postular. Quien canceló un cupo ya pagado, no: su pago guarda el reembolso
+ * y la retención de ese partido, y un pago nuevo lo pisaría.
+ */
+export function canRejoin(previousPaymentStatus: string | null): boolean {
+  return previousPaymentStatus === null || !['AUTHORIZED', 'RETAINED', 'REFUNDED'].includes(previousPaymentStatus);
 }
 
 /** HU-05: "WHEN presiono Unirme THEN mi postulación queda registrada como Pendiente". */
@@ -108,10 +134,16 @@ export async function join(matchId: string, userId: string, now: Date = new Date
     return await participationRepository.create(matchId, userId);
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
-    // Quien perdió su cupo (pago fallido o cancelación) puede volver a postular.
+    const already = conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
     const previous = await participationRepository.findOne(matchId, userId);
-    if (previous?.status === 'CANCELLED') return participationRepository.reopen(previous.id);
-    throw conflict('ALREADY_JOINED', 'Ya postulaste a este partido');
+    if (previous?.status !== 'CANCELLED' && previous?.status !== 'REJECTED') throw already;
+    const payment = await paymentRepository.findByParticipation(previous.id);
+    if (!canRejoin(payment?.status ?? null)) {
+      throw conflict('CANCELLED_PAID_SLOT', 'Cancelaste un cupo ya pagado en este partido y no puedes volver a postular');
+    }
+    const reopened = await participationRepository.reopen(previous.id);
+    if (!reopened) throw already;
+    return reopened;
   }
 }
 
@@ -132,5 +164,40 @@ export function approve(participationId: string, actorId: string, now: Date = ne
     const approved = await tx.markApproved(participationId, decision.amountDue);
     await tx.updateSlots(match.id, decision.filledSlots, decision.status);
     return approved;
+  });
+}
+
+/** KAN-32: solo el organizador rechaza, y solo una postulación que sigue pendiente. */
+export function decideRejection(
+  participation: Pick<Participation, 'status'>,
+  match: Pick<LockedMatch, 'organizerId'>,
+  actorId: string,
+): AppError | null {
+  if (match.organizerId !== actorId) return forbidden('Solo el organizador puede rechazar postulaciones');
+  if (participation.status !== 'PENDING') {
+    return conflict('PARTICIPATION_NOT_PENDING', 'Esta postulación ya fue procesada');
+  }
+  return null;
+}
+
+/**
+ * KAN-32: el organizador rechaza una postulación pendiente. Una pendiente no ocupa cupo,
+ * así que los cupos no cambian. Usa el mismo bloqueo que approve: aprobar y rechazar la
+ * misma postulación a la vez se resuelven en orden, y la segunda recibe 409.
+ */
+export function reject(participationId: string, actorId: string): Promise<Participation> {
+  return participationRepository.inApprovalTransaction(async (tx) => {
+    const found = await tx.findParticipation(participationId);
+    if (!found) throw notFound('PARTICIPATION_NOT_FOUND', 'La postulación no existe');
+
+    const match = await tx.lockMatch(found.matchId);
+    if (!match) throw notFound('MATCH_NOT_FOUND', 'El partido no existe');
+
+    const current = (await tx.findParticipation(participationId)) ?? found;
+    const error = decideRejection(current, match, actorId);
+    if (error) throw error;
+
+    await tx.markParticipation(participationId, 'REJECTED');
+    return { ...current, status: 'REJECTED' as const };
   });
 }
