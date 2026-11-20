@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/icons/Icon';
 import { Brand } from '@/components/Logo';
+import { UrgentButton } from '@/components/UrgentButton';
+import { DragSheet } from '@/components/ui/DragSheet';
 import { useNearbyMatches } from '@/api/hooks';
 import { SKILL_LEVELS } from '@/theme/sports';
 import { errorMessage } from '@/api/client';
@@ -43,14 +45,17 @@ const WHEN_OPTIONS: { key: When; label: string }[] = [
 const CARD_WIDTH = 300;
 const PANEL_WIDTH = 420;
 const MOBILE_TOP = 150;
-const MOBILE_BOTTOM = 290;
+/** Panel inferior cerrado (asa + botones) y lo que suma al abrirse (las cartas). */
+const PEEK_H = 150;
+const OPEN_H = PEEK_H + 250;
 /** Solo para el texto: la regla real es URGENT_WINDOW_HOURS de la API. */
 const URGENT_HOURS = 2;
 
 /**
  * HU-04 (KAN-10): partidos con cupo cerca, en un mapa oscuro.
  *
- * En el celular las cartas van en un carrusel sobre el mapa; en pantallas anchas
+ * En el celular las cartas van en un panel inferior que se desliza (cerrado al inicio, se abre al
+ * tocar un pin o "Falta uno"); en pantallas anchas
  * (la versión web que se proyecta ante la comisión) van en un panel lateral.
  */
 export default function MapScreen() {
@@ -61,11 +66,12 @@ export default function MapScreen() {
   // queda entre los filtros (arriba) y el carrusel de cartas (abajo).
   const fitPx = wide
     ? Math.min(width - PANEL_WIDTH, height - 64) * 0.9
-    : Math.min(width, height - insets.top - 64 - MOBILE_TOP - MOBILE_BOTTOM) * 0.95;
+    : Math.min(width, height - insets.top - 64 - MOBILE_TOP - PEEK_H) * 0.95;
 
   const { sports, when, radius: radiusM, level, urgent, toggleSport, toggleLevel, toggleUrgent, setWhen, setRadius } = useFilters();
   const { origin, userLocation, source, locate } = useOrigin();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // El rango "Hoy / Mañana / Finde" se recalcula solo cuando cambia el filtro.
   const range = useMemo(() => whenRange(when), [when]);
@@ -90,6 +96,8 @@ export default function MapScreen() {
   // Al tocar un pin, la carta correspondiente aparece en el carrusel o el panel.
   function selectFromMap(id: string | null) {
     setSelectedId(id);
+    // Tocar un pin abre el panel; tocar el mapa vacío lo cierra.
+    setSheetOpen(id !== null);
     if (!id) return;
     const index = matches.findIndex((m) => m.id === id);
     if (index < 0) return;
@@ -111,21 +119,19 @@ export default function MapScreen() {
         ? `${plural(matches.length, 'partido necesita', 'partidos necesitan')} un jugador en ${URGENT_HOURS} h o menos`
         : `${plural(matches.length, 'partido', 'partidos')} a menos de ${radiusM / 1000} km`;
 
-  // KAN-37: el "falta uno" de última hora, la razón de ser de Kancha (DESIGN.md §4.6).
-  const urgentButton = (
-    <Pressable
-      onPress={toggleUrgent}
-      accessibilityRole="button"
-      accessibilityState={{ selected: urgent }}
-      aria-selected={urgent}
-      accessibilityLabel="Falta uno"
-      accessibilityHint={`Muestra solo los partidos a los que les falta un jugador y empiezan en ${URGENT_HOURS} horas o menos`}
-      style={({ pressed }) => [s.urgentBtn, urgent && s.urgentBtnOn, pressed && { opacity: 0.85 }]}
-    >
-      <Text style={[s.urgentText, urgent && s.urgentTextOn]}>Falta uno</Text>
-      <Icon name={urgent ? 'check' : 'forward'} size={16} color={urgent ? colors.onAccent : colors.accent} strokeWidth={2.4} />
-    </Pressable>
-  );
+  // KAN-37: el "falta uno" de última hora, la razón de ser de Kancha. Abre el panel para ver el resultado.
+  const onUrgent = () => {
+    toggleUrgent();
+    setSheetOpen(true);
+  };
+  const urgentButton = <UrgentButton active={urgent} onPress={onUrgent} hours={URGENT_HOURS} style={{ flex: 1 }} />;
+
+  const sheetTitle =
+    isLoading || source === 'locating'
+      ? 'Buscando partidos…'
+      : isError
+        ? 'No pudimos cargar los partidos'
+        : (summary ?? (urgent ? 'Ahora no hay un "falta uno" cerca' : 'No hay partidos cerca con estos filtros'));
 
   const pilotNote =
     source === 'pilot'
@@ -200,7 +206,7 @@ export default function MapScreen() {
       selectedId={selectedId}
       onSelect={selectFromMap}
       userLocation={userLocation}
-      bottomInset={wide ? 0 : MOBILE_BOTTOM - MOBILE_TOP}
+      bottomInset={wide ? 0 : (sheetOpen ? OPEN_H : PEEK_H) - MOBILE_TOP}
     />
   );
 
@@ -241,7 +247,7 @@ export default function MapScreen() {
           </View>
           <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
             {filters}
-            <View style={{ alignSelf: 'flex-start' }}>{urgentButton}</View>
+            <View style={{ flexDirection: 'row' }}>{urgentButton}</View>
           </View>
           <ScrollView ref={listRef} contentContainerStyle={s.panelList}>
             {status}
@@ -273,25 +279,25 @@ export default function MapScreen() {
         ) : null}
       </View>
 
-      <View style={s.bottom} pointerEvents="box-none">
-        {summary ? (
-          <View style={[s.countPill, s.countRow]} pointerEvents="none">
-            <Text style={s.countText}>{summary}</Text>
+      <DragSheet
+        expanded={sheetOpen}
+        onChange={setSheetOpen}
+        title={sheetTitle}
+        peek={
+          <View style={s.actions}>
+            {urgentButton}
+            <Pressable
+              onPress={() => router.push('/publicar')}
+              accessibilityRole="button"
+              accessibilityLabel="Publicar partido"
+              style={({ pressed }) => [s.publish, pressed && { opacity: 0.85 }]}
+            >
+              <Icon name="plus" size={20} color={colors.accent} strokeWidth={2.4} />
+              <Text style={s.publishText}>Publicar</Text>
+            </Pressable>
           </View>
-        ) : null}
-        <View style={s.bottomBar} pointerEvents="box-none">
-          {urgentButton}
-          <Pressable
-            onPress={() => router.push('/publicar')}
-            accessibilityRole="button"
-            accessibilityLabel="Publicar partido"
-            style={({ pressed }) => [s.fab, pressed && { opacity: 0.85 }]}
-          >
-            <Icon name="plus" size={20} color={colors.onAccent} strokeWidth={2.4} />
-            <Text style={s.fabText}>Publicar</Text>
-          </Pressable>
-        </View>
-
+        }
+      >
         {status ? (
           <View style={{ paddingHorizontal: spacing.md }}>{status}</View>
         ) : (
@@ -313,13 +319,13 @@ export default function MapScreen() {
             )}
           />
         )}
-      </View>
+      </DragSheet>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
   top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.md, gap: spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   roundBtn: {
@@ -344,40 +350,19 @@ const s = StyleSheet.create({
     maxWidth: 360,
   },
   noteText: { ...type.caption, fontSize: 13, color: colors.textMuted },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: spacing.md, gap: spacing.sm },
-  bottomBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md },
-  countPill: {
-    backgroundColor: colors.surfaceFloating,
-    borderRadius: radius.chip,
-    paddingHorizontal: spacing.md - 4,
-    paddingVertical: 6,
-  },
-  countRow: { alignSelf: 'flex-start', marginLeft: spacing.md },
-  countText: { fontFamily: fonts.bold, fontSize: 13, color: colors.text },
-  urgentBtn: {
+  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  publish: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: 22,
+    height: 60,
+    paddingHorizontal: spacing.md + 2,
+    borderRadius: 30,
     borderWidth: 1.5,
     borderColor: colors.accent,
-    backgroundColor: colors.surfaceFloating,
+    backgroundColor: colors.surface,
   },
-  urgentBtnOn: { backgroundColor: colors.accent },
-  urgentText: { ...type.button, color: colors.accent },
-  urgentTextOn: { color: colors.onAccent },
-  fab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: 22,
-    backgroundColor: colors.accent,
-  },
-  fabText: { ...type.button, color: colors.onAccent },
+  publishText: { ...type.button, color: colors.text },
   carousel: { paddingHorizontal: spacing.md, gap: spacing.sm },
   stateCard: { backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.md, gap: spacing.sm + 2 },
   stateError: { borderWidth: 1, borderColor: colors.error },

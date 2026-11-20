@@ -44,6 +44,7 @@ export const ICONS = {
   /** Las flechas dobles de la marca (DESIGN.md §8). Nunca una flecha simple. */
   forward: [{ d: 'M5 6L11 12L5 18M12 6L18 12L12 18' }],
   back: [{ d: 'M15 5L8 12L15 19' }],
+  up: [{ d: 'M5 15L12 8L19 15' }],
   pin: [
     { d: 'M12 21C12 21 18.5 14.8 18.5 10A6.5 6.5 0 0 0 5.5 10C5.5 14.8 12 21 12 21Z' },
     { circle: { cx: 12, cy: 10, r: 2.3 } },
