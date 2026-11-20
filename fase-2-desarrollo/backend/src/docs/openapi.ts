@@ -140,6 +140,21 @@ export const openapi = {
           },
         },
       },
+      MyMatch: {
+        description: 'Partido de "Mis partidos": la carta del partido más mi rol y mi estado',
+        allOf: [
+          { $ref: '#/components/schemas/MatchSummary' },
+          {
+            type: 'object',
+            properties: {
+              role: { type: 'string', enum: ['ORGANIZER', 'PLAYER'] },
+              myStatus: { type: 'string', nullable: true, description: 'Estado de mi postulación; null si organizo' },
+              pendingCount: { type: 'integer', description: 'Postulaciones por revisar (solo si organizo)' },
+              ratingWindow: { $ref: '#/components/schemas/RatingWindow' },
+            },
+          },
+        ],
+      },
       RatingWindow: {
         type: 'string',
         enum: ['NOT_FINISHED', 'OPEN', 'CLOSED'],
@@ -197,7 +212,24 @@ export const openapi = {
         tags: ['Sistema'],
         security: [],
         summary: 'Estado de la API y de la base de datos',
-        responses: { 200: { description: 'API y base conectadas' }, 503: { description: 'Base de datos caída' } },
+        responses: {
+          200: {
+            description: 'API y base conectadas',
+            content: {
+              'application/json': {
+                example: { status: 'ok', db: 'connected', version: '0.6.0', timestamp: '2026-11-20T15:00:00.000Z' },
+              },
+            },
+          },
+          503: {
+            description: 'Base de datos caída',
+            content: {
+              'application/json': {
+                example: { status: 'degraded', db: 'disconnected', version: '0.6.0', timestamp: '2026-11-20T15:00:00.000Z' },
+              },
+            },
+          },
+        },
       },
     },
     '/auth/register': {
@@ -237,7 +269,16 @@ export const openapi = {
       get: {
         tags: ['Partidos'],
         summary: 'Partidos que organizo o a los que postulé',
-        responses: { 200: { description: 'Lista con mi rol y estado en cada partido' } },
+        responses: {
+          200: {
+            description: 'Lista con mi rol y estado en cada partido',
+            content: {
+              'application/json': {
+                schema: { type: 'object', properties: { matches: { type: 'array', items: { $ref: '#/components/schemas/MyMatch' } } } },
+              },
+            },
+          },
+        },
       },
     },
     '/users/{id}': {
@@ -314,7 +355,10 @@ export const openapi = {
         description: 'Quien perdió su cupo (pago fallido) puede volver a postular: se reactiva su postulación.',
         parameters: [idParam],
         responses: {
-          201: { description: 'Postulación registrada como pendiente' },
+          201: {
+            description: 'Postulación registrada como pendiente',
+            content: { 'application/json': { example: { participationId: '3f8a…', status: 'PENDING' } } },
+          },
           409: {
             ...error({ code: 'ALREADY_JOINED', message: 'Ya postulaste a este partido' }),
             description:
@@ -398,7 +442,10 @@ export const openapi = {
         description: 'Transacción con bloqueo de fila (SELECT … FOR UPDATE): el último cupo nunca se vende dos veces.',
         parameters: [idParam],
         responses: {
-          200: { description: 'Postulación aprobada. El partido pasa a FULL si era el último cupo' },
+          200: {
+            description: 'Postulación aprobada. El partido pasa a FULL si era el último cupo',
+            content: { 'application/json': { example: { participationId: '3f8a…', status: 'APPROVED', amountDue: 6000 } } },
+          },
           403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede aprobar postulaciones' }),
           409: error({ code: 'MATCH_FULL', message: 'El partido ya no tiene cupos disponibles' }),
         },
