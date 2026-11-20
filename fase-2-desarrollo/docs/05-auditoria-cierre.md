@@ -213,7 +213,7 @@ el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defect
 | Cancelar un partido completo desde el organizador | Fuera del MVP |
 | Reputación resistente a cuentas falsas | Fuera del MVP |
 | Rediseño visual y pruebas de pantallas completas | KAN-33, etapa 2 del plan de cierre |
-| Esquemas de respuesta completos en OpenAPI | Etapa 3 del plan de cierre |
+| Esquemas de respuesta completos en OpenAPI | **Hecho el 20-nov:** todas las respuestas exitosas tienen esquema o ejemplo, y "Mis partidos" usa el esquema `MyMatch` |
 
 ---
 

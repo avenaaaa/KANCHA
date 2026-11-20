@@ -8,7 +8,7 @@
 > `DESIGN.md` manda en todo lo visual. Jira manda en el estado real de sprints e historias.
 > Si encuentras una contradicción entre dos de ellos, no la resuelvas por tu cuenta: repórtala.
 >
-> Versión 1.8 — 17 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
+> Versión 1.9 — 20 de noviembre de 2026 · Lukas Guerrero · Portafolio de Título, Ingeniería en Informática
 
 ---
 
@@ -637,10 +637,19 @@ Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0`
 
 | Pieza | Servicio | Configuración |
 |---|---|---|
-| Base de datos | **Supabase** (o Neon) | Proyecto free. Activar PostGIS: `CREATE EXTENSION postgis;`. Copiar la connection string a `DATABASE_URL` |
-| API | **Render** — Web Service, runtime Docker | Conectar el repo, root `./fase-2-desarrollo/backend`. Variables: `DATABASE_URL`, `JWT_SECRET`, `TBK_ENV=integration` |
-| Web | **Render Static Site** o Vercel | Build: `npx expo export --platform web`, publish dir: `dist`. Var: `EXPO_PUBLIC_API_URL` = URL de la API |
-| App móvil | **Expo Go + QR** | `npx expo start --tunnel` → el profesor escanea y la app corre en su propio celular |
+| Base de datos | **Supabase** | Proyecto free en **East US (North Virginia)**, la misma región de la API. Activar `postgis` en Database → Extensions. `DATABASE_URL` = la cadena **Session pooler** (ver la nota) |
+| API | **Render** — Web Service, runtime Docker | Rama `main`, Root Directory `fase-2-desarrollo/backend`, región Virginia (US East), plan Free, Health Check Path `/api/v1/health`. El arranque aplica las migraciones |
+| Web | **Render Static Site** | Rama `main`, Root Directory `fase-2-desarrollo/mobile`. Build: `npm ci && npx expo export --platform web`, publish dir: `dist`. Variables: `EXPO_PUBLIC_API_URL` = URL de la API y `NODE_VERSION=22`. Regla de reescritura `/*` → `/index.html` |
+| App móvil | **Expo Go + QR** | `EXPO_PUBLIC_API_URL=<URL de la API> npx expo start --tunnel` → el profesor escanea y la app corre en su propio celular, contra la API de la nube |
+
+> **Por qué el Session pooler.** La conexión directa de Supabase solo tiene IPv6 y Render no sale por
+> IPv6, así que no la alcanza. El Transaction pooler (puerto `6543`) no sirve para `prisma migrate`.
+> El Session pooler (host `aws-…pooler.supabase.com`, puerto `5432`, usuario `postgres.<ref>`) funciona
+> por IPv4 para la API y para las migraciones. Conviene una contraseña de solo letras y números, para no
+> tener que codificarla dentro de la URL.
+>
+> **Por qué la reescritura.** La web se exporta como una sola página (`"output": "single"` en
+> `mobile/app.json`): sin la regla `/*` → `/index.html` (acción *Rewrite*), recargar `/mapa` responde 404.
 
 Variables que la API necesita en la nube, además de `DATABASE_URL`:
 
@@ -650,12 +659,26 @@ Variables que la API necesita en la nube, además de `DATABASE_URL`:
 | `TRUST_PROXY` | `1` | Render pone un proxy delante: sin esto la IP y el `https` del cliente se pierden |
 | `TBK_RETURN_URL` | `https://<api>/api/v1/payments/return` | Dirección pública a la que Transbank devuelve al jugador |
 | `CORS_ORIGINS` | La URL del sitio web | Limita qué sitios pueden llamar a la API |
-| `DEMO_MODE` | No se define | Así el seed nunca borra la base de la nube. Los datos de demostración se cargan una vez, a mano |
+| `DEMO_MODE` | No se define | Así el seed nunca borra la base de la nube |
 
-Al 15 de noviembre el despliegue aún no se hizo: es trabajo del Sprint 8 y requiere crear las cuentas.
+`NODE_ENV` y `PORT` no se definen: el Dockerfile ya fija `NODE_ENV=production` y Render entrega el puerto.
+
+**Datos de demostración en la nube.** Se cargan desde un PC, después del primer deploy (que crea las
+tablas). En `fase-2-desarrollo/backend`:
+
+```bash
+DATABASE_URL="<cadena Session pooler>" npx prisma db seed
+```
+
+El seed borra y recarga la base. Las fechas de los partidos se calculan desde ese momento y los tres
+partidos urgentes ("Falta uno") duran menos de dos horas, así que se repite antes de cada demo.
+
+Al 20 de noviembre el despliegue aún no se hizo: requiere crear las cuentas (KAN-34).
 
 > Ninguno de estos servicios pide tarjeta de crédito en su tier gratuito.
 > Supabase pausa proyectos tras ~1 semana sin uso: entra al dashboard la semana de la defensa.
+> Render duerme el servicio gratis tras 15 minutos sin tráfico y tarda cerca de un minuto en despertar:
+> abre la URL unos minutos antes de presentar.
 
 ---
 
