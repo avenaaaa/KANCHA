@@ -18,7 +18,7 @@ de historia. El trabajo se mide en tareas.
 | Duración | 14 días (10 – 23 de noviembre) |
 | Equipo | Lukas Guerrero, desarrollador único |
 | Compromiso | 8 tareas: auditoría y correcciones, rechazo de postulaciones, rediseño visual, despliegue, rendimiento, releases, prueba en teléfonos y documentación |
-| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno", y KAN-38, el límite real de la comuna con canchas existentes (16 de noviembre); KAN-39, el panel de partidos deslizable (20 de noviembre) |
+| Alcance agregado durante el sprint | KAN-37, el botón "Falta uno", y KAN-38, el límite real de la comuna con canchas existentes (16 de noviembre); KAN-39, el panel de partidos deslizable, y KAN-40, las canchas como pines al publicar (20 de noviembre) |
 
 El 15 de noviembre se acordó el orden de cierre, en tres etapas: (1) terminar de revisar y dejar todo
 implementado, (2) rediseñar la parte visual y (3) terminar la documentación y estudiar cómo se
@@ -40,6 +40,7 @@ presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda
 | [KAN-37](https://lukasguerrerokancha.atlassian.net/browse/KAN-37) | Tarea | Botón "Falta uno": filtrar en el mapa los partidos urgentes | Listo · PR #16 integrado a `develop` el 17-nov · agregada el 16-nov |
 | [KAN-38](https://lukasguerrerokancha.atlassian.net/browse/KAN-38) | Tarea | Límite real de La Florida, canchas existentes al publicar y dirección automática | Listo · PR #18 integrado a `develop` el 17-nov · agregada el 16-nov · evidencia `evidencias/sprint-08/10` a `12`, `15` y `16` |
 | [KAN-39](https://lukasguerrerokancha.atlassian.net/browse/KAN-39) | Tarea | Panel de partidos deslizable en el mapa y botón "Falta uno" destacado | En revisión · PR #23 a `develop` · agregada el 20-nov · evidencia `evidencias/sprint-08/17` a `19` |
+| [KAN-40](https://lukasguerrerokancha.atlassian.net/browse/KAN-40) | Tarea | Canchas de La Florida como pines al publicar: públicas, municipales y pagadas | En revisión · PR #24 a `develop` · agregada el 20-nov · evidencia `evidencias/sprint-08/20` y `21` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | Listo · PR #17 y PR #18 integrados a `develop` el 17-nov · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
 | [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | En revisión · PR #22 a `develop` · las cinco cumplen |
@@ -60,6 +61,7 @@ Desglose técnico de lo hecho:
 | KAN-33 | — | Isotipo de Kancha, Anton en títulos y números clave, hora grande y "Falta 1" en la carta de partido, carta de jugador como carta coleccionable, fotografía por deporte (portada del partido, carta de jugador y entrada) y transiciones entre pantallas |
 | KAN-38 | El seed ubica los 15 partidos dentro de la comuna · `/users/me` responde 401 si el usuario de la sesión ya no existe | Límite real de La Florida en el mapa (OpenStreetMap), lista de canchas existentes al publicar, dirección automática al marcar un punto (Nominatim) y rechazo de puntos fuera de la comuna |
 | KAN-39 | — | Panel inferior deslizable con las cartas (cerrado al inicio, se abre con un pin o con "Falta uno") · "Falta uno" amarillo de 60 px con animación constante mientras está apagado |
+| KAN-40 | — | 36 canchas investigadas (24 públicas, 5 municipales y 7 privadas) como pines en el mapa de Publicar, filtradas por deporte, con "$" en las que se arriendan |
 
 ## 3. Scrumboard
 
@@ -104,7 +106,7 @@ teléfonos y de los formatos de la entrega.
 | 16 nov | Merge del PR #15: KAN-31 y KAN-32 a *Listo*. Botón "Falta uno" (KAN-37): la API decide qué es urgente (falta 1 jugador y empieza en 2 h o menos) y el mapa lo filtra; 172 pruebas del backend y 27 de la app. Verificado en la app entrando desde el login, en ancho de celular y de escritorio. PR #16 | Merge del PR #16. Terminar la documentación (KAN-23) y después el rediseño visual (KAN-33) | Docker Desktop no arrancaba (IMP-15) |
 | 17 nov | Noche del 16 al 17. Rediseño visual (KAN-33, PR #17). Límite real de la comuna, canchas existentes y dirección automática (KAN-38, PR #18), con la carta de jugador nueva, fotos por deporte y transiciones. Revisión de incidencias: la demo caía fuera de la comuna (DEF-20), sesión sin usuario tras regenerar los datos (DEF-21), dirección que no habría funcionado en teléfonos (DEF-22) y estado de los chips para lectores de pantalla en la web. 173 pruebas del backend y 31 de la app; publicar un partido eligiendo una cancha, verificado en la app de punta a punta | Merge de los PR #16, #17 y #18, en ese orden. Documentos de la entrega (KAN-23) | Tres PR encadenados sin integrar (IMP-16) |
 | 18–19 nov | Sin avance registrado en el repositorio | — | — |
-| 20 nov | Panel de partidos deslizable y "Falta uno" amarillo, grande y animado (KAN-39), probados en la app con mouse y con eventos táctiles. Pruebas de rendimiento R-01 a R-05 con k6 (KAN-35): las cinco cumplen, con p95 de 19 ms en la búsqueda y de 45 ms con 10.000 partidos. Lista de todo lo pendiente para el cierre. Épica KAN-3 cerrada en Jira (sus tres hijos estaban en Listo). PR #19 de `develop` a `main` con el CI en verde (KAN-36). `DESARROLLO.md` §8 corregido: Supabase por el Session pooler, regla de reescritura de la web y `NODE_VERSION` | Merge del PR #19 y releases. Crear las cuentas de Supabase y Render (KAN-34) | Las tareas que quedan dependen de cuentas, teléfonos y formatos que solo tiene el autor |
+| 20 nov | Canchas de La Florida investigadas (36: multicanchas recuperadas por la Municipalidad, recintos municipales y clubes pagados) y elegibles como pines al publicar (KAN-40). Panel de partidos deslizable y "Falta uno" amarillo, grande y animado (KAN-39), probados en la app con mouse y con eventos táctiles. Pruebas de rendimiento R-01 a R-05 con k6 (KAN-35): las cinco cumplen, con p95 de 19 ms en la búsqueda y de 45 ms con 10.000 partidos. Lista de todo lo pendiente para el cierre. Épica KAN-3 cerrada en Jira (sus tres hijos estaban en Listo). PR #19 de `develop` a `main` con el CI en verde (KAN-36). `DESARROLLO.md` §8 corregido: Supabase por el Session pooler, regla de reescritura de la web y `NODE_VERSION` | Merge del PR #19 y releases. Crear las cuentas de Supabase y Render (KAN-34) | Las tareas que quedan dependen de cuentas, teléfonos y formatos que solo tiene el autor |
 
 ## 6. Registro de impedimentos
 
