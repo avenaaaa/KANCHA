@@ -41,7 +41,7 @@ presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda
 | [KAN-38](https://lukasguerrerokancha.atlassian.net/browse/KAN-38) | Tarea | Límite real de La Florida, canchas existentes al publicar y dirección automática | Listo · PR #18 integrado a `develop` el 17-nov · agregada el 16-nov · evidencia `evidencias/sprint-08/10` a `12`, `15` y `16` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | Listo · PR #17 y PR #18 integrados a `develop` el 17-nov · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
-| [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | Por hacer |
+| [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | En revisión · PR a `develop` · las cinco cumplen |
 | [KAN-36](https://lukasguerrerokancha.atlassian.net/browse/KAN-36) | Tarea | Llevar `develop` a `main` y publicar los releases | En curso · PR #19 de `develop` a `main` (20-nov) |
 | [KAN-29](https://lukasguerrerokancha.atlassian.net/browse/KAN-29) | Tarea | Expo SDK 58: probar en un iPhone y un Android reales | En curso · viene del Sprint 7 |
 | [KAN-23](https://lukasguerrerokancha.atlassian.net/browse/KAN-23) | Tarea | Documentación de la Fase 2 | En curso · faltan los documentos de la entrega |
@@ -66,7 +66,7 @@ Estado del tablero al 20 de noviembre:
 | Por hacer | En curso | Listo |
 |---|---|---|
 | KAN-34 · Despliegue | KAN-29 · Prueba en teléfonos | KAN-31 · Auditoría |
-| KAN-35 · Rendimiento | KAN-23 · Documentación | KAN-32 · Rechazar |
+| KAN-35 · Rendimiento (en revisión) | KAN-23 · Documentación | KAN-32 · Rechazar |
 | | KAN-36 · Releases | KAN-37 · Falta uno |
 | | | KAN-33 · Rediseño visual |
 | | | KAN-38 · Comuna y canchas |
@@ -102,7 +102,7 @@ teléfonos y de los formatos de la entrega.
 | 16 nov | Merge del PR #15: KAN-31 y KAN-32 a *Listo*. Botón "Falta uno" (KAN-37): la API decide qué es urgente (falta 1 jugador y empieza en 2 h o menos) y el mapa lo filtra; 172 pruebas del backend y 27 de la app. Verificado en la app entrando desde el login, en ancho de celular y de escritorio. PR #16 | Merge del PR #16. Terminar la documentación (KAN-23) y después el rediseño visual (KAN-33) | Docker Desktop no arrancaba (IMP-15) |
 | 17 nov | Noche del 16 al 17. Rediseño visual (KAN-33, PR #17). Límite real de la comuna, canchas existentes y dirección automática (KAN-38, PR #18), con la carta de jugador nueva, fotos por deporte y transiciones. Revisión de incidencias: la demo caía fuera de la comuna (DEF-20), sesión sin usuario tras regenerar los datos (DEF-21), dirección que no habría funcionado en teléfonos (DEF-22) y estado de los chips para lectores de pantalla en la web. 173 pruebas del backend y 31 de la app; publicar un partido eligiendo una cancha, verificado en la app de punta a punta | Merge de los PR #16, #17 y #18, en ese orden. Documentos de la entrega (KAN-23) | Tres PR encadenados sin integrar (IMP-16) |
 | 18–19 nov | Sin avance registrado en el repositorio | — | — |
-| 20 nov | Lista de todo lo pendiente para el cierre. Épica KAN-3 cerrada en Jira (sus tres hijos estaban en Listo). PR #19 de `develop` a `main` con el CI en verde (KAN-36). `DESARROLLO.md` §8 corregido: Supabase por el Session pooler, regla de reescritura de la web y `NODE_VERSION` | Merge del PR #19 y releases. Crear las cuentas de Supabase y Render (KAN-34) | Las tareas que quedan dependen de cuentas, teléfonos y formatos que solo tiene el autor |
+| 20 nov | Pruebas de rendimiento R-01 a R-05 con k6 (KAN-35): las cinco cumplen, con p95 de 19 ms en la búsqueda y de 45 ms con 10.000 partidos. Lista de todo lo pendiente para el cierre. Épica KAN-3 cerrada en Jira (sus tres hijos estaban en Listo). PR #19 de `develop` a `main` con el CI en verde (KAN-36). `DESARROLLO.md` §8 corregido: Supabase por el Session pooler, regla de reescritura de la web y `NODE_VERSION` | Merge del PR #19 y releases. Crear las cuentas de Supabase y Render (KAN-34) | Las tareas que quedan dependen de cuentas, teléfonos y formatos que solo tiene el autor |
 
 ## 6. Registro de impedimentos
 

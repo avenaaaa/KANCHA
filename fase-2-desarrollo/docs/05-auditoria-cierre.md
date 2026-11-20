@@ -209,7 +209,7 @@ el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defect
 |---|---|
 | Probar la app en un iPhone y en un Android reales: barra inferior y teclado | KAN-29, Sprint 8 |
 | Desplegar en Render y Supabase: contenedor sin root, PostGIS y permisos de las tablas | KAN-34, Sprint 8 |
-| Pruebas de rendimiento con k6 (R-01 a R-05) | KAN-35, Sprint 8 |
+| Pruebas de rendimiento con k6 (R-01 a R-05) | **Hecho el 20-nov:** las cinco cumplen sus metas (KAN-35) |
 | Cancelar un partido completo desde el organizador | Fuera del MVP |
 | Reputación resistente a cuentas falsas | Fuera del MVP |
 | Rediseño visual y pruebas de pantallas completas | KAN-33, etapa 2 del plan de cierre |
