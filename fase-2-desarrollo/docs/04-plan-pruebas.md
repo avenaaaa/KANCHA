@@ -2,12 +2,12 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 17 de noviembre de 2026 (Sprint 8).
+> Corte del documento: 20 de noviembre de 2026 (Sprint 8).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Al 17 de noviembre están ejecutados los casos de
-las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Siguen sin
-ejecutar las pruebas de rendimiento y las unitarias pendientes de la sección 4.4.
+se automatiza cuando exista el código que prueba). Al 20 de noviembre están ejecutados los casos de
+las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Las cinco pruebas de
+rendimiento se ejecutaron el 20 de noviembre. Siguen sin ejecutar las unitarias pendientes de la sección 4.4.
 
 ---
 
@@ -29,12 +29,12 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 17-nov |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
 | **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 31 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **86 ejecutadas contra PostGIS real, todas pasan** |
-| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas · se ejecutan en el Sprint 8 |
+| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
 | **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 17 de 18 controles verificados; S-11 parcial |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
@@ -270,12 +270,47 @@ PostGIS en el modelo de datos.
 | R-04 | Registro y login (bcrypt costo 12) | 5 usuarios virtuales, 1 minuto | p95 bajo 800 ms | k6 |
 | R-05 | Arranque en frío del stack | `docker compose up --build` | API sana en menos de 60 s desde contenedores construidos | Docker |
 
-Los umbrales son metas del proyecto para una demo y un piloto comunal. Los endpoints ya existen;
-las pruebas se ejecutan en el Sprint 8 (KAN-35) y sus resultados se guardan en `docs/evidencias/`.
+Los umbrales son metas del proyecto para una demo y un piloto comunal.
 
-**Medición preliminar (14-nov-2026).** 100 búsquedas por radio seguidas contra la API en Docker: mediana
-de 4 ms y p95 de 5 ms. Es un solo usuario y los 12 partidos del seed, así que **no reemplaza a R-01**:
-solo descarta un problema grueso antes de la prueba de carga real.
+### 7.1 Resultado de la ejecución (20 de noviembre de 2026, KAN-35)
+
+Entorno: `docker compose` local en el notebook de desarrollo. k6 1.0.0 corre desde su imagen oficial
+(`grafana/k6`) dentro de la red del compose, así que no hay que instalar nada. Los usuarios virtuales
+no hacen pausas entre peticiones: es más exigente que la misma cantidad de personas reales.
+
+| ID | Resultado | Meta | Cumple |
+|---|---|---|---|
+| R-01 | p95 de **19 ms**, 0 % de errores · 75.974 búsquedas en 1 minuto (unas 1.260 por segundo) | p95 < 300 ms · 0 % de errores | Sí |
+| R-02 | p95 de **45 ms**, 0 % de errores · 34.095 búsquedas en 1 minuto, con 10.017 partidos en la base | p95 < 500 ms | Sí |
+| R-03 | `Bitmap Index Scan on idx_match_location`: de 10.017 partidos, el índice deja 464 candidatos y la consulta tarda **11 ms**. La tabla de partidos no se recorre completa | Uso del índice GIST, sin recorrido secuencial | Sí |
+| R-04 | Registro p95 de **324 ms** y login p95 de **311 ms**, 0 % de errores · 652 cuentas | p95 < 800 ms | Sí |
+| R-05 | API, web y base sanas en **13,3 s**, con migraciones y seed | < 60 s | Sí |
+
+Notas:
+
+- **R-03:** el plan recorre completa la tabla de usuarios, que en la demo tiene 8 filas: con tan pocas,
+  PostgreSQL elige leerla entera porque es más barato que usar su índice. El criterio se refiere a la
+  tabla de partidos, que es la que crece.
+- **R-04:** el límite de registros (S-12, 20 por hora) se elevó solo en el contenedor local durante la
+  medición, porque lo que se mide es el costo de bcrypt. Al terminar se restauró la API y el seed borró
+  las cuentas de carga.
+- **Alcance:** es una medición local. En la nube (Render y Supabase en capa gratuita) los tiempos
+  serán mayores por la red y por el servidor más chico.
+
+Cómo se repiten, con `docker compose up` arriba y desde la raíz del repositorio:
+
+```bash
+docker run --rm -i --network kancha_default -e P95_MS=300 grafana/k6:1.0.0 run - < fase-2-desarrollo/backend/tests/performance/nearby.k6.js
+docker compose exec -T db psql -U kancha -d kancha < fase-2-desarrollo/backend/tests/performance/datos-sinteticos.sql
+docker compose exec -T db psql -U kancha -d kancha < fase-2-desarrollo/backend/tests/performance/plan-busqueda.sql
+docker run --rm -i --network kancha_default -e P95_MS=500 grafana/k6:1.0.0 run - < fase-2-desarrollo/backend/tests/performance/nearby.k6.js
+```
+
+R-04 usa `auth.k6.js` y necesita `REGISTER_RATE_LIMIT` elevado en la API. Salida completa en
+`evidencias/sprint-08/pruebas-rendimiento.txt`.
+
+**Medición preliminar (14-nov-2026), reemplazada por R-01.** 100 búsquedas seguidas con un solo usuario:
+mediana de 4 ms y p95 de 5 ms.
 
 ---
 
@@ -340,7 +375,7 @@ endpoint está documentado en OpenAPI.
 - `docker compose up` sigue levantando todo sin intervención manual.
 
 **El MVP sale de pruebas** (Fase 3) cuando además se cumplen los umbrales de rendimiento de la
-sección 7 y los diecisiete controles de seguridad de la sección 8.
+sección 7 (cumplidos el 20 de noviembre) y los dieciocho controles de seguridad de la sección 8.
 
 ---
 
@@ -383,4 +418,4 @@ Las capturas del CI en verde, los reportes de cobertura y los resultados de k6 s
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 17 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 20 de noviembre de 2026*
