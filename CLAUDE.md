@@ -179,9 +179,10 @@ Comuna del piloto El mapa dibuja el límite real de La Florida (OpenStreetMap). 
 
 Falta uno         Si a un partido le faltan 1 o 2 jugadores y empieza en 2 h o menos, el organizador
 destacado         puede destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se
-                  une entra aprobado y gratis, como invitado. Su cuota la cubre el grupo fuera de la
-                  app (la app muestra cuánto pone cada uno) y Kancha no cobra comisión por ese cupo.
-                  El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41)
+                  une entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o
+                  tiene menos, queda pendiente y lo aprueba el organizador. Su cuota la cubre el grupo
+                  fuera de la app (la app muestra cuánto pone cada uno) y Kancha no cobra comisión por
+                  ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41)
 
 Partidos jugados  matchesPlayed se incrementa al cerrar una participación como asistida. Se muestra
                   en la carta de jugador. Al terminar el partido, el organizador marca a cada

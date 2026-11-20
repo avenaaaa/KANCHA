@@ -209,6 +209,7 @@ Cuando a un partido le faltan 1 o 2 jugadores y empieza en 2 horas o menos, el o
 - **Aviso al organizador:** tarjeta `#2A2A2A` con borde `#F0A500` de 2 px en el detalle del partido: "Te falta 1 jugador y el partido es a las 13:30", qué pasa si lo destaca, cuánto pone cada uno por el invitado y el botón primario "Destacar partido". En "Mis partidos", su carta dice "Te falta 1 jugador · Destácalo" en naranja.
 - **Para el jugador:** la carta del partido muestra "Entra gratis »" en el botón naranja en vez de "Falta 1"; el pin lleva borde blanco y late (en la web) con un halo naranja; el detalle lleva la insignia "Destacado · entra gratis" y el botón "Únete gratis".
 - **Invitado confirmado:** "Entraste como invitado: no pagas nada. Nos vemos en la cancha.", en verde y sin botón de pago.
+- **Invitado por confirmar** (novato o honor bajo 7): "Solicitud enviada. Como aún no tienes buen honor, el organizador te confirma; si te acepta, entras gratis.", en ámbar, como cualquier postulación pendiente.
 - Con "reducir movimiento", el pin no late.
 
 ---

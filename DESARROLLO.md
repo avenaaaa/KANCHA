@@ -418,7 +418,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING`. 409 `CANCELLED_PAID_SLOT` si canceló un cupo ya pagado en ese partido · **implementado** |
-| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le faltan 1 o 2 y empieza en 2 h o menos. Quien se una entra aprobado y gratis. 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
+| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le faltan 1 o 2 y empieza en 2 h o menos. Quien se una entra gratis: al tiro con honor 7 o más; si no, lo aprueba el organizador. 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
 | PATCH | `/participations/:id/reject` | KAN-32 | ✔ org | Organizador rechaza una postulación pendiente → `REJECTED`. No mueve cupos; el jugador puede volver a postular · **implementado** |
 | PATCH | `/participations/:id/attendance` | KAN-30 | ✔ org | Con el partido terminado, el organizador marca `{ attended }`: asistió suma `matchesPlayed`, no se presentó deja `NO_SHOW`. Una vez por jugador; recalcula el honor · **implementado** |
@@ -478,7 +478,9 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      "Falta uno" destacado (KAN-41): el organizador destaca su partido si le
                      faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. Destacado,
                      va primero en la búsqueda, entra en "Falta uno" aunque le falten dos, y
-                     quien se une queda aprobado al tiro con amountDue = 0: entra gratis. Su
+                     quien se une entra gratis (amountDue = 0): al tiro si su honor es 7 o más
+                     (GUEST_MIN_HONOR); un novato o un honor menor queda PENDING y lo aprueba
+                     el organizador. Su
                      cuota la cubre el grupo fuera de la app (guestShare la reparte entre los
                      que ya están) y Kancha no cobra comisión por ese cupo. Se decide con la
                      fila del partido bloqueada, como la aprobación.

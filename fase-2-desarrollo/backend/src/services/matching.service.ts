@@ -6,8 +6,9 @@ import {
   type LockedMatch,
 } from '../repositories/participation.repository.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
-import { isUniqueViolation } from '../utils/db-errors.js';
+import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 import { calculateAmountDue } from './payment.service.js';
 import { checkCanPrioritize, toMatchSummary, type MatchSummary } from './match.service.js';
 import type { NearbyQuery } from '../schemas/match.schema.js';
@@ -132,9 +133,19 @@ export async function join(matchId: string, userId: string, now: Date = new Date
   if (block) throw conflict(block, JOIN_MESSAGES[block]);
 
   const participation = await createOrReopen(matchId, userId);
-  // KAN-41: en un partido destacado no hay tiempo de esperar al organizador: entra aprobado y gratis.
-  if (match.prioritizedAt) return (await approveAsGuest(participation.id, now)) ?? participation;
-  return participation;
+  if (!match.prioritizedAt) return participation;
+  // KAN-41: en un partido destacado entra al tiro quien tiene buen honor; al resto lo confirma el organizador.
+  const player = await userRepository.findById(userId);
+  if (!isTrustedGuest(toNumberOrNull(player?.honorScore))) return participation;
+  return (await approveAsGuest(participation.id, now)) ?? participation;
+}
+
+/** KAN-41: honor mínimo para entrar sin esperar al organizador a un partido destacado. */
+export const GUEST_MIN_HONOR = 7;
+
+/** Un novato (honor NULL) no es un mal jugador, pero aún no tiene historial: lo confirma el organizador. */
+export function isTrustedGuest(honorScore: number | null): boolean {
+  return honorScore !== null && honorScore >= GUEST_MIN_HONOR;
 }
 
 async function createOrReopen(matchId: string, userId: string): Promise<Participation> {
@@ -156,7 +167,7 @@ async function createOrReopen(matchId: string, userId: string): Promise<Particip
 }
 
 /**
- * KAN-41: aprobación automática del invitado de un partido destacado, con el mismo bloqueo de fila
+ * KAN-41: aprobación automática del invitado confiable de un partido destacado, con el mismo bloqueo de fila
  * que la aprobación manual. Si entre medio se llenó o dejó de estar destacado, queda pendiente.
  */
 function approveAsGuest(participationId: string, now: Date): Promise<Participation | null> {

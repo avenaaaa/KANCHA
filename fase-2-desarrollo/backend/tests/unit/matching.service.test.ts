@@ -4,6 +4,7 @@ import {
   checkCanJoin,
   decideApproval,
   decideRejection,
+  isTrustedGuest,
   urgentWindow,
 } from '../../src/services/matching.service.js';
 import type { LockedMatch } from '../../src/repositories/participation.repository.js';
@@ -145,5 +146,14 @@ describe('decideApproval en un partido destacado (KAN-41)', () => {
       status: 'FULL',
       amountDue: 0,
     });
+  });
+});
+
+describe('isTrustedGuest · verificación del invitado de un partido destacado (KAN-41)', () => {
+  it('U-90 · entra al tiro con honor 7 o más; un novato o un honor bajo esperan al organizador', () => {
+    expect(isTrustedGuest(null)).toBe(false);
+    expect(isTrustedGuest(6.9)).toBe(false);
+    expect(isTrustedGuest(7)).toBe(true);
+    expect(isTrustedGuest(9.5)).toBe(true);
   });
 });

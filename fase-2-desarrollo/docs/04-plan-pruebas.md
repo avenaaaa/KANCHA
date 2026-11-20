@@ -65,7 +65,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 |---|---|
 | Fecha | 17 de noviembre de 2026 |
 | Archivos de prueba del backend | 18 (8 unitarios y 10 de integración) |
-| Casos del backend | 182 ejecutados · 182 pasan · 0 fallan (94 unitarias, 88 de integración) |
+| Casos del backend | 183 ejecutados · 183 pasan · 0 fallan (95 unitarias, 88 de integración) |
 | Cobertura de `services/` y `utils/` | 99,03 % de líneas · 91,31 % de ramas · 98,66 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
 | Casos de la app (Jest + React Native Testing Library) | 35 ejecutados · 35 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
@@ -149,6 +149,7 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si faltan 1 o 2 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 3 faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41 |
 | U-88 | `payment.service` · `guestShare` | La cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros; en cancha gratis es 0 | KAN-41 |
 | U-89 | `matching.service` · `decideApproval` | Con el partido destacado, el cupo que se aprueba entra gratis (amountDue 0) | KAN-41 |
+| U-90 | `matching.service` · `isTrustedGuest` | Entra al tiro a un destacado con honor 7 o más; un novato (NULL) o un honor de 6,9 esperan al organizador | KAN-41 |
 
 ### 4.3 Pruebas de la app
 
@@ -236,7 +237,7 @@ exista.
 | CN-38 | KAN-32 | Límite | Aprobar y rechazar la misma postulación a la vez | Una gana, la otra recibe 409 y los cupos calzan | Cubierto (integración) |
 | CN-39 | KAN-37 | Equivalencia | Filtro "Falta uno" con tres partidos: 1 cupo libre en 1 h; 2 cupos libres en 1 h; 1 cupo libre en 3 h | Solo aparece el primero; sin el filtro aparecen los tres | Cubierto (U-80, U-81 e integración) |
 | CN-40 | KAN-37 | Límite | Partido que empieza en 1 h 59 min y otro en 2 h 01 min; `urgent=quizas` | Aparece el primero y no el segundo; 422 | Cubierto (integración) |
-| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le faltan 2 y que empieza en 1,5 h; un jugador se une | Va primero en "Falta uno" aunque le falten dos; el jugador queda `APPROVED` con cuota 0 y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
+| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le faltan 2 y que empieza en 1,5 h; se unen un jugador con honor 8 y un novato | Va primero en "Falta uno" aunque le falten dos; el de honor 8 queda `APPROVED` al tiro y el novato `PENDING` hasta que el organizador lo aprueba; ambos con cuota 0, y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
 | CN-42 | KAN-41 | Límite | Destacar siendo otro usuario, dos veces, con 3 h de anticipación, con 3 faltantes, con un id inválido | 403; 409 `ALREADY_PRIORITY`, `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`; 422 | Cubierto (U-83 a U-87 e integración) |
 
 ---
@@ -374,7 +375,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 | KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
-| KAN-41 | "Falta uno" destacado | U-83 a U-89, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
+| KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
 
 ---
 

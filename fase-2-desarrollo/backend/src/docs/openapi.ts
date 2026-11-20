@@ -133,7 +133,7 @@ export const openapi = {
           totalCost: { type: 'integer' },
           pricePerPlayer: { type: 'integer', description: 'ceil(totalCost / totalSlots)' },
           status: { type: 'string' },
-          priority: { type: 'boolean', description: '"Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro' },
+          priority: { type: 'boolean', description: '"Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más' },
           distanceM: { type: 'integer', description: 'Solo en /matches/nearby' },
           organizer: {
             type: 'object',
@@ -371,8 +371,8 @@ export const openapi = {
         summary: '"Falta uno" destacado (KAN-41)',
         description:
           'El organizador destaca su partido cuando le faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. ' +
-          'Aparece primero en la búsqueda y en "Falta uno"; quien se une entra aprobado y gratis, y el grupo cubre esa ' +
-          'cuota fuera de la app. Se decide con la fila del partido bloqueada.',
+          'Aparece primero en la búsqueda y en "Falta uno"; quien se une entra gratis (al tiro con honor 7 o más; si no, ' +
+          'lo aprueba el organizador) y el grupo cubre esa cuota fuera de la app. Se decide con la fila del partido bloqueada.',
         parameters: [idParam],
         responses: {
           200: {
@@ -395,7 +395,7 @@ export const openapi = {
         parameters: [idParam],
         responses: {
           201: {
-            description: 'Postulación registrada como pendiente; en un partido destacado (KAN-41), aprobada y gratis',
+            description: 'Postulación registrada como pendiente; en un partido destacado (KAN-41) entra gratis, y aprobada al tiro si el honor es 7 o más',
             content: { 'application/json': { example: { participationId: '3f8a…', status: 'PENDING' } } },
           },
           409: {

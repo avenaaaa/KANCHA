@@ -43,7 +43,7 @@ export interface MatchSummary {
   /** Cuota individual: ceil(totalCost / totalSlots). */
   pricePerPlayer: number;
   status: string;
-  /** "Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro. */
+  /** "Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más. */
   priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;

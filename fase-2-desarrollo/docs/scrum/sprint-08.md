@@ -63,7 +63,7 @@ Desglose técnico de lo hecho:
 | KAN-38 | El seed ubica los 15 partidos dentro de la comuna · `/users/me` responde 401 si el usuario de la sesión ya no existe | Límite real de La Florida en el mapa (OpenStreetMap), lista de canchas existentes al publicar, dirección automática al marcar un punto (Nominatim) y rechazo de puntos fuera de la comuna |
 | KAN-39 | — | Panel inferior deslizable con las cartas (cerrado al inicio, se abre con un pin o con "Falta uno") · "Falta uno" amarillo de 60 px con animación constante mientras está apagado |
 | KAN-40 | — | 36 canchas investigadas (24 públicas, 5 municipales y 7 privadas) como pines en el mapa de Publicar, filtradas por deporte, con "$" en las que se arriendan |
-| KAN-41 | `PATCH /matches/:id/priority` con la fila bloqueada · columna `prioritizedAt` · destacados primero y dentro de "Falta uno" · el invitado entra aprobado con cuota 0 | Aviso "¿Lo destacas?" al organizador con lo que pone cada uno · "Entra gratis" en la carta, pin que late, "Únete gratis" |
+| KAN-41 | `PATCH /matches/:id/priority` con la fila bloqueada · columna `prioritizedAt` · destacados primero y dentro de "Falta uno" · el invitado entra con cuota 0: al tiro con honor 7 o más, y si no lo aprueba el organizador | Aviso "¿Lo destacas?" al organizador con lo que pone cada uno · "Entra gratis" en la carta, pin que late, "Únete gratis" |
 
 ## 3. Scrumboard
 
