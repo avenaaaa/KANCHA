@@ -176,12 +176,21 @@ El Sistema de Honor es el "Perfil de Confianza" del jugador. Mide tres métricas
 
 Botón del mapa que deja a la vista solo los partidos urgentes: les falta exactamente un jugador y empiezan en 2 horas o menos (la regla está en `DESARROLLO.md` §5.2). No es el CTA de la §4.3: aquel une al jugador a un partido; este filtra el mapa.
 
-- **Ubicación:** en el celular, justo sobre la barra horizontal de partidos, a la izquierda de "Publicar". En pantallas anchas, bajo los filtros del panel y sobre la lista.
-- **Forma:** píldora de 44 px de alto, texto "Falta uno" en Roboto Bold 15px.
-- **Inactivo:** fondo `#2A2A2A` al 94 % (superficie flotante sobre el mapa), borde y texto `#F0A500`, ícono ">>".
-- **Activo:** fondo `#F0A500`, texto `#1A1A1A`, ícono de visto.
+- **Ubicación:** en el celular, en la fila de botones del panel de partidos, ocupando casi todo el ancho junto a "Publicar". En pantallas anchas, a todo el ancho del panel lateral, bajo los filtros.
+- **Forma:** píldora de 60 px de alto, fondo `#F0A500`, texto "Falta uno" en Anton 24 px y `#1A1A1A`. Es el botón más visible del mapa (KAN-39).
+- **Apagado:** late y suelta una onda amarilla que se expande y se desvanece cada 1,5 s, sin parar, para que se vea apenas se abre la app. Con "reducir movimiento" activado no se anima.
+- **Encendido:** el mismo amarillo con borde blanco de 3 px e ícono de visto. Deja de latir.
 - Con el filtro activo el contador dice "N partidos necesitan un jugador en 2 h o menos". Si no hay ninguno, se muestra un mensaje propio con el botón "Ver todos los partidos", nunca una lista vacía.
 - Urgente significa ahora: activar "Falta uno" vuelve el horario a "Cuando sea", y elegir un día lo apaga.
+
+### 4.7 Panel de partidos del mapa (celular)
+
+Las cartas de partidos van en un panel inferior que se desliza (KAN-39), para que el mapa ocupe casi toda la pantalla.
+
+- **Cerrado** (al abrir la app): se ven el asa, con el contador de partidos y una flecha, y la fila de botones ("Falta uno" y "Publicar").
+- **Abierto:** suma el carrusel de cartas. Se abre al tocar un pin o "Falta uno"; se cierra al tocar el mapa vacío.
+- Se arrastra hacia arriba o hacia abajo desde el asa o desde la fila de botones, o se alterna tocando el asa. Al soltar, un gesto rápido manda; si fue lento, queda en la posición más cercana.
+- Fondo `#1A1A1A` con esquinas superiores de 24 px y borde `#3A3A3A`, para que las cartas (`#2A2A2A`) resalten sobre él.
 
 ---
 

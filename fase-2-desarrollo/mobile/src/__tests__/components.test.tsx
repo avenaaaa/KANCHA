@@ -6,6 +6,8 @@ import { SportFilter } from '@/components/SportFilter';
 import { MatchCard } from '@/components/MatchCard';
 import { RatingPicker } from '@/components/RatingPicker';
 import { PlayerCard } from '@/components/PlayerCard';
+import { UrgentButton } from '@/components/UrgentButton';
+import { sheetSnap } from '@/components/ui/DragSheet';
 import type { MatchSummary, User } from '@/api/types';
 
 const partido: MatchSummary = {
@@ -125,5 +127,29 @@ describe('PlayerCard (HU-02)', () => {
     expect(screen.getByText('100 %')).toBeTruthy();
     expect(screen.getByText('75 %')).toBeTruthy();
     expect(screen.getByText('92 %')).toBeTruthy();
+  });
+});
+
+describe('Panel de partidos que se desliza', () => {
+  it('M-32 · al soltar, un gesto rápido manda y si fue lento gana la posición más cercana', () => {
+    const range = 250;
+    expect(sheetSnap(200, -1.2, range)).toBe(true); // casi cerrado, pero lanzado hacia arriba: abre
+    expect(sheetSnap(20, 1.2, range)).toBe(false); // casi abierto, pero lanzado hacia abajo: cierra
+    expect(sheetSnap(100, 0, range)).toBe(true); // lento y más cerca de abierto
+    expect(sheetSnap(160, 0.2, range)).toBe(false); // lento y más cerca de cerrado
+  });
+});
+
+describe('Botón "Falta uno" (KAN-37)', () => {
+  it('M-33 · avisa si está encendido a los lectores de pantalla y responde al toque', async () => {
+    const onPress = jest.fn();
+    const { rerender } = await render(<UrgentButton active={false} onPress={onPress} hours={2} />);
+    const boton = screen.getByRole('button', { name: 'Falta uno' });
+    expect(boton.props.accessibilityState).toMatchObject({ selected: false });
+    await fireEvent.press(boton);
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    await rerender(<UrgentButton active onPress={onPress} hours={2} />);
+    expect(screen.getByRole('button', { name: 'Falta uno' }).props.accessibilityState).toMatchObject({ selected: true });
   });
 });

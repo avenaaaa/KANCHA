@@ -31,7 +31,7 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 31 de la app, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 33 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **86 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
@@ -67,7 +67,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Archivos de prueba del backend | 17 (8 unitarios y 9 de integración) |
 | Casos del backend | 173 ejecutados · 173 pasan · 0 fallan (87 unitarias, 86 de integración) |
 | Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,66 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 31 ejecutados · 31 pasan · el CI los corre en cada push desde el 15-nov |
+| Casos de la app (Jest + React Native Testing Library) | 33 ejecutados · 33 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -162,6 +162,8 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 | M-27 | `filterStore` | "Falta uno" se activa y se apaga; activarlo limpia el día elegido y elegir un día lo apaga (KAN-37) | Pasa |
 | M-28 a M-30 | `lib/places.ts` | El centro de La Florida cae dentro del límite real y Ñuñoa o Santiago centro, fuera; todas las canchas ofrecidas están dentro de la comuna; la dirección se arma con calle y número, y sin calle no se propone nada (KAN-38) | Pasa |
 | M-31 | `lib/places.ts` · `reverseGeocode` | La dirección sale del servicio de OpenStreetMap; si el servicio responde mal o no hay conexión, no se inventa nada y el campo queda para escribirlo (KAN-38, DEF-22) | Pasa |
+| M-32 | `DragSheet` · `sheetSnap` | Al soltar el panel de partidos, un gesto rápido manda (hacia arriba abre, hacia abajo cierra) y si fue lento gana la posición más cercana (KAN-39) | Pasa |
+| M-33 | `UrgentButton` | "Falta uno" avisa a los lectores de pantalla si está encendido y responde al toque (KAN-37, KAN-39) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -348,7 +350,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12, S-18 |
 | HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
 | HU-03 | Publicar partido | U-23 a U-30 | CN-04 a CN-06 | I-03 | S-05 |
-| HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
+| HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27, M-32 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46, M-22 a M-24 | CN-11, CN-12, CN-35 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10, U-69, U-70, M-17 | CN-13 a CN-17 | I-09 | S-05, S-14 |
 | HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
@@ -357,7 +359,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-10 | Notificación de cupo | — | — | — | — · fuera de alcance desde el 8-nov |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
-| KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27 | CN-39, CN-40 | I-04 | S-04 |
+| KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 
 ---

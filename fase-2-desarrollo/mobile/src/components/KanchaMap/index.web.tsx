@@ -150,7 +150,8 @@ export default function KanchaMap({
     const opts = { center: [center.lng, center.lat] as [number, number], zoom, padding: { top: 0, bottom: bottomInset, left: 0, right: 0 } };
     if (reducedMotion()) map.jumpTo(opts);
     else map.easeTo({ ...opts, duration: 600 });
-  }, [center.lat, center.lng, zoom, bottomInset]);
+    // bottomInset no está en las dependencias: abrir o cerrar el panel no debe devolver la cámara al origen.
+  }, [center.lat, center.lng, zoom]);
 
   // Sincronizar pines con los partidos.
   useEffect(() => {
