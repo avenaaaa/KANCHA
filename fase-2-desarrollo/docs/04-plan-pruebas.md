@@ -31,7 +31,7 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **103 del backend y 38 de la app, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **103 del backend y 40 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
@@ -67,7 +67,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Archivos de prueba del backend | 20 (9 unitarios y 11 de integración) |
 | Casos del backend | 196 ejecutados · 196 pasan · 0 fallan (103 unitarias, 93 de integración) · seis corridas seguidas en verde |
 | Cobertura de `services/` y `utils/` | 98,12 % de líneas · 91,61 % de ramas · 98,05 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 38 ejecutados · 38 pasan · el CI los corre en cada push desde el 15-nov |
+| Casos de la app (Jest + React Native Testing Library) | 40 ejecutados · 40 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -186,6 +186,8 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | M-36 | `lib/notifications.ts` · `firstUrgent` | Sobre el mapa se destaca el primer "Falta uno" que la API marca como vigente; uno lleno no (HU-10) | Pasa |
 | M-37 | `lib/notifications.ts` · `timeAgo` | "ahora", "hace 5 min", "hace 2 h", "ayer", "hace 3 días" (HU-10) | Pasa |
 | M-38 | `lib/notifications.ts` · `toggleIn`, `hourLabel` | Elegir días y deportes, y la hora del horario (HU-10) | Pasa |
+| M-39 | `lib/format.ts` · `countdown` | Cuenta atrás de la carta: días, horas y minutos, minutos:segundos en la última hora, "En juego" mientras dura y nada al terminar (KAN-43) | Pasa |
+| M-40 | `data/laFlorida.json` · `venuesForSport` | Las multicanchas de pasto sintético no se ofrecen para básquetbol, y ninguna cancha pública ofrece pádel (KAN-43) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -393,6 +395,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 | KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
 | KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
+| KAN-43 | Cuenta atrás y equipamiento real de las canchas | M-39, M-40 | — · verificado a mano en la app (`evidencias/sprint-08/28` y `29`) y foto satelital de cada cancha (`fuentes-canchas-KAN40.md`) | — | — |
 
 ---
 
