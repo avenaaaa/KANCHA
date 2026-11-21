@@ -134,9 +134,8 @@ describe('checkCanPrioritize · "Falta uno" destacado (KAN-41)', () => {
   };
   const codigo = (e: AppError | null) => e?.code ?? null;
 
-  it('U-83 · el organizador puede destacar si le faltan 1 o 2 jugadores y empieza en 2 h o menos', () => {
+  it('U-83 · el organizador puede destacar si le falta 1 jugador y empieza en 2 h o menos', () => {
     expect(checkCanPrioritize(partido, 'organizador', ahora)).toBeNull();
-    expect(checkCanPrioritize({ ...partido, filledSlots: 8 }, 'organizador', ahora)).toBeNull();
     expect(checkCanPrioritize({ ...partido, startsAt: enHoras(2) }, 'organizador', ahora)).toBeNull();
   });
 
@@ -144,7 +143,8 @@ describe('checkCanPrioritize · "Falta uno" destacado (KAN-41)', () => {
     expect(checkCanPrioritize(partido, 'otro', ahora)?.statusCode).toBe(403);
   });
 
-  it('U-85 · no se destaca si faltan 3 o más jugadores', () => {
+  it('U-85 · no se destaca si faltan 2 o más: quienes entran pagan su parte (KAN-44)', () => {
+    expect(codigo(checkCanPrioritize({ ...partido, filledSlots: 8 }, 'organizador', ahora))).toBe('PRIORITY_NOT_AVAILABLE');
     expect(codigo(checkCanPrioritize({ ...partido, filledSlots: 7 }, 'organizador', ahora))).toBe('PRIORITY_NOT_AVAILABLE');
   });
 

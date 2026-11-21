@@ -237,7 +237,7 @@ erDiagram
 |---|---|---|---|---|
 | `id` | UUID | No | PK | Identificador |
 | `userId` | UUID | No | FK → User (CASCADE) | A quién va el aviso |
-| `kind` | ENUM | No | FALTA_UNO \| NEARBY_MATCH \| JOIN_REQUEST \| JOIN_APPROVED \| PRIORITY_OFFER \| NUDGE | Tipo. FALTA_UNO es el prioritario |
+| `kind` | ENUM | No | FALTA_UNO \| NEARBY_MATCH \| JOIN_REQUEST \| JOIN_APPROVED \| PRIORITY_OFFER \| NUDGE \| GUEST_COVER | Tipo. FALTA_UNO es el prioritario |
 | `matchId` | UUID | Sí | FK → Match (CASCADE) | Partido del aviso; null en el ánimo para jugar |
 | `title`, `body` | VARCHAR | No | — | Texto armado por reglas, sin IA |
 | `readAt` | TIMESTAMP | Sí | null = sin leer | Cuándo lo leyó |
@@ -364,6 +364,7 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`migrations/20261115130000_participation_rechazada/migration.sql`](../backend/prisma/migrations/20261115130000_participation_rechazada/migration.sql) | Valor `REJECTED` en el tipo `PartStatus` (KAN-32) |
 | [`migrations/20261120180000_match_destacado/migration.sql`](../backend/prisma/migrations/20261120180000_match_destacado/migration.sql) | Columna `prioritizedAt` en `Match`: el "Falta uno" destacado (KAN-41) |
 | [`migrations/20261120220000_avisos/migration.sql`](../backend/prisma/migrations/20261120220000_avisos/migration.sql) | Tablas `NotificationPreference` y `Notification`, tipo `NotificationKind`, `UNIQUE (userId, kind, matchId)` y `CHECK` de horario y radio (HU-10) |
+| [`migrations/20261121150000_aviso_cubrir_invitado/migration.sql`](../backend/prisma/migrations/20261121150000_aviso_cubrir_invitado/migration.sql) | Valor `GUEST_COVER` en `NotificationKind`: a los confirmados de un destacado, cuánto pone cada uno por el invitado (KAN-44) |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el

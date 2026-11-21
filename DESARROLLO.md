@@ -334,7 +334,7 @@ model NotificationPreference {
 model Notification {
   id      String           @id @default(uuid())
   userId  String
-  kind    NotificationKind // FALTA_UNO, NEARBY_MATCH, JOIN_REQUEST, JOIN_APPROVED, PRIORITY_OFFER, NUDGE
+  kind    NotificationKind // FALTA_UNO, NEARBY_MATCH, JOIN_REQUEST, JOIN_APPROVED, PRIORITY_OFFER, NUDGE, GUEST_COVER
   matchId String?
   title   String
   body    String
@@ -454,7 +454,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING`. 409 `CANCELLED_PAID_SLOT` si canceló un cupo ya pagado en ese partido · **implementado** |
-| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le faltan 1 o 2 y empieza en 2 h o menos. Quien se una entra gratis: al tiro con honor 7 o más; si no, lo aprueba el organizador. 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
+| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le falta 1 y empieza en 2 h o menos (KAN-44). Quien se una entra gratis: al tiro con honor 7 o más; si no, lo aprueba el organizador. Los confirmados reciben cuánto pone cada uno (`GUEST_COVER`). 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
 | PATCH | `/participations/:id/reject` | KAN-32 | ✔ org | Organizador rechaza una postulación pendiente → `REJECTED`. No mueve cupos; el jugador puede volver a postular · **implementado** |
 | PATCH | `/participations/:id/attendance` | KAN-30 | ✔ org | Con el partido terminado, el organizador marca `{ attended }`: asistió suma `matchesPlayed`, no se presentó deja `NO_SHOW`. Una vez por jugador; recalcula el honor · **implementado** |
@@ -512,13 +512,14 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      Prisma con bloqueo de fila, para evitar sobreventa de cupos.
                      Rechazar usa el mismo bloqueo y no mueve cupos. (KAN-32)
                      "Falta uno" destacado (KAN-41): el organizador destaca su partido si le
-                     faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. Destacado,
-                     va primero en la búsqueda, entra en "Falta uno" aunque le falten dos, y
+                     falta 1 jugador y empieza dentro de URGENT_WINDOW_HOURS; si faltan más, se
+                     paga normal (KAN-44). Destacado, va primero en la búsqueda y en "Falta uno", y
                      quien se une entra gratis (amountDue = 0): al tiro si su honor es 7 o más
                      (GUEST_MIN_HONOR); un novato o un honor menor queda PENDING y lo aprueba
                      el organizador. Su
                      cuota la cubre el grupo fuera de la app (guestShare la reparte entre los
-                     que ya están) y Kancha no cobra comisión por ese cupo. Se decide con la
+                     que ya están, y a cada confirmado le llega el aviso GUEST_COVER) y Kancha no
+                     cobra comisión por ese cupo. Se decide con la
                      fila del partido bloqueada, como la aprobación.
                      Quien canceló un cupo ya pagado no vuelve a postular a ese partido:
                      su pago conserva el reembolso y la retención. Quien perdió el cupo
@@ -795,6 +796,22 @@ de la red local en el celular). En la nube se define con la URL pública de Rend
 **Prueba manual (5-nov-2026):** pago aprobado en Integración con la VISA de prueba; el comprobante
 está en `fase-2-desarrollo/docs/evidencias/sprint-07/`.
 
+### Siguiente iteración: tarjeta inscrita con Oneclick (HU-12, KAN-45)
+
+La cuota del invitado de un "Falta uno" destacado hoy la cubre el grupo fuera de la app (KAN-44). Es
+mala práctica: queda a confianza y sin registro. La solución diseñada es Webpay **Oneclick Mall**, que
+viene en el mismo `transbank-sdk` 6.1.1 y tiene ambiente de integración gratis:
+
+| Paso | Qué pasa |
+|---|---|
+| Inscripción | Una vez, por Transbank. Kancha guarda solo `tbkUser`, el tipo y los 4 últimos dígitos; el número queda en Transbank (PCI DSS) |
+| Cupo normal | Al aprobarse la postulación se cobra a la tarjeta, sin redirección; si el cargo falla, el cupo se pierde |
+| Destacado | Los confirmados reciben "¿Cubres $X para que entre un invitado gratis?"; se cobra solo a quienes dicen Sí, solo cuando el invitado entra y sin comisión. Nunca se cobra sin un Sí explícito |
+
+Modelo: `PaymentMethod` (userId, tbkUser, cardType, last4), `CoverPledge` (matchId, userId, amount,
+status) y `Payment.kind` (SLOT | GUEST_COVER). Estimación: 8 puntos. Quedó fuera de esta fase para no
+tocar los pagos antes de la defensa.
+
 ---
 
 ## 10. Plan de pruebas (competencia C1)
@@ -835,7 +852,7 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
 | **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
-| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43). **Pendiente:** documentación de cierre (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
+| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). **Pendiente:** documentación de cierre (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
 | **9** | 24 nov–07 dic | **Push en Android** con la app compilada (KAN-42). **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y

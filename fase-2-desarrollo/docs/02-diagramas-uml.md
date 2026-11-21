@@ -402,6 +402,7 @@ classDiagram
         JOIN_APPROVED
         PRIORITY_OFFER
         NUDGE
+        GUEST_COVER
     }
 
     class Sport {

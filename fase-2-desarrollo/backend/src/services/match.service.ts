@@ -90,12 +90,15 @@ export interface MyMatch extends MatchSummary {
   canPrioritize: boolean;
 }
 
-/** Faltan a lo más estos jugadores para poder destacar un partido (KAN-41). */
-export const MAX_PRIORITY_SLOTS = 2;
+/**
+ * Faltan a lo más estos jugadores para poder destacar un partido. KAN-44: solo 1; si faltan más, quienes
+ * entran pagan su parte como siempre.
+ */
+export const MAX_PRIORITY_SLOTS = 1;
 
 /**
- * KAN-41: ¿puede el organizador destacar su partido ahora? Solo si le faltan 1 o 2 jugadores, empieza
- * dentro de la ventana de urgencia (URGENT_WINDOW_HOURS) y no está destacado. Devuelve el motivo si no.
+ * KAN-41: ¿puede el organizador destacar su partido ahora? Solo si le falta 1 jugador, empieza dentro de
+ * la ventana de urgencia (URGENT_WINDOW_HOURS) y no está destacado. Devuelve el motivo si no.
  */
 export function checkCanPrioritize(
   match: { organizerId: string; status: string; startsAt: Date; totalSlots: number; filledSlots: number; prioritizedAt: Date | null },
@@ -109,7 +112,7 @@ export function checkCanPrioritize(
   if (match.status !== 'OPEN') return conflict('MATCH_NOT_OPEN', 'El partido ya no recibe postulaciones');
   const left = match.totalSlots - match.filledSlots;
   if (left < 1 || left > MAX_PRIORITY_SLOTS) {
-    return conflict('PRIORITY_NOT_AVAILABLE', `Solo se destaca un partido al que le faltan 1 o ${MAX_PRIORITY_SLOTS} jugadores`);
+    return conflict('PRIORITY_NOT_AVAILABLE', 'Solo se destaca un partido al que le falta 1 jugador: si faltan más, quienes entren pagan su parte');
   }
   if (untilStart > env.URGENT_WINDOW_HOURS * 3_600_000) {
     return conflict('PRIORITY_TOO_EARLY', `Se puede destacar desde ${env.URGENT_WINDOW_HOURS} horas antes del partido`);

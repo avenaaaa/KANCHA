@@ -65,7 +65,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 |---|---|
 | Fecha | 20 de noviembre de 2026 |
 | Archivos de prueba del backend | 20 (9 unitarios y 11 de integración) |
-| Casos del backend | 196 ejecutados · 196 pasan · 0 fallan (103 unitarias, 93 de integración) · seis corridas seguidas en verde |
+| Casos del backend | 198 ejecutados · 198 pasan · 0 fallan (105 unitarias, 93 de integración) |
 | Cobertura de `services/` y `utils/` | 98,12 % de líneas · 91,61 % de ramas · 98,05 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
 | Casos de la app (Jest + React Native Testing Library) | 40 ejecutados · 40 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
@@ -146,18 +146,19 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 
 | IDs | Módulo | Qué prueban | Origen |
 |---|---|---|---|
-| U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si faltan 1 o 2 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 3 faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41 |
+| U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si falta 1 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 2 o más faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41, KAN-44 |
 | U-88 | `payment.service` · `guestShare` | La cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros; en cancha gratis es 0 | KAN-41 |
 | U-89 | `matching.service` · `decideApproval` | Con el partido destacado, el cupo que se aprueba entra gratis (amountDue 0) | KAN-41 |
 | U-90 | `matching.service` · `isTrustedGuest` | Entra al tiro a un destacado con honor 7 o más; un novato (NULL) o un honor de 6,9 esperan al organizador | KAN-41 |
 | U-91 | `notification.service` · `faltaUnoMessage` | Dice cuántos faltan, la hora de Chile (22:30 Z son las 19:30 en noviembre) y, si está destacado, "Entras gratis" | HU-10 |
 | U-92 | `notification.service` · `nearbyMessage` | Deporte, día, hora y recinto del partido nuevo | HU-10 |
 | U-93 | `notification.service` · `joinRequestMessage`, `joinApprovedMessage` | Al organizador, la postulación (urgente si es un destacado); al jugador, su aprobación, con o sin pago | HU-10 |
-| U-94 | `notification.service` · `priorityOfferMessage` | "¿Lo destacas?" con 1 o 2 faltantes | HU-10, KAN-41 |
+| U-94 | `notification.service` · `priorityOfferMessage` | "¿Lo destacas?" cuando falta 1 | HU-10, KAN-41, KAN-44 |
 | U-95 | `notification.service` · `nudgeMessage` | Ánimo distinto para quien nunca jugó ("Tu primer partido te espera") y para quien lleva 16 días sin jugar | HU-10 |
 | U-96 | `notification.service` · `sortInbox`, `isUrgent` | Los "Falta uno" vigentes primero y, entre ellos, los destacados; uno lleno, empezado o leído deja de destacarse | HU-10 |
 | U-97 | `notification.service` · `defaultPreferences` | Sin preferencias guardadas no hay nada activado; viene marcado el deporte favorito | HU-10 |
 | U-98 | `notification.schema` · `preferencesSchema` | Horario que termina después de empezar, ubicación y deporte si activa algo, días si activa "cerca", radio y días válidos, sin repetidos | HU-10 |
+| U-99 | `notification.service` · `guestCoverMessage` | A los confirmados de un destacado: la cuota del invitado y cuánto pone cada uno, en pesos con punto de miles | KAN-44 |
 
 ### 4.3 Pruebas de la app
 
@@ -250,13 +251,14 @@ exista.
 | CN-38 | KAN-32 | Límite | Aprobar y rechazar la misma postulación a la vez | Una gana, la otra recibe 409 y los cupos calzan | Cubierto (integración) |
 | CN-39 | KAN-37 | Equivalencia | Filtro "Falta uno" con tres partidos: 1 cupo libre en 1 h; 2 cupos libres en 1 h; 1 cupo libre en 3 h | Solo aparece el primero; sin el filtro aparecen los tres | Cubierto (U-80, U-81 e integración) |
 | CN-40 | KAN-37 | Límite | Partido que empieza en 1 h 59 min y otro en 2 h 01 min; `urgent=quizas` | Aparece el primero y no el segundo; 422 | Cubierto (integración) |
-| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le faltan 2 y que empieza en 1,5 h; se unen un jugador con honor 8 y un novato | Va primero en "Falta uno" aunque le falten dos; el de honor 8 queda `APPROVED` al tiro y el novato `PENDING` hasta que el organizador lo aprueba; ambos con cuota 0, y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
-| CN-42 | KAN-41 | Límite | Destacar siendo otro usuario, dos veces, con 3 h de anticipación, con 3 faltantes, con un id inválido | 403; 409 `ALREADY_PRIORITY`, `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`; 422 | Cubierto (U-83 a U-87 e integración) |
+| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le falta 1 y que empieza en 1,5 h; postula un novato y luego un jugador con honor 8 | Va primero en "Falta uno"; el novato queda `PENDING` sin ocupar el cupo; el de honor 8 queda `APPROVED` al tiro, con cuota 0, y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
+| CN-42 | KAN-41 | Límite | Destacar siendo otro usuario, dos veces, con 3 h de anticipación, con 2 faltantes (KAN-44), con un id inválido | 403; 409 `ALREADY_PRIORITY`, `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`; 422 | Cubierto (U-83 a U-87 e integración) |
 | CN-43 | HU-10 | Equivalencia | Leer las preferencias sin haber guardado nada; guardarlas; guardar con un aviso activo y sin ubicación, o con el horario al revés; leer la bandeja sin token | Todo apagado y el deporte favorito; se guardan; 422; 422; 401 | Cubierto (integración) |
 | CN-44 | HU-10 | Equivalencia | Publicar un pádel a 1 km ante seis usuarios: uno que acepta partidos cerca y cinco que no calzan (apagado, otro deporte, otro día, otra hora, a 20 km) | Solo el primero recibe "Partido de pádel cerca"; ni los otros ni el organizador | Cubierto (integración) |
-| CN-45 | HU-10 | Equivalencia | Partido al que le falta 1 y empieza en 1 h; barrido dos veces; otro al que le faltan 2, que el organizador destaca; el primero se llena | Un solo "Falta uno", primero en la bandeja; al organizador, "¿Lo destacas?" (leído al destacar); al destacar, "Entras gratis"; lleno, deja de destacarse; marcar el aviso de otro, 404 | Cubierto (integración) |
+| CN-45 | HU-10 | Equivalencia | Partido al que le falta 1 y empieza en 1 h; barrido dos veces; otro al que le falta 1 y empieza en 1,5 h, que el organizador destaca; el primero se llena | Un solo "Falta uno", primero en la bandeja; al organizador, "¿Lo destacas?" (leído al destacar); al destacar, el "Falta uno" del otro pasa a "Entras gratis"; lleno, deja de destacarse; marcar el aviso de otro, 404 | Cubierto (integración) |
 | CN-46 | HU-10 | Equivalencia | Un jugador postula y el organizador lo aprueba | El organizador recibe "Tienes postulaciones por revisar" y el jugador "Te aceptaron", con "Paga tu parte" | Cubierto (integración) |
 | CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y otro que acaba de postular, ambos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al segundo, nada | Cubierto (integración) |
+| CN-48 | KAN-44 | Equivalencia | Partido de $24.000 para 4 con un confirmado y un pendiente; el organizador lo destaca con 1 faltante | El confirmado recibe "Entra un invitado gratis": $6.000 entre los 3 que ya están, $2.000 cada uno; el organizador y el pendiente no lo reciben | Cubierto (integración) |
 
 ---
 
@@ -388,7 +390,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
 | HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07, I-12 a I-15 | S-03, S-08, S-13, S-16 |
 | HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68, U-72 | CN-26 a CN-28, CN-33, CN-36 | I-08 | S-03 |
-| HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-98, M-36 a M-38 | CN-43 a CN-47 | I-10 | S-19 |
+| HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-99, M-36 a M-38 | CN-43 a CN-48 | I-10 | S-19 |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
@@ -396,6 +398,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
 | KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
 | KAN-43 | Cuenta atrás y equipamiento real de las canchas | M-39, M-40 | — · verificado a mano en la app (`evidencias/sprint-08/28` y `29`) y foto satelital de cada cancha (`fuentes-canchas-KAN40.md`) | — | — |
+| KAN-44 | Invitado gratis solo si falta 1 y aviso a los confirmados | U-83, U-85, U-91, U-94, U-99 | CN-41, CN-42, CN-45, CN-48 · verificado en la app (`evidencias/sprint-08/30`) | — | — |
 
 ---
 
