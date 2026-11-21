@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import { fonts, type } from '@/theme/typography';
+import { antonLine, fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
 import { countdown, formatCLP, formatDistance, formatWhen, plural, slotsCta } from '@/lib/format';
 import { useNow } from '@/hooks/useNow';
@@ -130,7 +130,7 @@ const s = StyleSheet.create({
   title: { ...type.h3, fontFamily: fonts.bold, color: colors.text, flex: 1, fontSize: 16, lineHeight: 20 },
   when: { alignItems: 'flex-end' },
   day: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.8, color: colors.textMuted, textTransform: 'uppercase' },
-  time: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: colors.text },
+  time: { fontFamily: fonts.display, ...antonLine(24, 28), color: colors.text },
   countdown: { fontFamily: fonts.bold, fontSize: 12, color: colors.textMuted, fontVariant: ['tabular-nums'] },
   countdownSoon: { color: colors.warning },
   countdownLive: { color: colors.success },

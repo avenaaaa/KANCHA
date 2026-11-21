@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
-import { type } from '@/theme/typography';
+import { antonLine, type } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
 
 /** Encabezado de pantallas apiladas, con volver. */
@@ -39,5 +39,5 @@ const s = StyleSheet.create({
     gap: spacing.sm,
   },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  title: { ...type.display, fontSize: 20, lineHeight: 26, color: colors.text, flex: 1 },
+  title: { ...type.display, ...antonLine(20, 26), color: colors.text, flex: 1 },
 });

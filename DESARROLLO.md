@@ -711,7 +711,27 @@ Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0`
 | Base de datos | **Supabase** | Proyecto free en **East US (North Virginia)**, la misma región de la API. Activar `postgis` en Database → Extensions. `DATABASE_URL` = la cadena **Session pooler** (ver la nota) |
 | API | **Render** — Web Service, runtime Docker | Rama `main`, Root Directory `fase-2-desarrollo/backend`, región Virginia (US East), plan Free, Health Check Path `/api/v1/health`. El arranque aplica las migraciones |
 | Web | **Render Static Site** | Rama `main`, Root Directory `fase-2-desarrollo/mobile`. Build: `npm ci && npx expo export --platform web`, publish dir: `dist`. Variables: `EXPO_PUBLIC_API_URL` = URL de la API y `NODE_VERSION=22`. Regla de reescritura `/*` → `/index.html` |
-| App móvil | **Expo Go + QR** | `EXPO_PUBLIC_API_URL=<URL de la API> npx expo start --tunnel` → el profesor escanea y la app corre en su propio celular, contra la API de la nube |
+| App móvil | **Expo Go** (solo la cuenta del autor) | `EXPO_PUBLIC_API_URL=<URL de la API> npx expo start` en `fase-2-desarrollo/mobile`, con el teléfono en la misma red. Ver la nota de Expo Go |
+
+**En línea desde el 21 de noviembre de 2026 (KAN-34):**
+
+| Pieza | Dirección |
+|---|---|
+| Web | https://kancha-web.onrender.com |
+| API | https://kancha-api-u3v4.onrender.com/api/v1 (salud en `/health`, Swagger en `https://kancha-api-u3v4.onrender.com/api/docs`) |
+| Base | Supabase, East US (North Virginia), con las migraciones que aplica la API al arrancar |
+
+Las dos piezas de Render se vuelven a desplegar solas con cada merge a `main`.
+
+> **Por qué la comisión usa la web y no Expo Go.** Desde 2026, Expo Go solo abre proyectos de la cuenta
+> con la que está iniciada su sesión: en iPhone exige la misma cuenta en el teléfono y en el PC, y las
+> publicaciones con EAS Update solo las abre el dueño o un miembro de su organización
+> ([changelog de Expo](https://expo.dev/changelog/expo-go-loading-changes-may-2026)). Un profesor no
+> podría abrir Kancha en su teléfono con Expo Go; la web sí abre en cualquiera, sin instalar nada.
+> El autor muestra la app nativa en su iPhone: el proyecto está registrado como `@avenaaaa/kancha`
+> (`owner` y `extra.eas.projectId` en `mobile/app.json`), y la sesión del PC se inicia con
+> `BROWSER=none npx expo login` y abriendo a mano el enlace que imprime (la cuenta es de GitHub y, en
+> Windows, el `start` de Expo corta la URL en el primer `&`).
 
 > **Por qué el Session pooler.** La conexión directa de Supabase solo tiene IPv6 y Render no sale por
 > IPv6, así que no la alcanza. El Transaction pooler (puerto `6543`) no sirve para `prisma migrate`.
@@ -729,7 +749,7 @@ Variables que la API necesita en la nube, además de `DATABASE_URL`:
 | `JWT_SECRET` | Una clave propia (`openssl rand -base64 32`) | Con la clave de ejemplo la API se niega a arrancar en producción |
 | `TRUST_PROXY` | `1` | Render pone un proxy delante: sin esto la IP y el `https` del cliente se pierden |
 | `TBK_RETURN_URL` | `https://<api>/api/v1/payments/return` | Dirección pública a la que Transbank devuelve al jugador |
-| `CORS_ORIGINS` | La URL del sitio web | Limita qué sitios pueden llamar a la API |
+| `CORS_ORIGINS` | `https://kancha-web.onrender.com` | Limita qué sitios pueden llamar a la API. Si no se define, la API acepta cualquier origen (así quedó el 21-nov; falta definirla) |
 | `DEMO_MODE` | No se define | Así el seed nunca borra la base de la nube |
 
 `NODE_ENV` y `PORT` no se definen: el Dockerfile ya fija `NODE_ENV=production` y Render entrega el puerto.
@@ -738,13 +758,16 @@ Variables que la API necesita en la nube, además de `DATABASE_URL`:
 tablas). En `fase-2-desarrollo/backend`:
 
 ```bash
-DATABASE_URL="<cadena Session pooler>" npx prisma db seed
+DATABASE_URL="<cadena Session pooler>" JWT_SECRET="relleno-solo-para-el-seed" npx prisma db seed
 ```
+
+`JWT_SECRET` es solo de relleno: el seed no firma tokens, pero al recalcular el honor carga la
+configuración de la API, que la exige (16 caracteres o más). Sin ella, el seed se corta después de
+crear los partidos. La cadena de Supabase se puede copiar desde Render (Environment → `DATABASE_URL`,
+botón copiar) sin mostrarla en pantalla.
 
 El seed borra y recarga la base. Las fechas de los partidos se calculan desde ese momento y los tres
 partidos urgentes ("Falta uno") duran menos de dos horas, así que se repite antes de cada demo.
-
-Al 20 de noviembre el despliegue aún no se hizo: requiere crear las cuentas (KAN-34).
 
 > Ninguno de estos servicios pide tarjeta de crédito en su tier gratuito.
 > Supabase pausa proyectos tras ~1 semana sin uso: entra al dashboard la semana de la defensa.
@@ -852,7 +875,7 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
 | **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
-| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). **Pendiente:** documentación de cierre (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
+| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). Kancha en la nube el 21-nov: API y web en Render, base en Supabase (KAN-34, §8). **Pendiente:** documentación de cierre (KAN-23), tags y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
 | **9** | 24 nov–07 dic | **Push en Android** con la app compilada (KAN-42). **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y

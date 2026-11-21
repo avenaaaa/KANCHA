@@ -4,7 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import { fonts, type } from '@/theme/typography';
+import { antonLine, fonts, type } from '@/theme/typography';
 import { useMyMatches } from '@/api/hooks';
 import { errorMessage } from '@/api/client';
 import { playerStatus } from '@/lib/status';
@@ -135,8 +135,8 @@ function Footer({ m }: { m: MyMatch }) {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  h1: { ...type.display, fontSize: 34, lineHeight: 40, color: colors.text },
-  h2: { ...type.display, fontSize: 16, lineHeight: 22, letterSpacing: 1, color: colors.accent },
+  h1: { ...type.display, ...antonLine(34, 40), color: colors.text },
+  h2: { ...type.display, ...antonLine(16, 22), letterSpacing: 1, color: colors.accent },
   empty: { backgroundColor: colors.surface, borderRadius: radius.card, padding: spacing.lg, gap: spacing.md - 4 },
   emptyTitle: { ...type.h3, fontFamily: fonts.bold, color: colors.text },
   emptyText: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.textMuted },

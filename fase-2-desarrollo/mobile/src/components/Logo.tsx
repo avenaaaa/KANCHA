@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { ColorValue } from 'react-native';
 import Svg, { Circle, Polygon } from 'react-native-svg';
 import { colors } from '@/theme/colors';
-import { fonts } from '@/theme/typography';
+import { antonLine, fonts } from '@/theme/typography';
 
 /** Isotipo de Kancha: el jugador que entra a completar el partido. Trazado desde la presentación de Fase 1. */
 export function Logo({ size = 28, color = colors.accent }: { size?: number; color?: ColorValue }) {
@@ -20,7 +20,7 @@ export function Brand({ size = 24 }: { size?: number }) {
   return (
     <View style={s.row} accessible accessibilityRole="header" accessibilityLabel="Kancha">
       <Logo size={size} />
-      <Text style={[s.word, { fontSize: size, lineHeight: size * 1.25 }]}>KANCHA</Text>
+      <Text style={[s.word, antonLine(size, size * 1.25)]}>KANCHA</Text>
     </View>
   );
 }
