@@ -699,8 +699,8 @@ Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0`
 |---|---|---|
 | `v0.3.0` | Esqueleto, ambiente, Docker y CI (sprints 3 y 4) | Publicado · tag del 27-sep |
 | `v0.6.0` | Registro, publicación, mapa y postulación (HU-01, HU-03 a HU-05) · Sprint 6 | Publicado · sobre el merge del PR #4 (19-oct) |
-| `v0.7.0` | Pago, retención, calificación, honor, carta y asistencia (HU-02, HU-06 a HU-09, KAN-30) · Sprint 7 | Publicado · sobre el merge del PR #13 (8-nov) |
-| `v0.8.0` | MVP completo con la auditoría de cierre, "Falta uno", rediseño y comuna · primera parte del Sprint 8 | Publicado · tag del 20-nov (PR #21) |
+| `v0.7.0` | Pago fraccionado, retención, calificación y honor (HU-06 a HU-09) y Expo SDK 58 (KAN-29) · Sprint 7 | Publicado · sobre el merge del PR #13 (8-nov) |
+| `v0.8.0` | MVP completo: carta de jugador (HU-02) y asistencia (KAN-30), con la auditoría de cierre (KAN-31), "Falta uno" (KAN-37), rediseño (KAN-33) y comuna (KAN-38) · primera parte del Sprint 8 | Publicado · tag del 20-nov (PR #21) |
 | `v0.9.0` | Avisos (HU-10), "Falta uno" destacado (KAN-41, KAN-44), cuenta atrás y canchas (KAN-43), Kancha en la nube (KAN-34) y documentos de la Fase 2 · lo que se presenta el 23-nov | Publicado · 21-nov |
 | `v1.0.0` | MVP congelado para la defensa | Sprint 9 |
 
