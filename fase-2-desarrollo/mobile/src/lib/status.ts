@@ -32,8 +32,8 @@ export function playerStatus(status: ParticipationStatus | null, mustPay: boolea
 
 /**
  * Cada cuánto se vuelve a pedir el detalle de un partido, o false si no hace falta.
- * Sin notificaciones push (HU-10 quedó fuera del MVP), es lo que hace que el jugador
- * vea su aprobación y el organizador las postulaciones nuevas sin salir de la pantalla.
+ * Mientras no haya push (KAN-42), es lo que hace que el jugador vea su aprobación y el
+ * organizador las postulaciones nuevas sin salir de la pantalla; los avisos (HU-10) llegan a la bandeja.
  */
 export function matchPollInterval(m: Pick<MatchDetail, 'ratingWindow' | 'viewer'> | undefined): number | false {
   if (!m || m.ratingWindow !== 'NOT_FINISHED') return false;

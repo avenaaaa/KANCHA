@@ -89,7 +89,7 @@ La estructura detallada está en `DESARROLLO.md` §3.
 | E6 | KAN-3 | Sistema de Honor | Alta | HU-06, HU-07 |
 | E7 | KAN-4 | Pago fraccionado | Alta | HU-08 |
 | E8 | KAN-28 | Retención por deserción | Alta | HU-09 |
-| E9 | KAN-5 | Notificaciones | Media | HU-10 · fuera de alcance desde el 8-nov |
+| E9 | KAN-5 | Notificaciones | Media | HU-10 · reincorporada el 20-nov |
 | E10 | KAN-6 | Moderación | Baja | HU-11 |
 
 > **Diez épicas, una capacidad cada una.** La Fase 1 se entregó con seis épicas que agrupaban dos cosas
@@ -114,11 +114,13 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU-07 | KAN-13 | E6 | Cálculo automático de puntaje de honor | Should | 5 | 7 |
 | HU-08 | KAN-14 | E7 | Reserva con pago fraccionado | Must | 8 | 7 |
 | HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
-| HU-10 | KAN-16 | E9 | Notificación de cupo disponible | Won't (esta fase) | 3 | Backlog |
+| HU-10 | KAN-16 | E9 | Avisos de partidos cercanos y de "Falta uno" | Should | 8 | 8 |
 | HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
 
-**Total del MVP (HU-01 a HU-09): 47 puntos, todos terminados al 8 de noviembre de 2026 (Sprint 7).**
-La columna Sprint refleja la replanificación del 8 de noviembre de 2026, vigente en Jira. Además,
+**Total del MVP: 55 puntos.** HU-01 a HU-09 (47 puntos) quedaron terminadas al 8 de noviembre de 2026
+(Sprint 7); HU-10 (8 puntos) se reincorporó el 20 de noviembre y su parte dentro de la app se hizo en el
+Sprint 8. El push con la app cerrada es la tarea **KAN-42**, después del despliegue.
+La columna Sprint refleja la replanificación del 20 de noviembre de 2026, vigente en Jira. Además,
 la tarea **KAN-30** implementó la regla "Partidos jugados" (registro de asistencia), que ninguna
 historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre del 14 de noviembre
 (`fase-2-desarrollo/docs/05-auditoria-cierre.md`), **KAN-32** agregó el rechazo de postulaciones y
@@ -179,9 +181,19 @@ Comuna del piloto El mapa dibuja el límite real de La Florida (OpenStreetMap). 
 
 Falta uno         Si a un partido le faltan 1 o 2 jugadores y empieza en 2 h o menos, el organizador
 destacado         puede destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se
-                  une entra aprobado y gratis, como invitado. Su cuota la cubre el grupo fuera de la
-                  app (la app muestra cuánto pone cada uno) y Kancha no cobra comisión por ese cupo.
-                  El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41)
+                  une entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o
+                  tiene menos, queda pendiente y lo aprueba el organizador. Su cuota la cubre el grupo
+                  fuera de la app (la app muestra cuánto pone cada uno) y Kancha no cobra comisión por
+                  ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41)
+
+Avisos            Cada usuario elige qué avisos acepta; sin elegir, ninguno. "Falta uno" (partido
+                  urgente o destacado dentro de su radio y deportes) es el prioritario: va primero y
+                  destacado sobre el mapa mientras su partido siga abierto, y lo decide la API.
+                  "Partidos cerca" llega al publicarse uno de sus deportes en sus días y horario, en
+                  hora de Chile. El organizador recibe quién pide entrar y el "¿Lo destacas?"; el
+                  jugador, su aprobación. "Ánimo para jugar": a quien lleva 14 días sin postular ni
+                  organizar y tiene partidos cerca, a lo más uno por semana. Disparadores por reglas,
+                  sin IA, costo $0. UNIQUE (userId, kind, matchId) impide repetir un aviso. (HU-10)
 
 Partidos jugados  matchesPlayed se incrementa al cerrar una participación como asistida. Se muestra
                   en la carta de jugador. Al terminar el partido, el organizador marca a cada
@@ -204,8 +216,8 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
-| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado (KAN-41) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
-| 9 | 24 nov–07 dic 2026 | Cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
+| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
+| 9 | 24 nov–07 dic 2026 | Push en Android con la app compilada (KAN-42) · cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
 > dejar operativo el ambiente. Las historias se corrieron un sprint y el desarrollo ahora llega hasta
@@ -220,6 +232,13 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 > y se movieron a ese sprint en Jira. HU-10 salió del alcance (*Won't* en esta fase), como estaba
 > previsto si el plan se atrasaba: con Expo Go las notificaciones push tienen límites y el tiempo rinde
 > más en desplegar, medir rendimiento y preparar la defensa. El MVP cierra con 9 historias y 47 puntos.
+>
+> **Replanificación del 20 de noviembre de 2026.** El autor reincorporó HU-10: sin avisos, el "Falta uno"
+> depende de que el jugador abra la app justo a tiempo. Se reescribió (avisos que el usuario elige, con
+> "Falta uno" como prioritario) y se estimó en 8 puntos. Para no arriesgar el despliegue se partió en dos:
+> los avisos dentro de la app y sus disparadores en el Sprint 8 (KAN-16), y el push en Android en el
+> Sprint 9 (KAN-42), porque exige compilar la app con la cuenta gratuita de Expo. El push en iPhone queda
+> fuera: requiere la cuenta de desarrollador de Apple, que no es gratis. El MVP suma 10 historias y 55 puntos.
 
 ---
 

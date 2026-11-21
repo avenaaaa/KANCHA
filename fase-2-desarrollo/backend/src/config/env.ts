@@ -45,6 +45,8 @@ const schema = z
     /** KAN-37: un partido es "urgente" si le falta 1 jugador y empieza dentro de estas horas. */
     URGENT_WINDOW_HOURS: z.coerce.number().positive().default(2),
     HONOR_SAMPLE_SIZE: z.coerce.number().int().positive().default(20),
+    /** HU-10: cada cuántos minutos se revisan los avisos que dependen del tiempo. 0 = apagado. */
+    NOTIFY_SWEEP_MINUTES: z.coerce.number().min(0).default(5),
   })
   .superRefine((v, ctx) => {
     // Las claves de ejemplo del repositorio son públicas: en producción real firmarían tokens falsificables.

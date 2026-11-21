@@ -63,7 +63,8 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte, horario y nivel |
 | Falta uno | Con el botón "Falta uno" del mapa, ver solo los partidos urgentes: les falta un jugador y empiezan en 2 horas o menos |
-| Falta uno destacado | Si al organizador le faltan 1 o 2 jugadores y el partido empieza en 2 horas o menos, la app le ofrece destacarlo: va primero en "Falta uno" y quien se une entra gratis, como invitado. Probarlo: entrar como `diego@kancha.cl` y abrir su "Fútbol 5 · Falta uno ya" |
+| Falta uno destacado | Si al organizador le faltan 1 o 2 jugadores y el partido empieza en 2 horas o menos, la app le ofrece destacarlo: va primero en "Falta uno" y quien se une entra gratis, como invitado: al tiro si su honor es 7 o más, y si no el organizador lo aprueba. Probarlo: entrar como `diego@kancha.cl` y abrir su "Fútbol 5 · Falta uno ya" |
+| Avisos | Cada usuario elige qué avisos recibe: los "Falta uno" cerca (los más destacados, también sobre el mapa), partidos nuevos en sus días y horario, quién pide entrar a sus partidos y un ánimo semanal si deja de jugar. Probarlo: entrar como `camila@kancha.cl`, que tiene todos activados, y abrir la pestaña Avisos |
 | Comuna y canchas | El mapa dibuja el límite real de La Florida. Al publicar se elige una de las 36 canchas de la comuna tocando su pin (24 abiertas al público, 5 municipales y 7 privadas; un "$" marca las que se arriendan) o se marca un punto, y la dirección se completa sola |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe o rechace, y quedar confirmado sin sobreventa del último cupo |
 | HU-08 · Pagar | Pagar la parte del arriendo más un 10 % de servicio con Webpay Plus (Transbank, ambiente de Integración) y ver el comprobante |
@@ -73,7 +74,7 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-02 · Carta | Ver la carta de jugador de cualquier participante: honor, partidos jugados y métricas, sin su correo |
 | Asistencia | El organizador marca quién asistió y quién no se presentó; eso suma partidos jugados y cuenta en el honor |
 
-La notificación de cupo disponible (HU-10) quedó fuera del alcance del MVP el 8 de noviembre de 2026.
+Los avisos (HU-10) volvieron al alcance el 20 de noviembre de 2026: llegan dentro de la app; el push con la app cerrada en Android es la tarea KAN-42, y en iPhone queda fuera porque exige la cuenta de desarrollador de Apple, que no es gratis.
 
 Los datos geográficos (límite de la comuna, ubicación de las canchas y direcciones) son de © colaboradores
 de [OpenStreetMap](https://www.openstreetmap.org/copyright), bajo licencia ODbL. La lista de canchas sale

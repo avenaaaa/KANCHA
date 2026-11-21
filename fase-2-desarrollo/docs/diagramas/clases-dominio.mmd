@@ -73,6 +73,41 @@ classDiagram
         +DateTime updatedAt
     }
 
+    class NotificationPreference {
+        +UUID userId
+        +Boolean faltaUno
+        +Boolean nearby
+        +Boolean nudges
+        +Sport[] sports
+        +Int[] days
+        +Int fromHour
+        +Int toHour
+        +Int radiusKm
+        +Float lat
+        +Float lng
+    }
+
+    class Notification {
+        +UUID id
+        +UUID userId
+        +NotificationKind kind
+        +UUID matchId
+        +String title
+        +String body
+        +DateTime readAt
+        +DateTime createdAt
+    }
+
+    class NotificationKind {
+        <<enumeration>>
+        FALTA_UNO
+        NEARBY_MATCH
+        JOIN_REQUEST
+        JOIN_APPROVED
+        PRIORITY_OFFER
+        NUDGE
+    }
+
     class Sport {
         <<enumeration>>
         FUTBOL
@@ -123,6 +158,9 @@ classDiagram
     Match "1" *-- "0..*" Rating : contextualiza
     User "1" --> "0..*" Rating : califica (rater)
     User "1" --> "0..*" Rating : es calificado (rated)
+    User "1" *-- "0..1" NotificationPreference : elige sus avisos
+    User "1" *-- "0..*" Notification : recibe
+    Match "0..1" <-- "0..*" Notification : sobre
 
     User ..> Sport
     Match ..> Sport
@@ -130,3 +168,5 @@ classDiagram
     Match ..> MatchStatus
     Participation ..> PartStatus
     Payment ..> PayStatus
+    Notification ..> NotificationKind
+    NotificationPreference ..> Sport

@@ -152,7 +152,8 @@ function MatchDetailView() {
                 <Text style={s.priorityTitle}>Tu partido está destacado</Text>
                 <Text style={s.priorityText}>
                   Aparece primero en "Falta uno" para los jugadores cercanos. Quien se una entra gratis, como invitado
-                  {m.totalCost > 0 ? ', y su cuota la cubren entre los que ya están, fuera de la app.' : '.'}
+                  {m.totalCost > 0 ? ', y su cuota la cubren entre los que ya están, fuera de la app.' : '.'} Los jugadores con
+                  buen honor entran al tiro; a los nuevos los apruebas tú más abajo.
                 </Text>
               </>
             ) : (
@@ -391,7 +392,14 @@ function JoinCta({
   if (status === 'PENDING') {
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="warning" text="Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe." />
+        <StatusLine
+          tone="warning"
+          text={
+            m.priority
+              ? 'Solicitud enviada. Como aún no tienes buen honor, el organizador te confirma; si te acepta, entras gratis.'
+              : 'Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe.'
+          }
+        />
         {errorText}
         {cancelButton}
       </View>
@@ -462,7 +470,9 @@ function JoinCta({
         disabled={m.slotsLeft === 0}
         forward={m.slotsLeft > 0}
         accessibilityHint={
-          m.priority ? 'Te invitan gratis: entras confirmado y sin pagar' : 'Envía tu postulación al organizador'
+          m.priority
+            ? 'Te invitan gratis: con buen honor entras al tiro; si no, te confirma el organizador'
+            : 'Envía tu postulación al organizador'
         }
       />
     </View>

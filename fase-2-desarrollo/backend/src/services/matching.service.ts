@@ -6,10 +6,12 @@ import {
   type LockedMatch,
 } from '../repositories/participation.repository.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
-import { isUniqueViolation } from '../utils/db-errors.js';
+import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 import { calculateAmountDue } from './payment.service.js';
 import { checkCanPrioritize, toMatchSummary, type MatchSummary } from './match.service.js';
+import { onJoinApproved, onJoinRequested, onMatchPrioritized } from './notification.service.js';
 import type { NearbyQuery } from '../schemas/match.schema.js';
 
 /**
@@ -132,9 +134,22 @@ export async function join(matchId: string, userId: string, now: Date = new Date
   if (block) throw conflict(block, JOIN_MESSAGES[block]);
 
   const participation = await createOrReopen(matchId, userId);
-  // KAN-41: en un partido destacado no hay tiempo de esperar al organizador: entra aprobado y gratis.
-  if (match.prioritizedAt) return (await approveAsGuest(participation.id, now)) ?? participation;
-  return participation;
+  let result = participation;
+  // KAN-41: en un partido destacado entra al tiro quien tiene buen honor; al resto lo confirma el organizador.
+  if (match.prioritizedAt) {
+    const player = await userRepository.findById(userId);
+    if (isTrustedGuest(toNumberOrNull(player?.honorScore))) result = (await approveAsGuest(participation.id, now)) ?? participation;
+  }
+  if (result.status === 'PENDING') await onJoinRequested(match, now); // HU-10: avisa al organizador
+  return result;
+}
+
+/** KAN-41: honor mínimo para entrar sin esperar al organizador a un partido destacado. */
+export const GUEST_MIN_HONOR = 7;
+
+/** Un novato (honor NULL) no es un mal jugador, pero aún no tiene historial: lo confirma el organizador. */
+export function isTrustedGuest(honorScore: number | null): boolean {
+  return honorScore !== null && honorScore >= GUEST_MIN_HONOR;
 }
 
 async function createOrReopen(matchId: string, userId: string): Promise<Participation> {
@@ -156,7 +171,7 @@ async function createOrReopen(matchId: string, userId: string): Promise<Particip
 }
 
 /**
- * KAN-41: aprobación automática del invitado de un partido destacado, con el mismo bloqueo de fila
+ * KAN-41: aprobación automática del invitado confiable de un partido destacado, con el mismo bloqueo de fila
  * que la aprobación manual. Si entre medio se llenó o dejó de estar destacado, queda pendiente.
  */
 function approveAsGuest(participationId: string, now: Date): Promise<Participation | null> {
@@ -176,8 +191,12 @@ function approveAsGuest(participationId: string, now: Date): Promise<Participati
  * KAN-41: el organizador destaca su partido. Se decide con la fila bloqueada: una aprobación o
  * una cancelación simultánea no puede dejarlo destacado con más cupos libres de los permitidos.
  */
-export function prioritize(matchId: string, actorId: string, now: Date = new Date()): Promise<{ matchId: string; prioritizedAt: string }> {
-  return participationRepository.inApprovalTransaction(async (tx) => {
+export async function prioritize(
+  matchId: string,
+  actorId: string,
+  now: Date = new Date(),
+): Promise<{ matchId: string; prioritizedAt: string }> {
+  const result = await participationRepository.inApprovalTransaction(async (tx) => {
     const match = await tx.lockMatch(matchId);
     if (!match) throw notFound('MATCH_NOT_FOUND', 'El partido no existe');
     const error = checkCanPrioritize(match, actorId, now);
@@ -185,11 +204,13 @@ export function prioritize(matchId: string, actorId: string, now: Date = new Dat
     await tx.setPriority(matchId, now);
     return { matchId, prioritizedAt: now.toISOString() };
   });
+  await onMatchPrioritized(matchId, now); // HU-10: "Falta uno" al tiro a los jugadores cercanos
+  return result;
 }
 
 /** HU-05: el organizador aprueba y el cupo pasa a "Confirmado", sin sobreventa. */
-export function approve(participationId: string, actorId: string, now: Date = new Date()): Promise<Participation> {
-  return participationRepository.inApprovalTransaction(async (tx) => {
+export async function approve(participationId: string, actorId: string, now: Date = new Date()): Promise<Participation> {
+  const approved = await participationRepository.inApprovalTransaction(async (tx) => {
     const found = await tx.findParticipation(participationId);
     if (!found) throw notFound('PARTICIPATION_NOT_FOUND', 'La postulación no existe');
 
@@ -201,10 +222,12 @@ export function approve(participationId: string, actorId: string, now: Date = ne
     const decision = decideApproval(current, match, actorId, now);
     if (!decision.ok) throw decision.error;
 
-    const approved = await tx.markApproved(participationId, decision.amountDue);
+    const done = await tx.markApproved(participationId, decision.amountDue);
     await tx.updateSlots(match.id, decision.filledSlots, decision.status);
-    return approved;
+    return done;
   });
+  await onJoinApproved(approved, now); // HU-10: avisa al jugador
+  return approved;
 }
 
 /** KAN-32: solo el organizador rechaza, y solo una postulación que sigue pendiente. */

@@ -73,7 +73,11 @@ describe.skipIf(!hasDb)('Partidos · HU-03 y HU-04 (integración)', () => {
 
   it('I-04 · ordena por distancia y la informa en metros', async () => {
     const res = await nearby({ radius: 20000 });
-    const distancias = res.body.matches.map((m: { distanceM: number }) => m.distanceM);
+    // Los destacados van primero sin importar la distancia (KAN-41, CN-41); la base de pruebas puede
+    // tener alguno de otra ejecución dentro del radio. El orden por distancia se mide entre los demás.
+    const distancias = res.body.matches
+      .filter((m: { priority: boolean }) => !m.priority)
+      .map((m: { distanceM: number }) => m.distanceM);
     expect(distancias.length).toBeGreaterThan(1);
     expect([...distancias].sort((a, b) => a - b)).toEqual(distancias);
   });

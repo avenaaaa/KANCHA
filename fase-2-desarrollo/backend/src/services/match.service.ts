@@ -11,6 +11,7 @@ import { env } from '../config/env.js';
 import { AppError, conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
 import { toNumberOrNull } from '../utils/db-errors.js';
 import { ratingWindow, type RatingWindow } from './honor.service.js';
+import { onMatchPublished } from './notification.service.js';
 import {
   calculateAmountDue,
   calculateCommission,
@@ -43,7 +44,7 @@ export interface MatchSummary {
   /** Cuota individual: ceil(totalCost / totalSlots). */
   pricePerPlayer: number;
   status: string;
-  /** "Falta uno" destacado (KAN-41): quien se une entra gratis y aprobado al tiro. */
+  /** "Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más. */
   priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;
@@ -160,7 +161,9 @@ export async function publish(
 ): Promise<MatchDetail> {
   assertFutureStart(input.startsAt, now);
   const id = await matchRepository.insert({ organizerId, ...input });
-  return getDetail(id, organizerId);
+  const detail = await getDetail(id, organizerId);
+  await onMatchPublished(detail, now); // HU-10: avisa a quienes aceptan partidos cerca
+  return detail;
 }
 
 export async function getDetail(id: string, viewerId: string): Promise<MatchDetail> {
