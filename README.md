@@ -109,8 +109,8 @@ Una carpeta por cada fase del Portafolio de Título.
 | Carpeta | Contenido | Estado |
 |---|---|---|
 | [`fase-1-definicion/`](fase-1-definicion/) | Definición del proyecto: documento consolidado, los diez documentos ágiles, Excel y diagramas | ✅ Entregada · agosto 2026 |
-| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | 🔄 En curso · Sprint 8 de 9 · las 9 historias del MVP terminadas y auditadas |
-| [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas de rendimiento, cierre de pruebas y defensa | ⏳ Sprints 8 y 9 · nov–dic 2026 |
+| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | ✅ Lista para la evaluación del 23 de noviembre de 2026 · las 10 historias del MVP, en la nube · release `v0.9.0` |
+| [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas de rendimiento, cierre de pruebas y defensa | 🔄 En curso · nube publicada el 21-nov y guía para correr Kancha · defensa en el Sprint 9 (dic 2026) |
 
 Cada fase se ordena igual: `entrega/` reúne lo que se presenta en la evaluación (guía de la asignatura,
 documentos individuales y presentación) y `docs/` reúne los documentos de la fase.
