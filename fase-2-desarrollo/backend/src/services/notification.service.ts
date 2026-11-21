@@ -8,17 +8,20 @@ import {
   type NewNotification,
   type NudgeCandidateRow,
 } from '../repositories/notification.repository.js';
+import { participationRepository } from '../repositories/participation.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
 import type { SportValue } from '../schemas/common.schema.js';
 import type { PreferencesInput } from '../schemas/notification.schema.js';
 import { notFound } from '../utils/errors.js';
 import { MAX_PRIORITY_SLOTS } from './match.service.js';
+import { guestShare } from './payment.service.js';
 
 /**
  * Avisos dentro de la app (HU-10, KAN-16). Costo $0: los disparadores son reglas, sin IA.
  *
- * - Por evento: partido publicado (NEARBY_MATCH), partido destacado (FALTA_UNO), postulación
- *   (JOIN_REQUEST al organizador) y aprobación (JOIN_APPROVED al jugador).
+ * - Por evento: partido publicado (NEARBY_MATCH), partido destacado (FALTA_UNO a los cercanos y
+ *   GUEST_COVER a los confirmados), postulación (JOIN_REQUEST al organizador) y aprobación
+ *   (JOIN_APPROVED al jugador).
  * - Por barrido periódico (runSweep): partidos que quedan urgentes (FALTA_UNO), el "¿Lo destacas?"
  *   al organizador (PRIORITY_OFFER) y el ánimo para volver a jugar (NUDGE).
  *
@@ -95,11 +98,30 @@ export function joinApprovedMessage(m: Pick<MatchInfo, 'title' | 'startsAt'>, fr
   };
 }
 
-/** KAN-41: el "¿Lo destacas?" llega a la bandeja del organizador. */
-export function priorityOfferMessage(m: Pick<MatchInfo, 'title' | 'startsAt' | 'slotsLeft'>): Message {
+/** KAN-41: el "¿Lo destacas?" llega a la bandeja del organizador. Solo cuando le falta 1 (KAN-44). */
+export function priorityOfferMessage(m: Pick<MatchInfo, 'title' | 'startsAt'>): Message {
   return {
-    title: m.slotsLeft === 1 ? 'Todavía te falta 1 jugador' : `Todavía te faltan ${m.slotsLeft} jugadores`,
+    title: 'Todavía te falta 1 jugador',
     body: `${m.title} es a las ${chileTime(m.startsAt)}. ¿Lo destacas? Aparecerá primero en "Falta uno" y el invitado entra gratis.`,
+  };
+}
+
+const clp = new Intl.NumberFormat('es-CL');
+
+/**
+ * KAN-44: a los confirmados de un partido destacado, cuánto pone cada uno por la cuota del invitado.
+ * shortcut: el grupo la paga fuera de la app; cobrarla con tarjeta inscrita (Oneclick) es la siguiente iteración.
+ */
+export function guestCoverMessage(
+  m: Pick<MatchInfo, 'title' | 'startsAt'>,
+  share: { amount: number; perPlayer: number; players: number },
+): Message {
+  return {
+    title: 'Entra un invitado gratis',
+    body:
+      `Destacaron ${m.title}, a las ${chileTime(m.startsAt)}: quien llene el último cupo juega gratis. ` +
+      `Su cuota de $${clp.format(share.amount)} la cubren entre los ${share.players} que ya están: ` +
+      `$${clp.format(share.perPlayer)} cada uno, fuera de la app.`,
   };
 }
 
@@ -255,6 +277,16 @@ export function onMatchPrioritized(matchId: string, now: Date = new Date()): Pro
     await notificationRepository.fanOutFaltaUno(matchId, msg.title, msg.body, now, true);
     // El organizador ya respondió al "¿Lo destacas?".
     await notificationRepository.markKindRead(matchId, 'PRIORITY_OFFER', now);
+
+    // KAN-44: los confirmados saben cuánto pone cada uno por el invitado. Es dinero: no depende de las preferencias.
+    const players = Number(m.filledSlots);
+    const cover = guestCoverMessage(infoOf(m), { ...guestShare(Number(m.totalCost), Number(m.totalSlots), players), players });
+    const confirmed = (await participationRepository.findByMatch(matchId)).filter(
+      (p) => (p.status === 'APPROVED' || p.status === 'PAID') && p.user.id !== m.organizerId,
+    );
+    await notificationRepository.addMany(
+      confirmed.map((p) => ({ userId: p.user.id, kind: 'GUEST_COVER' as const, matchId, ...cover, createdAt: now })),
+    );
   });
 }
 
@@ -296,7 +328,7 @@ export async function runSweep(now: Date = new Date()): Promise<{ faltaUno: numb
   const offers: NewNotification[] = [];
   for (const row of soon) {
     const m: MatchInfo = { ...row, startsAt: new Date(row.startsAt), priority: row.prioritizedAt != null };
-    // Urgente = le falta exactamente 1 (KAN-37); destacado = 1 o 2 (KAN-41).
+    // Urgente = le falta exactamente 1 (KAN-37); destacado, también (KAN-44).
     if (m.slotsLeft === 1 || m.priority) {
       const msg = faltaUnoMessage(m);
       faltaUno += await notificationRepository.fanOutFaltaUno(row.id, msg.title, msg.body, now, false);

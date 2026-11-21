@@ -20,7 +20,7 @@ export const matchesController = {
     res.json(await matchService.getDetail(id, requireUserId(req)));
   },
 
-  /** KAN-41: el organizador destaca su partido cuando le faltan 1 o 2 jugadores y empieza pronto. */
+  /** KAN-41: el organizador destaca su partido cuando le falta 1 jugador y empieza pronto (KAN-44). */
   async prioritize(req: Request, res: Response): Promise<void> {
     const { id } = req.params as { id: string };
     res.json(await matchingService.prioritize(id, requireUserId(req)));

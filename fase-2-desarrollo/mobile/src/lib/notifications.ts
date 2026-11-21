@@ -41,4 +41,5 @@ export const KIND_ICON: Record<NotificationKind, IconName> = {
   JOIN_APPROVED: 'check',
   PRIORITY_OFFER: 'up',
   NUDGE: 'calendar',
+  GUEST_COVER: 'wallet',
 };

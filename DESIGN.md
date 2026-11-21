@@ -205,7 +205,7 @@ En "Publicar partido" el mapa muestra las canchas de La Florida como pines (KAN-
 
 ### 4.9 "Falta uno" destacado
 
-Cuando a un partido le faltan 1 o 2 jugadores y empieza en 2 horas o menos, el organizador puede destacarlo (KAN-41).
+Cuando a un partido le falta 1 jugador y empieza en 2 horas o menos, el organizador puede destacarlo (KAN-41, KAN-44). Si faltan 2 o más, no se ofrece. Al destacarlo, los confirmados reciben en Avisos cuánto pone cada uno, con el ícono de billetera.
 
 - **Aviso al organizador:** tarjeta `#2A2A2A` con borde `#F0A500` de 2 px en el detalle del partido: "Te falta 1 jugador y el partido es a las 13:30", qué pasa si lo destaca, cuánto pone cada uno por el invitado y el botón primario "Destacar partido". En "Mis partidos", su carta dice "Te falta 1 jugador · Destácalo" en naranja.
 - **Para el jugador:** la carta del partido muestra "Entra gratis »" en el botón naranja en vez de "Falta 1"; el pin lleva borde blanco y late (en la web) con un halo naranja; el detalle lleva la insignia "Destacado · entra gratis" y el botón "Únete gratis".

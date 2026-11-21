@@ -21,7 +21,7 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
   const destacar = (token: string, id: string) => api().patch(`/api/v1/matches/${id}/priority`).set(auth(token));
   const detalle = (token: string, id: string) => api().get(`/api/v1/matches/${id}`).set(auth(token));
 
-  it('CN-41 · destacado: aparece primero en "Falta uno" aunque le falten dos, y el invitado entra gratis (al tiro con honor 7 o más)', async () => {
+  it('CN-41 · destacado: aparece primero en "Falta uno" y el invitado entra gratis (al tiro con honor 7 o más)', async () => {
     const urgente = await publishMatch(organizador.token, {
       ...northOf(300),
       totalSlots: 4,
@@ -32,14 +32,14 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
     const partido = await publishMatch(organizador.token, {
       ...northOf(900),
       totalSlots: 4,
-      filledSlots: 2,
+      filledSlots: 3,
       totalCost: 24000,
       startsAt: inHours(1.5),
-      title: 'Faltan 2, destacado',
+      title: 'Falta 1, destacado',
     });
 
     const antes = await detalle(organizador.token, partido.id);
-    expect(antes.body.priorityOffer).toEqual({ canActivate: true, guestShare: 6000, perPlayer: 3000 });
+    expect(antes.body.priorityOffer).toEqual({ canActivate: true, guestShare: 6000, perPlayer: 2000 });
 
     const res = await destacar(organizador.token, partido.id);
     expect(res.status).toBe(200);
@@ -52,29 +52,53 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
     const ids = lista.body.matches.map((m: { id: string }) => m.id);
     expect(ids).toContain(urgente.id);
     expect(ids[0]).toBe(partido.id); // más lejos, pero destacado: va primero
-    expect(lista.body.matches[0]).toMatchObject({ priority: true, slotsLeft: 2 });
+    expect(lista.body.matches[0]).toMatchObject({ priority: true, slotsLeft: 1 });
+
+    // Un novato (sin honor) queda pendiente y no ocupa el cupo: lo decide el organizador.
+    const novato = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
+    expect([novato.status, novato.body.status]).toEqual([201, 'PENDING']);
 
     // Con honor 7 o más entra al tiro, aprobado y gratis.
     const union = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(confiable.token));
-    expect(union.status).toBe(201);
-    expect(union.body.status).toBe('APPROVED');
+    expect([union.status, union.body.status]).toEqual([201, 'APPROVED']);
 
-    // Un novato (sin honor) queda pendiente: lo confirma el organizador, y también entra gratis.
-    const novato = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(jugador.token));
-    expect([novato.status, novato.body.status]).toEqual([201, 'PENDING']);
-    const ok = await api().patch(`/api/v1/participations/${novato.body.participationId}/approve`).set(auth(organizador.token));
-    expect(ok.status).toBe(200);
-
-    const visto = await detalle(jugador.token, partido.id);
+    const visto = await detalle(confiable.token, partido.id);
     expect(visto.body).toMatchObject({ filledSlots: 4, priority: true });
     expect(visto.body.viewer).toMatchObject({ status: 'APPROVED', amountDue: 0 });
 
-    const pago = await api().post(`/api/v1/payments/${novato.body.participationId}/init`).set(auth(jugador.token));
+    const pago = await api().post(`/api/v1/payments/${union.body.participationId}/init`).set(auth(confiable.token));
     expect(pago.status).toBe(409);
     expect(pago.body.error.code).toBe('NOTHING_TO_PAY');
   });
 
-  it('CN-42 · solo el organizador, una vez, desde 2 h antes y con 1 o 2 jugadores faltantes', async () => {
+  it('CN-48 · al destacar, los confirmados reciben cuánto pone cada uno por el invitado; el organizador y los pendientes no (KAN-44)', async () => {
+    const [confirmado, pendiente] = await Promise.all([registerUser('Confirmado'), registerUser('Pendiente')]);
+    const partido = await publishMatch(organizador.token, {
+      ...northOf(1100),
+      totalSlots: 4,
+      filledSlots: 2,
+      totalCost: 24000,
+      startsAt: inHours(1),
+      title: 'Pádel con invitado',
+    });
+    const union = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(confirmado.token));
+    await api().patch(`/api/v1/participations/${union.body.participationId}/approve`).set(auth(organizador.token));
+    await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(pendiente.token)); // pendiente: no ocupa cupo
+
+    expect((await destacar(organizador.token, partido.id)).status).toBe(200);
+
+    const cubrir = async (token: string) =>
+      (await api().get('/api/v1/users/me/notifications').set(auth(token))).body.notifications.filter(
+        (n: { matchId: string; kind: string }) => n.matchId === partido.id && n.kind === 'GUEST_COVER',
+      );
+    const [aviso] = await cubrir(confirmado.token);
+    expect(aviso).toMatchObject({ title: 'Entra un invitado gratis', read: false });
+    expect(aviso.body).toContain('Su cuota de $6.000 la cubren entre los 3 que ya están: $2.000 cada uno, fuera de la app.');
+    expect(await cubrir(organizador.token)).toEqual([]);
+    expect(await cubrir(pendiente.token)).toEqual([]);
+  });
+
+  it('CN-42 · solo el organizador, una vez, desde 2 h antes y solo si falta 1 jugador (KAN-44)', async () => {
     const listo = await publishMatch(organizador.token, { ...northOf(1500), totalSlots: 6, filledSlots: 5, startsAt: inHours(1) });
     expect((await destacar(jugador.token, listo.id)).status).toBe(403);
     expect((await destacar(organizador.token, listo.id)).status).toBe(200);
@@ -85,8 +109,9 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
     const r1 = await destacar(organizador.token, temprano.id);
     expect([r1.status, r1.body.error.code]).toEqual([409, 'PRIORITY_TOO_EARLY']);
 
-    const faltanTres = await publishMatch(organizador.token, { ...northOf(1700), totalSlots: 6, filledSlots: 3, startsAt: inHours(1) });
-    const r2 = await destacar(organizador.token, faltanTres.id);
+    // Si faltan 2, no hay entrada gratis: quienes entran pagan su parte.
+    const faltanDos = await publishMatch(organizador.token, { ...northOf(1700), totalSlots: 6, filledSlots: 4, startsAt: inHours(1) });
+    const r2 = await destacar(organizador.token, faltanDos.id);
     expect([r2.status, r2.body.error.code]).toEqual([409, 'PRIORITY_NOT_AVAILABLE']);
 
     expect((await destacar(organizador.token, 'no-es-un-uuid')).status).toBe(422);

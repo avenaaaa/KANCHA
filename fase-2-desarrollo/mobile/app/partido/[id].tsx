@@ -144,7 +144,7 @@ function MatchDetailView() {
           <SlotBar filled={m.filledSlots} total={m.totalSlots} breathe={m.slotsLeft > 0} height={12} />
         </View>
 
-        {/* KAN-41: el organizador destaca su partido cuando le faltan 1 o 2 y empieza pronto. */}
+        {/* KAN-41: el organizador destaca su partido cuando le falta 1 y empieza pronto (KAN-44). */}
         {m.viewer.isOrganizer && (m.priorityOffer.canActivate || (m.priority && m.slotsLeft > 0)) ? (
           <View style={s.priorityCard}>
             {m.priority ? (

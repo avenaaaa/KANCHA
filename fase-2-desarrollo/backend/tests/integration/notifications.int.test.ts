@@ -90,11 +90,11 @@ describe.skipIf(!hasDb)('Avisos · HU-10 (integración)', () => {
     const urgente = await publishMatch(organizador.token, { ...northOf(500), totalSlots: 4, filledSlots: 3, startsAt: inHours(1) });
     await runSweep();
     await runSweep(); // el segundo barrido no lo repite
-    const faltanDos = await publishMatch(organizador.token, { ...northOf(700), totalSlots: 4, filledSlots: 2, startsAt: inHours(1.5) });
+    const otro = await publishMatch(organizador.token, { ...northOf(700), totalSlots: 4, filledSlots: 3, startsAt: inHours(1.5) });
 
     // Solo los avisos de esta prueba: la base compartida puede traer un destacado cercano de otra ejecución.
     const bandeja = (await inbox(suscrito.token)).notifications.filter((n: { matchId: string }) =>
-      [urgente.id, faltanDos.id].includes(n.matchId),
+      [urgente.id, otro.id].includes(n.matchId),
     );
     expect(bandeja.map((n: { kind: string }) => n.kind)).toEqual(['FALTA_UNO', 'NEARBY_MATCH', 'NEARBY_MATCH']);
     expect(bandeja[0]).toMatchObject({ matchId: urgente.id, title: '¡Falta uno cerca!', urgent: true });
@@ -103,14 +103,14 @@ describe.skipIf(!hasDb)('Avisos · HU-10 (integración)', () => {
       expect.objectContaining({ kind: 'PRIORITY_OFFER', title: 'Todavía te falta 1 jugador' }),
     ]);
 
-    // Al de dos faltantes se le ofrece destacarlo; destacado, sale el "Falta uno" con "entras gratis".
+    // Al otro se le ofrece destacarlo; destacado, su "Falta uno" se reemplaza por el de "entras gratis".
     await runSweep();
-    expect((await about(organizador.token, faltanDos.id))[0]).toMatchObject({ kind: 'PRIORITY_OFFER', title: 'Todavía te faltan 2 jugadores' });
-    expect((await about(suscrito.token, faltanDos.id)).map((n: { kind: string }) => n.kind)).toEqual(['NEARBY_MATCH']);
-    expect((await api().patch(`/api/v1/matches/${faltanDos.id}/priority`).set(auth(organizador.token))).status).toBe(200);
-    const destacado = (await about(suscrito.token, faltanDos.id)).find((n: { kind: string }) => n.kind === 'FALTA_UNO');
+    expect((await about(organizador.token, otro.id))[0]).toMatchObject({ kind: 'PRIORITY_OFFER', title: 'Todavía te falta 1 jugador' });
+    expect((await about(suscrito.token, otro.id)).map((n: { kind: string }) => n.kind)).toEqual(['FALTA_UNO', 'NEARBY_MATCH']);
+    expect((await api().patch(`/api/v1/matches/${otro.id}/priority`).set(auth(organizador.token))).status).toBe(200);
+    const destacado = (await about(suscrito.token, otro.id)).find((n: { kind: string }) => n.kind === 'FALTA_UNO');
     expect(destacado).toMatchObject({ title: '¡Falta uno cerca! Entras gratis', read: false, urgent: true });
-    expect((await about(organizador.token, faltanDos.id))[0]).toMatchObject({ kind: 'PRIORITY_OFFER', read: true });
+    expect((await about(organizador.token, otro.id))[0]).toMatchObject({ kind: 'PRIORITY_OFFER', read: true });
 
     // Lleno, el "Falta uno" sin leer deja de destacarse.
     await prisma.match.update({ where: { id: urgente.id }, data: { filledSlots: 4, status: 'FULL' } });

@@ -110,7 +110,14 @@ export interface NewMatch {
 }
 
 /** HU-10: tipos de aviso. FALTA_UNO es el prioritario: va primero y destacado. */
-export type NotificationKind = 'FALTA_UNO' | 'NEARBY_MATCH' | 'JOIN_REQUEST' | 'JOIN_APPROVED' | 'PRIORITY_OFFER' | 'NUDGE';
+export type NotificationKind =
+  | 'FALTA_UNO'
+  | 'NEARBY_MATCH'
+  | 'JOIN_REQUEST'
+  | 'JOIN_APPROVED'
+  | 'PRIORITY_OFFER'
+  | 'NUDGE'
+  | 'GUEST_COVER';
 
 export interface AppNotification {
   id: string;
