@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors } from '@/theme/colors';
-import { fonts } from '@/theme/typography';
+import { antonLine, fonts } from '@/theme/typography';
 import { Icon } from '@/components/icons/Icon';
 
 interface UrgentButtonProps {
@@ -88,5 +88,5 @@ const s = StyleSheet.create({
   // Encendido: el mismo amarillo con un borde claro, para que se lea como "marcado".
   btnOn: { borderWidth: 3, borderColor: colors.text },
   pressed: { opacity: 0.9, transform: [{ scale: 0.97 }] },
-  label: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.onAccent },
+  label: { fontFamily: fonts.display, ...antonLine(24, 30), letterSpacing: 0.8, textTransform: 'uppercase', color: colors.onAccent },
 });

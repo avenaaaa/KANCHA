@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { colors, honorColor } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import { fonts, type } from '@/theme/typography';
+import { antonLine, fonts, type } from '@/theme/typography';
 import { sportLabel } from '@/theme/sports';
 import { SPORT_PLAYER } from '@/theme/sportImages';
 import type { User } from '@/api/types';
@@ -107,17 +107,17 @@ const s = StyleSheet.create({
     borderTopRightRadius: radius.card,
   },
   photo: { position: 'absolute', right: -18, bottom: -6, width: '64%', height: '104%' },
-  score: { fontFamily: fonts.display, fontSize: 92, lineHeight: 98, color: colors.onAccent, letterSpacing: -1 },
+  score: { fontFamily: fonts.display, ...antonLine(92, 98), color: colors.onAccent, letterSpacing: -1 },
   scoreLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.onAccent },
-  newTitle: { ...type.display, fontSize: 34, lineHeight: 40, color: colors.text, maxWidth: '60%' },
+  newTitle: { ...type.display, ...antonLine(34, 40), color: colors.text, maxWidth: '60%' },
   newLabel: { ...type.body, color: colors.textMuted },
   body: { padding: spacing.lg, gap: spacing.lg },
-  name: { ...type.display, fontSize: 30, lineHeight: 34, color: colors.text },
+  name: { ...type.display, ...antonLine(30, 34), color: colors.text },
   sportRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   muted: { ...type.body, color: colors.textMuted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tile: { flexBasis: '46%', flexGrow: 1, padding: spacing.md, gap: 2, borderRadius: radius.tile, backgroundColor: colors.background },
-  tileValue: { fontFamily: fonts.display, fontSize: 32, lineHeight: 38, color: colors.text },
+  tileValue: { fontFamily: fonts.display, ...antonLine(32, 38), color: colors.text },
   tileLabel: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden', marginTop: spacing.sm },
   fill: { height: 4, borderRadius: 2 },

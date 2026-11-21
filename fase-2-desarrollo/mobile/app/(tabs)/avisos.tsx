@@ -4,7 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import { fonts, type } from '@/theme/typography';
+import { antonLine, fonts, type } from '@/theme/typography';
 import { useInbox, useMarkRead, useNotificationPrefs } from '@/api/hooks';
 import { errorMessage } from '@/api/client';
 import type { AppNotification } from '@/api/types';
@@ -108,7 +108,7 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg, width: '100%', maxWidth: 720, alignSelf: 'center' },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, flexWrap: 'wrap' },
-  h1: { ...type.display, fontSize: 34, lineHeight: 40, color: colors.text },
+  h1: { ...type.display, ...antonLine(34, 40), color: colors.text },
   invite: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,

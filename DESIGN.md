@@ -111,6 +111,13 @@
 
 Anton solo aparece en momentos de alto impacto visual: splash screens, pantallas de transición entre secciones y elementos hero de onboarding. **Nunca** usar Anton en componentes funcionales de la UI: cards, botones, formularios, listas ni menús de navegación.
 
+### Alto de línea de Anton
+
+Anton es más alta que su letra: sube 1,18 veces su tamaño sobre la línea base y baja 0,33. En iOS, una
+línea más baja que esa suma (1,505 veces el tamaño) corta la parte de arriba de la letra; Android y la web
+la centran. Por eso todo texto en Anton que fija `lineHeight` lo hace con `antonLine()` de
+`src/theme/typography.ts`, que en iOS da el alto natural sin cambiar el espacio que ocupa (KAN-29).
+
 ---
 
 ## 4. Componentes Principales de la App
