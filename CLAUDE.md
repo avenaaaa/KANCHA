@@ -127,7 +127,8 @@ historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre d
 **KAN-37** el botón "Falta uno", que deja en el mapa solo los partidos urgentes. **KAN-33** rediseñó la
 interfaz y **KAN-38** dibuja el límite real de La Florida, ofrece canchas existentes al publicar y
 completa la dirección; **KAN-40** reemplazó esa lista por 36 canchas investigadas que se eligen
-como pines en el mapa, y **KAN-41** agregó el "Falta uno" destacado: el invitado entra gratis.
+como pines en el mapa, y **KAN-41** agregó el "Falta uno" destacado: el invitado entra gratis. **KAN-43** puso una cuenta atrás en
+las cartas y verificó con foto satelital qué deportes admite de verdad cada cancha.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -216,7 +217,7 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
-| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
+| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · cuenta atrás en las cartas y equipamiento real de las canchas (KAN-43) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
 | 9 | 24 nov–07 dic 2026 | Push en Android con la app compilada (KAN-42) · cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en

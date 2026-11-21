@@ -49,6 +49,19 @@ export function formatWhen(iso: string, now: Date = new Date()): string {
   return `${formatDay(d, now)} ${formatTime(d)}`;
 }
 
+/**
+ * Cuenta atrás de la carta: "en 2 días", "en 5 h 7 min", "en 42:05" en la última hora y "En juego"
+ * mientras dura. null cuando ya terminó.
+ */
+export function countdown(iso: string, durationMin: number, now: Date = new Date()): string | null {
+  const left = new Date(iso).getTime() - now.getTime();
+  if (left <= 0) return left > -durationMin * 60_000 ? 'En juego' : null;
+  const totalMin = Math.floor(left / 60_000);
+  if (totalMin >= 24 * 60) return `en ${plural(Math.floor(totalMin / (24 * 60)), 'día', 'días')}`;
+  if (totalMin >= 60) return `en ${Math.floor(totalMin / 60)} h ${totalMin % 60} min`;
+  return `en ${pad(totalMin)}:${pad(Math.floor(left / 1000) % 60)}`;
+}
+
 /** El texto del CTA cambia con el partido (DESIGN.md §4.3): "Falta 1", "Faltan 3". */
 export function slotsCta(slotsLeft: number): string {
   if (slotsLeft <= 0) return 'Partido completo';

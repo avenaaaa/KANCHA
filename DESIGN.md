@@ -140,6 +140,7 @@ Componente de fondo `#2A2A2A`, bordes redondeados (border-radius 12px), sin somb
 
 - El ícono de deporte en la esquina superior izquierda cambia según el deporte: balón de fútbol / raqueta de pádel / aro de básquet.
 - La barra de progreso de jugadores usa `#F0A500` como color de relleno.
+- **Cuenta atrás** bajo la hora, en Roboto Bold 12 con cifras de ancho fijo: "en 2 días" y "en 5 h 7 min" en gris `#B0B0B0`; en la última hora "en 42:05", que avanza cada segundo, en ámbar `#F39C12`; "En juego" en verde `#2ECC71` mientras dura. Los lectores de pantalla la omiten: el día y la hora ya van en la etiqueta de la carta (KAN-43).
 - El botón "UNIRSE" es el CTA principal en naranja.
 
 ### 4.3 Botón "Falta 1"
