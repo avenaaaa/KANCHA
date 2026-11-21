@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import { fonts, type } from '@/theme/typography';
+import { antonLine, fonts, type } from '@/theme/typography';
 import { RADIUS_OPTIONS } from '@/theme/geo';
 import KanchaMap from '@/components/KanchaMap';
 import { zoomForRadius } from '@/components/KanchaMap/types';
@@ -404,7 +404,7 @@ const s = StyleSheet.create({
     gap: spacing.md,
   },
   panelHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
-  panelTitle: { ...type.display, fontSize: 24, lineHeight: 30, color: colors.text },
+  panelTitle: { ...type.display, ...antonLine(24, 30), color: colors.text },
   panelSub: { ...type.caption, fontSize: 13, color: colors.textMuted },
   publishSmall: { minHeight: 44, paddingHorizontal: spacing.md },
   panelList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm + 4 },
