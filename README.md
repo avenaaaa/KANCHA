@@ -8,6 +8,20 @@ Plataforma web y móvil geolocalizada que conecta a jugadores sin equipo ("agent
 
 Proyecto de Título · Ingeniería en Informática · Duoc UC Sede Plaza Vespucio · Lukas Guerrero · 2026
 
+## Demo en la nube
+
+Se abre en cualquier teléfono o computador, desde el navegador y sin instalar nada:
+
+| Dirección | Qué hay |
+|---|---|
+| https://kancha-web.onrender.com | La app Kancha (versión web) |
+| https://kancha-api-u3v4.onrender.com/api/docs | Documentación de la API (Swagger UI) |
+| https://kancha-api-u3v4.onrender.com/api/v1/health | Estado de la API y la base de datos |
+
+La API corre en Render, la base de datos PostgreSQL + PostGIS en Supabase y la web en Render Static
+Site, todo en capas gratuitas. Render duerme el servicio tras 15 minutos sin uso, así que la primera
+visita puede tardar cerca de un minuto. Las cuentas son las mismas de la demo local (más abajo).
+
 ## Cómo levantarlo
 
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/).
@@ -30,12 +44,19 @@ levanta los tres contenedores, espera a que la API responda y abre la app en el 
 
 ### Ver la app en el celular (iPhone o Android)
 
+Lo más simple es abrir la [demo en la nube](https://kancha-web.onrender.com) en el navegador del
+teléfono. Para verla como app nativa con Expo Go:
+
 1. Con la API levantada (`docker compose up -d db api`), instala **Expo Go** desde App Store o Google Play.
 2. Conecta el celular a la misma red que el PC y, en `fase-2-desarrollo/mobile`, ejecuta `npx expo start --lan`.
 3. Escanea el código QR: con la cámara en iPhone, con Expo Go en Android.
 
 La app se conecta sola a la API del PC que la sirve. Si Windows pregunta por el firewall de Node.js,
 permite las redes privadas.
+
+Desde 2026, Expo Go en iPhone exige la misma cuenta de Expo en el teléfono y en el PC
+(`npx expo login`), y solo abre proyectos de esa cuenta: Kancha está registrado como
+`@avenaaaa/kancha`. Para cualquier otro teléfono, la demo en la nube es el camino.
 
 ### Cuentas de demostración
 

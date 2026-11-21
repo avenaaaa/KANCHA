@@ -36,6 +36,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "avenaaaa",
+    "extra": {
+      "eas": {
+        "projectId": "1cc06d76-c62d-4de6-b335-7d674c3e7809"
+      }
     }
   }
 }

@@ -47,7 +47,7 @@ presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda
 | [KAN-43](https://lukasguerrerokancha.atlassian.net/browse/KAN-43) | Tarea | Cuenta atrás en las cartas de partido y equipamiento real de las canchas | Listo · PR #27 · agregada el 21-nov · evidencia `evidencias/sprint-08/28` y `29` |
 | [KAN-44](https://lukasguerrerokancha.atlassian.net/browse/KAN-44) | Tarea | Invitado gratis solo si falta 1, y aviso a los confirmados de cuánto pone cada uno | En revisión · PR a `develop` · agregada el 21-nov · evidencia `evidencias/sprint-08/30` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | Listo · PR #17 y PR #18 integrados a `develop` el 17-nov · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
-| [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Por hacer · requiere crear las cuentas |
+| [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Listo · API y web en Render, base en Supabase (21-nov) · evidencia `evidencias/sprint-08/despliegue-nube.txt` |
 | [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | En revisión · PR #22 a `develop` · las cinco cumplen |
 | [KAN-36](https://lukasguerrerokancha.atlassian.net/browse/KAN-36) | Tarea | Llevar `develop` a `main` y publicar los releases | En curso · PR #19 de `develop` a `main` (20-nov) |
 | [KAN-29](https://lukasguerrerokancha.atlassian.net/browse/KAN-29) | Tarea | Expo SDK 58: probar en un iPhone y un Android reales | En curso · viene del Sprint 7 |
@@ -149,7 +149,8 @@ Se completa al cierre del sprint, el 23 de noviembre. Avance al corte:
 | KAN-37 — Botón "Falta uno" (agregada el 16-nov) | Terminada e integrada (PR #16) · evidencia en `evidencias/sprint-08/04-falta-uno-activo-KAN37.png`, `05` y `06` |
 | KAN-33 — Rediseño visual | Terminada e integrada (PR #17 y PR #18) · evidencia en `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | KAN-38 — Comuna, canchas y dirección (agregada el 16-nov) | Terminada e integrada (PR #18) · evidencia en `evidencias/sprint-08/10` a `12`, `15` y `16` |
-| KAN-34 a KAN-36, KAN-29 y KAN-23 | Sin terminar |
+| KAN-34 — Despliegue | Terminada el 21-nov: https://kancha-web.onrender.com y https://kancha-api-u3v4.onrender.com · evidencia en `evidencias/sprint-08/despliegue-nube.txt` |
+| KAN-35, KAN-36, KAN-29 y KAN-23 | Sin terminar |
 
 ## 9. Sprint Retrospective
 

@@ -1,0 +1,16 @@
+Despliegue en la nube (KAN-34) · comprobado el 21-11-2026 13:11 hora de Chile
+
+$ curl https://kancha-api-u3v4.onrender.com/api/v1/health
+{"status":"ok","db":"connected","version":"0.6.0","timestamp":"2026-11-21T16:12:16.486Z"}
+
+$ curl -o /dev/null -w '%{http_code}' https://kancha-web.onrender.com/mapa   (regla /* -> /index.html)
+200
+
+Web: la URL de la API dentro del build publicado
+https://kancha-api-u3v4.onrender.com/api/v1
+
+Swagger publicado: etiquetas y rutas
+['Sistema', 'Cuentas', 'Partidos', 'Postulaciones', 'Pagos', 'Calificaciones', 'Avisos'] 23 rutas
+
+Render: servicio kancha-api, rama main, Live en el commit c452d9c (21-11-2026 00:47), migraciones 8 de 8 aplicadas en Supabase.
+Render: sitio kancha-web, rama main, raiz fase-2-desarrollo/mobile, build 'npm ci && npx expo export --platform web', publica dist.
