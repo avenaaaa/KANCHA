@@ -103,6 +103,22 @@ describe('La Florida: límite real y direcciones (KAN-38)', () => {
     expect(VENUES.some((v) => v.kind !== 'PUBLICA')).toBe(true);
   });
 
+  it('M-40 · las multicanchas de pasto sintético no se ofrecen para básquetbol, y el pádel solo donde hay canchas de pádel (KAN-43)', () => {
+    const basket = venuesForSport('BASQUETBOL').map((v) => v.id);
+    for (const sintetica of [
+      'multicancha-geronimo-de-alderete-con-manutara',
+      'multicancha-las-gardenias-con-los-clarines',
+      'multicancha-los-quillayes-rio-1-con-oriente',
+      'multicancha-san-jose-de-la-estrella-con-punta-arenas',
+      'multicancha-vicuna-mackenna-con-toledo',
+    ]) {
+      expect(basket).not.toContain(sintetica);
+      expect(VENUES.find((v) => v.id === sintetica)?.sports).toEqual(['FUTBOL']);
+    }
+    // Ninguna cancha pública tiene pádel: exige muros y vidrio.
+    expect(venuesForSport('PADEL').every((v) => v.kind !== 'PUBLICA')).toBe(true);
+  });
+
   it('M-30 · la dirección se arma con calle y número; sin calle no se propone nada', () => {
     expect(formatAddress({ road: 'Avenida Vicuña Mackenna', house_number: '7110' })).toBe('Avenida Vicuña Mackenna 7110, La Florida');
     expect(formatAddress({ road: 'Walker Martínez' })).toBe('Walker Martínez, La Florida');
