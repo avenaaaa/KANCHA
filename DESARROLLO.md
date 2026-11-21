@@ -695,12 +695,16 @@ Al cierre de cada sprint, un tag y un release con notas:
 Cada release es una prueba fechada de avance incremental. El primero es `v0.3.0` (27 de septiembre de
 2026), con el esqueleto del Sprint 3 y el ambiente del Sprint 4.
 
-| Tag | Contenido | Estado al 8-nov |
+| Tag | Contenido | Estado al 21-nov |
 |---|---|---|
-| `v0.3.0` | Esqueleto, ambiente, Docker y CI (sprints 3 y 4) | Publicado |
-| `v0.6.0` | Registro, publicación, mapa y postulación (HU-01, HU-03 a HU-05) | Pendiente: el incremento está en `main` desde el PR #4 |
-| `v0.7.0` | Pago, retención, calificación, honor, carta y asistencia (HU-02, HU-06 a HU-09, KAN-30) | Pendiente: se publica al llevar `develop` a `main` |
+| `v0.3.0` | Esqueleto, ambiente, Docker y CI (sprints 3 y 4) | Publicado · tag del 27-sep |
+| `v0.6.0` | Registro, publicación, mapa y postulación (HU-01, HU-03 a HU-05) · Sprint 6 | Publicado · sobre el merge del PR #4 (19-oct) |
+| `v0.7.0` | Pago, retención, calificación, honor, carta y asistencia (HU-02, HU-06 a HU-09, KAN-30) · Sprint 7 | Publicado · sobre el merge del PR #13 (8-nov) |
+| `v0.8.0` | MVP completo con la auditoría de cierre, "Falta uno", rediseño y comuna · primera parte del Sprint 8 | Publicado · tag del 20-nov (PR #21) |
+| `v0.9.0` | Avisos (HU-10), "Falta uno" destacado (KAN-41, KAN-44), cuenta atrás y canchas (KAN-43), Kancha en la nube (KAN-34) y documentos de la Fase 2 · lo que se presenta el 23-nov | Publicado · 21-nov |
 | `v1.0.0` | MVP congelado para la defensa | Sprint 9 |
+
+Los releases atrasados se publicaron el 21-nov sobre el commit de `main` de cada cierre (KAN-36).
 
 ---
 
@@ -875,7 +879,7 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **5** | 29 sep–12 oct | **Sin incremento de producto** (impedimento laboral, IMP-09). Documentación de la Fase 2 (KAN-23). HU-01 y HU-03 pasan al Sprint 6 |
 | **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
-| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). Kancha en la nube el 21-nov: API y web en Render, base en Supabase (KAN-34, §8). **Pendiente:** documentación de cierre (KAN-23), tags y releases (KAN-36), dependencias con versiones mayores (S-11) y prueba en iPhone y Android (KAN-29) |
+| **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). Kancha en la nube el 21-nov: API y web en Render, base en Supabase (KAN-34, §8). Documentos de la entrega (KAN-23) y releases `v0.6.0` a `v0.9.0` (KAN-36) el 21-nov. **Pendiente:** ver en el iPhone del autor el arreglo de las letras (KAN-29, DEF-23) y dependencias con versiones mayores (S-11) |
 | **9** | 24 nov–07 dic | **Push en Android** con la app compilada (KAN-42). **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y

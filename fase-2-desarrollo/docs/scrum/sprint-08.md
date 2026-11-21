@@ -43,15 +43,15 @@ presentación de Fase 1 como referencia, y sumó KAN-38. La documentación queda
 | [KAN-39](https://lukasguerrerokancha.atlassian.net/browse/KAN-39) | Tarea | Panel de partidos deslizable en el mapa y botón "Falta uno" destacado | Listo · PR #23 integrado a `develop` el 20-nov · agregada el 20-nov · evidencia `evidencias/sprint-08/17` a `19` |
 | [KAN-40](https://lukasguerrerokancha.atlassian.net/browse/KAN-40) | Tarea | Canchas de La Florida como pines al publicar: públicas, municipales y pagadas | Listo · PR #24 integrado a `develop` el 20-nov · agregada el 20-nov · evidencia `evidencias/sprint-08/20` y `21` |
 | [KAN-41](https://lukasguerrerokancha.atlassian.net/browse/KAN-41) | Tarea | "Falta uno" destacado: el invitado entra gratis | Listo · PR #25 integrado a `develop` el 20-nov; la verificación por honor llega con el PR de HU-10 · agregada el 20-nov · evidencia `evidencias/sprint-08/22` a `24` |
-| [KAN-16](https://lukasguerrerokancha.atlassian.net/browse/KAN-16) | Historia | HU-10 — Avisos de partidos cercanos y de "Falta uno" (8 pts) | En revisión · PR #26 a `develop` · reincorporada el 20-nov · evidencia `evidencias/sprint-08/25` a `27` |
+| [KAN-16](https://lukasguerrerokancha.atlassian.net/browse/KAN-16) | Historia | HU-10 — Avisos de partidos cercanos y de "Falta uno" (8 pts) | Listo · PR #26 integrado a `develop` · reincorporada el 20-nov · evidencia `evidencias/sprint-08/25` a `27` |
 | [KAN-43](https://lukasguerrerokancha.atlassian.net/browse/KAN-43) | Tarea | Cuenta atrás en las cartas de partido y equipamiento real de las canchas | Listo · PR #27 · agregada el 21-nov · evidencia `evidencias/sprint-08/28` y `29` |
-| [KAN-44](https://lukasguerrerokancha.atlassian.net/browse/KAN-44) | Tarea | Invitado gratis solo si falta 1, y aviso a los confirmados de cuánto pone cada uno | En revisión · PR a `develop` · agregada el 21-nov · evidencia `evidencias/sprint-08/30` |
+| [KAN-44](https://lukasguerrerokancha.atlassian.net/browse/KAN-44) | Tarea | Invitado gratis solo si falta 1, y aviso a los confirmados de cuánto pone cada uno | Listo · PR #29 integrado a `develop` y en la nube el 21-nov · agregada el 21-nov · evidencia `evidencias/sprint-08/30` |
 | [KAN-33](https://lukasguerrerokancha.atlassian.net/browse/KAN-33) | Tarea | Rediseño visual de la app | Listo · PR #17 y PR #18 integrados a `develop` el 17-nov · adelantado el 16-nov por decisión del autor · evidencia `evidencias/sprint-08/07` a `09`, `13` y `14` |
 | [KAN-34](https://lukasguerrerokancha.atlassian.net/browse/KAN-34) | Tarea | Desplegar la demo pública en Render + Supabase | Listo · API y web en Render, base en Supabase (21-nov) · evidencia `evidencias/sprint-08/despliegue-nube.txt` |
-| [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | En revisión · PR #22 a `develop` · las cinco cumplen |
-| [KAN-36](https://lukasguerrerokancha.atlassian.net/browse/KAN-36) | Tarea | Llevar `develop` a `main` y publicar los releases | En curso · PR #19 de `develop` a `main` (20-nov) |
-| [KAN-29](https://lukasguerrerokancha.atlassian.net/browse/KAN-29) | Tarea | Expo SDK 58: probar en un iPhone y un Android reales | En curso · viene del Sprint 7 |
-| [KAN-23](https://lukasguerrerokancha.atlassian.net/browse/KAN-23) | Tarea | Documentación de la Fase 2 | En curso · faltan los documentos de la entrega |
+| [KAN-35](https://lukasguerrerokancha.atlassian.net/browse/KAN-35) | Tarea | Pruebas de rendimiento con k6 (R-01 a R-05) | Listo · PR #22 integrado a `develop` · las cinco cumplen · evidencia `evidencias/sprint-08/pruebas-rendimiento.txt` |
+| [KAN-36](https://lukasguerrerokancha.atlassian.net/browse/KAN-36) | Tarea | Llevar `develop` a `main` y publicar los releases | Listo · `main` igual a `develop` y releases `v0.3.0` a `v0.9.0` publicados el 21-nov |
+| [KAN-29](https://lukasguerrerokancha.atlassian.net/browse/KAN-29) | Tarea | Expo SDK 58: probar en un iPhone y un Android reales | En curso · viene del Sprint 7 · las letras en Anton salían cortadas en iPhone: corregido en el PR #34 (DEF-23); falta verlo en el iPhone del autor |
+| [KAN-23](https://lukasguerrerokancha.atlassian.net/browse/KAN-23) | Tarea | Documentación de la Fase 2 | Listo · guías 2.4 y 2.6 y presentación en `fase-2-desarrollo/entrega/` (PR #32, 21-nov); los documentos individuales los completa el autor |
 
 Desglose técnico de lo hecho:
 
@@ -119,6 +119,7 @@ teléfonos y de los formatos de la entrega.
 | 20 nov (tarde) | HU-10 reincorporada (KAN-16, 8 pts) y push en Android separado en KAN-42. Verificación del invitado del "Falta uno" destacado por su honor (KAN-41). Avisos dentro de la app: preferencias, bandeja, "Falta uno" sobre el mapa y barrido periódico, probados de punta a punta en `docker compose` (destacar, unirse como novato, aprobar). 196 pruebas del backend en seis corridas seguidas y 38 de la app. Se corrigió I-04, que fallaba a veces con un destacado de otra ejecución en la base de pruebas | Merge del PR #26 (HU-10). Despliegue (KAN-34) | El push en Android necesita la cuenta de Expo del autor |
 | 21 nov | Cuenta atrás en las cartas de partido, vista en la app con un partido que empezaba en 40 minutos (KAN-43). Equipamiento de las 36 canchas revisado con OpenStreetMap y foto satelital: 5 multicanchas de pasto sintético quedan solo para fútbol, 2 pines movidos a su cancha, pádel confirmado en 4 clubes; 2 pines sin cancha cerca. 40 pruebas de la app | Merge de los PR #26 y KAN-43. Decidir si se quitan los dos pines sin cancha | Las fuentes públicas no detallan arcos ni aros por cancha |
 | 21 nov (tarde) | Web publicada en Render (`kancha-web.onrender.com`), porque desde 2026 Expo Go solo abre proyectos de la propia cuenta; el autor pagó con Transbank en la nube. KAN-44: entrada gratis solo si falta 1 y aviso a los confirmados de cuánto pone cada uno, probado en `docker compose` (Diego destaca, Camila recibe el aviso). El cobro dentro de la app con tarjeta inscrita (Oneclick) quedó diseñado como HU-12 (KAN-45, backlog). 198 pruebas del backend y 40 de la app | Merge del PR de KAN-44. Documentar el despliegue (KAN-34) | Docker Desktop no arrancaba por archivos de conexión rotos; se renombraron sus carpetas `run` y `docker-secrets-engine` |
+| 21 nov (noche) | Letras en Anton cortadas en iPhone corregidas (DEF-23, PR #34): 41 pruebas de la app. Guía para hacer correr Kancha y QR de la demo en `fase-3-implementacion/docs/`. Documentos de la entrega con la convención de nombres. `develop` a `main`, releases `v0.3.0` a `v0.9.0` y 29 ramas ya integradas borradas de GitHub. KAN-23, KAN-35, KAN-36 y KAN-44 a *Listo* | Ver el arreglo en el iPhone del autor (KAN-29). Cierre del Sprint 8 el 23-nov | — |
 
 ## 6. Registro de impedimentos
 
@@ -126,7 +127,7 @@ teléfonos y de los formatos de la entrega.
 |---|---|---|---|
 | IMP-11 | Del 10 al 13 de noviembre no hubo avance registrado | El trabajo del sprint empezó el día 5 | Abierto |
 | IMP-01 | El Sprint 2 sigue activo en Jira y los sprints 3 a 8 nunca se iniciaron | Sin burndown automático de Jira; los gráficos se hacen a mano | Abierto: cerrar los sprints desde el tablero |
-| IMP-12 | `main` no tiene HU-02, KAN-30, KAN-31 ni KAN-32, y solo existe el tag `v0.3.0` | La rama de producción no refleja el producto | Abierto: KAN-36 |
+| IMP-12 | `main` no tiene HU-02, KAN-30, KAN-31 ni KAN-32, y solo existe el tag `v0.3.0` | La rama de producción no refleja el producto | Cerrado el 21-nov: `main` igual a `develop` y releases `v0.6.0` a `v0.9.0` publicados (KAN-36) |
 | IMP-13 | La auditoría se interrumpió antes de verificar dos de sus seis dimensiones | 14 hallazgos quedaron sin escéptico | Cerrado el 15-nov: se comprobaron a mano contra el código y en la app |
 | IMP-14 | Al limitar el puerto de la base a `127.0.0.1`, cada conexión nueva tardaba 2 s: en Windows `localhost` se resuelve primero por IPv6 | Una prueba de concurrencia empezó a fallar | Cerrado el 15-nov: el puerto se publica en los dos loopback |
 | IMP-15 | Docker Desktop no arrancaba: quedaron sockets huérfanos de un cierre anterior y el motor no podía renombrarlos | No se pudieron correr las pruebas de integración ni la app en Docker hasta resolverlo | Cerrado el 16-nov: con Docker detenido se apartaron las carpetas `Docker\run` y `docker-secrets-engine`; el motor levantó sin perder imágenes ni volúmenes |
@@ -134,9 +135,10 @@ teléfonos y de los formatos de la entrega.
 
 ## 7. Release
 
-En curso. El PR #19 lleva `develop` a `main` (KAN-36): el merge simulado con `git merge-tree` queda
-idéntico a `develop`. Al integrarse se publican los releases atrasados `v0.6.0` y `v0.7.0`, y
-`v0.8.0 — Sprint 8: auditoría de cierre, rechazo de postulaciones, "Falta uno", rediseño y comuna`.
+Publicados el 21-nov (KAN-36). Los atrasados, `v0.6.0` (Sprint 6) y `v0.7.0` (Sprint 7), van sobre el
+commit de `main` de cada cierre, así su fecha muestra cuándo estuvo listo cada incremento. `v0.8.0` es el
+tag del 20-nov y `v0.9.0` reúne lo que se presenta el 23-nov: avisos, "Falta uno" destacado, Kancha en la
+nube y los documentos de la Fase 2. El contenido de cada versión está en `DESARROLLO.md` §7.6.
 
 ## 8. Sprint Review
 
