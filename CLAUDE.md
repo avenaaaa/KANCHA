@@ -87,7 +87,7 @@ La estructura detallada está en `DESARROLLO.md` §3.
 | E4 | KAN-26 | Búsqueda geolocalizada | Alta | HU-04 |
 | E5 | KAN-27 | Postulación a partidos | Alta | HU-05 |
 | E6 | KAN-3 | Sistema de Honor | Alta | HU-06, HU-07 |
-| E7 | KAN-4 | Pago fraccionado | Alta | HU-08 |
+| E7 | KAN-4 | Pago fraccionado | Alta | HU-08 · HU-12 en el backlog |
 | E8 | KAN-28 | Retención por deserción | Alta | HU-09 |
 | E9 | KAN-5 | Notificaciones | Media | HU-10 · reincorporada el 20-nov |
 | E10 | KAN-6 | Moderación | Baja | HU-11 |
@@ -116,6 +116,7 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
 | HU-10 | KAN-16 | E9 | Avisos de partidos cercanos y de "Falta uno" | Should | 8 | 8 |
 | HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
+| HU-12 | KAN-45 | E7 | Pagar con tarjeta inscrita y cubrir al invitado dentro de la app | Won't (esta fase) | 8 | Backlog |
 
 **Total del MVP: 55 puntos.** HU-01 a HU-09 (47 puntos) quedaron terminadas al 8 de noviembre de 2026
 (Sprint 7); HU-10 (8 puntos) se reincorporó el 20 de noviembre y su parte dentro de la app se hizo en el
@@ -128,7 +129,9 @@ historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre d
 interfaz y **KAN-38** dibuja el límite real de La Florida, ofrece canchas existentes al publicar y
 completa la dirección; **KAN-40** reemplazó esa lista por 36 canchas investigadas que se eligen
 como pines en el mapa, y **KAN-41** agregó el "Falta uno" destacado: el invitado entra gratis. **KAN-43** puso una cuenta atrás en
-las cartas y verificó con foto satelital qué deportes admite de verdad cada cancha.
+las cartas y verificó con foto satelital qué deportes admite de verdad cada cancha. **KAN-44** dejó
+la entrada gratis solo para cuando falta 1 jugador y avisa a los confirmados cuánto pone cada uno;
+cobrar esa cuota dentro de la app con tarjeta inscrita (Oneclick) es HU-12, en el backlog.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -180,19 +183,23 @@ Comuna del piloto El mapa dibuja el límite real de La Florida (OpenStreetMap). 
                   dirección se completa sola. Lo valida la app: la API aún acepta cualquier
                   coordenada. (KAN-38, KAN-40)
 
-Falta uno         Si a un partido le faltan 1 o 2 jugadores y empieza en 2 h o menos, el organizador
-destacado         puede destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se
-                  une entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o
-                  tiene menos, queda pendiente y lo aprueba el organizador. Su cuota la cubre el grupo
-                  fuera de la app (la app muestra cuánto pone cada uno) y Kancha no cobra comisión por
-                  ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41)
+Falta uno         Si a un partido le falta 1 jugador y empieza en 2 h o menos, el organizador puede
+destacado         destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se une
+                  entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o tiene
+                  menos, queda pendiente y lo aprueba el organizador. Si faltan 2 o más no hay entrada
+                  gratis: quien entra paga su parte. La cuota del invitado la cubre el grupo fuera de
+                  la app: al destacar, cada confirmado recibe cuánto pone, y Kancha no cobra comisión
+                  por ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. Cobrar la cuota en la
+                  app con tarjeta inscrita es HU-12. (KAN-41, KAN-44)
 
 Avisos            Cada usuario elige qué avisos acepta; sin elegir, ninguno. "Falta uno" (partido
                   urgente o destacado dentro de su radio y deportes) es el prioritario: va primero y
                   destacado sobre el mapa mientras su partido siga abierto, y lo decide la API.
                   "Partidos cerca" llega al publicarse uno de sus deportes en sus días y horario, en
                   hora de Chile. El organizador recibe quién pide entrar y el "¿Lo destacas?"; el
-                  jugador, su aprobación. "Ánimo para jugar": a quien lleva 14 días sin postular ni
+                  jugador, su aprobación; los confirmados de un destacado, cuánto pone cada uno por
+                  el invitado (llega aunque no hayan elegido avisos: es dinero, KAN-44).
+                  "Ánimo para jugar": a quien lleva 14 días sin postular ni
                   organizar y tiene partidos cerca, a lo más uno por semana. Disparadores por reglas,
                   sin IA, costo $0. UNIQUE (userId, kind, matchId) impide repetir un aviso. (HU-10)
 
@@ -217,7 +224,7 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 5 | 29 sep–12 oct 2026 | Sin incremento de producto (impedimento laboral) · documentación de la Fase 2 (KAN-23) | Fase 2 |
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
-| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · cuenta atrás en las cartas y equipamiento real de las canchas (KAN-43) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
+| 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · cuenta atrás en las cartas y equipamiento real de las canchas (KAN-43) · invitado gratis solo si falta 1, con aviso a los confirmados (KAN-44) · pendiente: documentación (KAN-23), despliegue en Render + Supabase (KAN-34), tags y releases (KAN-36) y prueba en iPhone y Android (KAN-29) | Fase 3 |
 | 9 | 24 nov–07 dic 2026 | Push en Android con la app compilada (KAN-42) · cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
@@ -332,4 +339,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 20 de noviembre de 2026 (Sprint 8)*
+*Última actualización: 21 de noviembre de 2026 (Sprint 8)*
