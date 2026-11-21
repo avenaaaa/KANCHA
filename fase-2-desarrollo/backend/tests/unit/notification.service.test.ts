@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultPreferences,
   faltaUnoMessage,
+  guestCoverMessage,
   isUrgent,
   joinApprovedMessage,
   joinRequestMessage,
@@ -29,9 +30,9 @@ describe('Textos de los avisos (HU-10)', () => {
       title: '¡Falta uno cerca!',
       body: 'Falta 1 jugador para Pádel dobles, a las 19:30 en Club Los Quillayes.',
     });
-    const destacado = faltaUnoMessage({ ...partido, slotsLeft: 2, priority: true });
+    const destacado = faltaUnoMessage({ ...partido, priority: true });
     expect(destacado.title).toBe('¡Falta uno cerca! Entras gratis');
-    expect(destacado.body).toBe('Faltan 2 jugadores para Pádel dobles, a las 19:30 en Club Los Quillayes. Vas de invitado: no pagas.');
+    expect(destacado.body).toBe('Falta 1 jugador para Pádel dobles, a las 19:30 en Club Los Quillayes. Vas de invitado: no pagas.');
   });
 
   it('U-92 · partido cerca: deporte, día, hora y recinto', () => {
@@ -50,10 +51,18 @@ describe('Textos de los avisos (HU-10)', () => {
     expect(joinApprovedMessage(partido, false).body).toBe('Ya tienes cupo en Pádel dobles. Paga tu parte para asegurarlo.');
   });
 
-  it('U-94 · "¿Lo destacas?" al organizador, con 1 o 2 faltantes (KAN-41)', () => {
+  it('U-94 · "¿Lo destacas?" al organizador cuando le falta 1 (KAN-41, KAN-44)', () => {
     expect(priorityOfferMessage(partido).title).toBe('Todavía te falta 1 jugador');
-    expect(priorityOfferMessage({ ...partido, slotsLeft: 2 }).title).toBe('Todavía te faltan 2 jugadores');
     expect(priorityOfferMessage(partido).body).toContain('¿Lo destacas?');
+  });
+
+  it('U-99 · a los confirmados de un destacado: la cuota del invitado y cuánto pone cada uno, en pesos (KAN-44)', () => {
+    expect(guestCoverMessage(partido, { amount: 6000, perPlayer: 2000, players: 3 })).toEqual({
+      title: 'Entra un invitado gratis',
+      body:
+        'Destacaron Pádel dobles, a las 19:30: quien llene el último cupo juega gratis. ' +
+        'Su cuota de $6.000 la cubren entre los 3 que ya están: $2.000 cada uno, fuera de la app.',
+    });
   });
 
   it('U-95 · ánimo para jugar: distinto para quien nunca jugó y para quien lleva días sin jugar', () => {

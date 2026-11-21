@@ -54,10 +54,12 @@ enum NotificationKind {
   JOIN_REQUEST
   /// Al jugador: el organizador aprobó su postulación.
   JOIN_APPROVED
-  /// Al organizador: "¿Lo destacas?" cuando le faltan 1 o 2 a 2 h o menos (KAN-41).
+  /// Al organizador: "¿Lo destacas?" cuando le falta 1 a 2 h o menos (KAN-41, KAN-44).
   PRIORITY_OFFER
   /// Ánimo para volver a jugar, por reglas y sin IA. A lo más uno por semana.
   NUDGE
+  /// A los confirmados de un partido destacado: cuánto pone cada uno por el invitado (KAN-44).
+  GUEST_COVER
 }
 
 enum PayStatus {

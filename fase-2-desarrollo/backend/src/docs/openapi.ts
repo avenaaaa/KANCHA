@@ -242,7 +242,7 @@ export const openapi = {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
-          kind: { type: 'string', enum: ['FALTA_UNO', 'NEARBY_MATCH', 'JOIN_REQUEST', 'JOIN_APPROVED', 'PRIORITY_OFFER', 'NUDGE'] },
+          kind: { type: 'string', enum: ['FALTA_UNO', 'NEARBY_MATCH', 'JOIN_REQUEST', 'JOIN_APPROVED', 'PRIORITY_OFFER', 'NUDGE', 'GUEST_COVER'] },
           matchId: { type: 'string', format: 'uuid', nullable: true },
           title: { type: 'string', example: '¡Falta uno cerca! Entras gratis' },
           body: { type: 'string', example: 'Falta 1 jugador para Fútbol 5, a las 19:30 en Cancha Los Quillayes. Vas de invitado: no pagas.' },
@@ -401,9 +401,10 @@ export const openapi = {
         tags: ['Partidos'],
         summary: '"Falta uno" destacado (KAN-41)',
         description:
-          'El organizador destaca su partido cuando le faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. ' +
-          'Aparece primero en la búsqueda y en "Falta uno"; quien se une entra gratis (al tiro con honor 7 o más; si no, ' +
-          'lo aprueba el organizador) y el grupo cubre esa cuota fuera de la app. Se decide con la fila del partido bloqueada.',
+          'El organizador destaca su partido cuando le falta 1 jugador y empieza dentro de URGENT_WINDOW_HOURS (KAN-44: ' +
+          'si faltan más, quienes entran pagan su parte). Aparece primero en la búsqueda y en "Falta uno"; quien se une ' +
+          'entra gratis (al tiro con honor 7 o más; si no, lo aprueba el organizador) y el grupo cubre esa cuota fuera de ' +
+          'la app: los confirmados reciben el aviso GUEST_COVER con lo que pone cada uno. Se decide con la fila del partido bloqueada.',
         parameters: [idParam],
         responses: {
           200: {
@@ -413,7 +414,7 @@ export const openapi = {
           403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede destacar su partido' }),
           409: {
             ...error({ code: 'PRIORITY_TOO_EARLY', message: 'Se puede destacar desde 2 horas antes del partido' }),
-            description: 'PRIORITY_TOO_EARLY · PRIORITY_NOT_AVAILABLE (le faltan 0 o más de 2) · ALREADY_PRIORITY · MATCH_STARTED · MATCH_NOT_OPEN',
+            description: 'PRIORITY_TOO_EARLY · PRIORITY_NOT_AVAILABLE (no le falta exactamente 1) · ALREADY_PRIORITY · MATCH_STARTED · MATCH_NOT_OPEN',
           },
         },
       },
