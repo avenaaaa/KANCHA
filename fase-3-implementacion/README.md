@@ -7,3 +7,4 @@ Las historias del MVP se terminaron en la Fase 2 (al 8 de noviembre de 2026).
 | Carpeta | Contenido |
 |---|---|
 | [`entrega/`](entrega/) | Lo que se presenta en la evaluación: guía de la asignatura, documentos individuales y presentación |
+| [`docs/`](docs/) | [Guía para hacer correr Kancha](docs/guia-para-correr-kancha.md) (nube, Docker y Expo Go, y el plan del día de la presentación) y el [QR de la demo en la nube](docs/qr-demo-nube.png) |
