@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import { colors } from '@/theme/colors';
-import { fonts } from '@/theme/typography';
+import { antonLine, fonts } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { SlotBar } from './SlotBar';
 import { Brand } from './Logo';
@@ -31,7 +31,7 @@ export function AuthHero({ lines, size, caption, photo }: AuthHeroProps) {
       <View accessible accessibilityLabel={lines.join(' ')}>
         {lines.map((line, i) => (
           <FadeIn key={line} index={i * 2}>
-            <Text style={[s.line, { fontSize: size, lineHeight: size * 1.02 }]}>{line}</Text>
+            <Text style={[s.line, antonLine(size, size * 1.02)]}>{line}</Text>
           </FadeIn>
         ))}
       </View>

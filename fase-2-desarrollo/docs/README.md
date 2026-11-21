@@ -12,7 +12,7 @@
 | Modelo relacional normalizado | [01-modelo-datos.md](01-modelo-datos.md) · normalización en la [sección 6](01-modelo-datos.md#6-normalización) | Listo · siete migraciones |
 | Diagrama de clases | [02-diagramas-uml.md](02-diagramas-uml.md#7-diagrama-de-clases--modelo-de-dominio), secciones 7 y 8 | Listo · corresponde al código del 16-nov |
 | Diagramas de secuencia de las funcionalidades principales | [02-diagramas-uml.md](02-diagramas-uml.md), secciones 2, 3 y 4 | Listo · búsqueda, pago y honor como quedaron implementados |
-| Plan de pruebas (unitarias, caja negra, integración, rendimiento, seguridad) | [04-plan-pruebas.md](04-plan-pruebas.md) | 198 pruebas del backend y 40 de la app, y las 5 de rendimiento, todas pasan · cobertura del 98,9 %, medida por el CI · rendimiento pendiente |
+| Plan de pruebas (unitarias, caja negra, integración, rendimiento, seguridad) | [04-plan-pruebas.md](04-plan-pruebas.md) | 198 pruebas del backend y 41 de la app, y las 5 de rendimiento, todas pasan · cobertura del 98,9 %, medida por el CI · rendimiento pendiente |
 | Auditoría de cierre (no la pide la pauta; es evidencia adicional de C1) | [05-auditoria-cierre.md](05-auditoria-cierre.md) | 71 hallazgos verificados · 45 corregidos · backlog visual para el rediseño |
 
 Además: diagrama de casos de uso y diagrama de estados del partido en

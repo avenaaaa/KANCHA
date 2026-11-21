@@ -31,7 +31,7 @@ recibir en una demo y en un piloto en La Florida.
 
 | Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **103 del backend y 40 de la app, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **105 del backend y 41 de la app, todas pasan** |
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
@@ -67,7 +67,7 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 | Archivos de prueba del backend | 20 (9 unitarios y 11 de integración) |
 | Casos del backend | 198 ejecutados · 198 pasan · 0 fallan (105 unitarias, 93 de integración) |
 | Cobertura de `services/` y `utils/` | 98,12 % de líneas · 91,61 % de ramas · 98,05 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 40 ejecutados · 40 pasan · el CI los corre en cada push desde el 15-nov |
+| Casos de la app (Jest + React Native Testing Library) | 41 ejecutados · 41 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -189,6 +189,7 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | M-38 | `lib/notifications.ts` · `toggleIn`, `hourLabel` | Elegir días y deportes, y la hora del horario (HU-10) | Pasa |
 | M-39 | `lib/format.ts` · `countdown` | Cuenta atrás de la carta: días, horas y minutos, minutos:segundos en la última hora, "En juego" mientras dura y nada al terminar (KAN-43) | Pasa |
 | M-40 | `data/laFlorida.json` · `venuesForSport` | Las multicanchas de pasto sintético no se ofrecen para básquetbol, y ninguna cancha pública ofrece pádel (KAN-43) | Pasa |
+| M-41 | `theme/typography.ts` · `antonLine` | En iOS, Anton toma su alto natural (1,505 veces el tamaño) y los márgenes negativos le devuelven el espacio de diseño; en Android y la web no cambia nada (KAN-29) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -399,6 +400,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
 | KAN-43 | Cuenta atrás y equipamiento real de las canchas | M-39, M-40 | — · verificado a mano en la app (`evidencias/sprint-08/28` y `29`) y foto satelital de cada cancha (`fuentes-canchas-KAN40.md`) | — | — |
 | KAN-44 | Invitado gratis solo si falta 1 y aviso a los confirmados | U-83, U-85, U-91, U-94, U-99 | CN-41, CN-42, CN-45, CN-48 · verificado en la app (`evidencias/sprint-08/30`) | — | — |
+| KAN-29 | La app en iPhone y Android | M-41 | — · falta verlo en el iPhone del autor | — | — |
 
 ---
 
@@ -445,6 +447,7 @@ sección 7 (cumplidos el 20 de noviembre) y los dieciocho controles de seguridad
 | DEF-20 | 17-nov-2026 | Siete de los 15 partidos de demostración caían fuera de La Florida: el punto central del seed y de la app estaba en el borde poniente de la comuna. Quedó a la vista al dibujar el límite real (KAN-38) | Media | Cerrado el 17-nov: punto interior y desplazamientos al 70 %. Comprobado contra la API: 15 de 15 dentro del límite |
 | DEF-21 | 17-nov-2026 | Tras regenerar los datos de la demo, una sesión abierta seguía entrando con un usuario que ya no existía: `/users/me` respondía 404 y la app no cerraba la sesión | Media | Cerrado el 17-nov: responde 401 y la app valida la sesión al entrar (S-18) |
 | DEF-22 | 17-nov-2026 | La dirección automática usaba `AbortSignal.timeout`, que React Native no trae: en un teléfono nunca se habría completado (KAN-38) | Media | Cerrado el 17-nov, antes de integrarse: el límite de tiempo se arma con `AbortController` (M-31). Falta verlo en un teléfono real |
+| DEF-23 | 20-nov-2026 | En el iPhone del autor, los títulos, el honor y los números en Anton salían cortados arriba; en un Samsung S23 se veían bien. iOS apoya la letra abajo cuando el alto de línea es menor que el de la fuente (KAN-29) | Media | Corregido el 21-nov: todo texto en Anton con alto de línea pasa por `antonLine` (M-41). Falta verlo en el iPhone |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.
