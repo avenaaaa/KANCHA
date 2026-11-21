@@ -32,6 +32,9 @@ erDiagram
     USER ||--o{ RATING : "califica como rater"
     USER ||--o{ RATING : "recibe como rated"
     MATCH ||--o{ RATING : "contextualiza"
+    USER ||--o| NOTIFICATION_PREFERENCE : "elige sus avisos"
+    USER ||--o{ NOTIFICATION : "recibe"
+    MATCH |o--o{ NOTIFICATION : "origina"
 
     USER {
         uuid     id PK
@@ -62,6 +65,7 @@ erDiagram
         int       totalSlots
         int       filledSlots
         int       totalCost "CLP entero"
+        datetime  prioritizedAt "null = no destacado (KAN-41)"
         enum      status
         datetime  createdAt
     }
@@ -99,6 +103,32 @@ erDiagram
         datetime authorizedAt
         datetime createdAt
     }
+
+    NOTIFICATION_PREFERENCE {
+        uuid     userId PK "FK a User, 1 a 1"
+        boolean  faltaUno "el aviso prioritario"
+        boolean  nearby
+        boolean  nudges
+        enum     sports "arreglo de Sport"
+        int      days "arreglo, 0 domingo a 6 sabado"
+        int      fromHour "CHECK 0 a 23"
+        int      toHour "CHECK 1 a 24, mayor que fromHour"
+        int      radiusKm "CHECK 1 a 20"
+        float    lat
+        float    lng
+        datetime updatedAt
+    }
+
+    NOTIFICATION {
+        uuid     id PK
+        uuid     userId FK
+        enum     kind "FALTA_UNO y otros 5"
+        uuid     matchId FK "null en el animo para jugar"
+        string   title
+        string   body
+        datetime readAt "null = sin leer"
+        datetime createdAt
+    }
 ```
 
 ---
@@ -119,7 +149,7 @@ erDiagram
 | `attendanceRate` | DECIMAL(5,2) | Sí | 0–100 | Calculado: asistidos / (asistidos + no presentados), según `Participation.attended` |
 | `punctualityRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.punctuality` |
 | `fairPlayRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.conduct` |
-| `expoPushToken` | VARCHAR | Sí | — | Token de Expo Push para HU-10. Sin uso desde que HU-10 salió del alcance el 8-nov; se conserva para no migrar dos veces si vuelve |
+| `expoPushToken` | VARCHAR | Sí | — | Token de Expo Push para el push en Android (KAN-42, Sprint 9). Los avisos dentro de la app (HU-10) no lo usan |
 | `createdAt` | TIMESTAMP | No | default now() | Alta de la cuenta |
 
 ### 3.2 `Match` — partidos publicados
@@ -139,6 +169,7 @@ erDiagram
 | `totalSlots` | INT | No | > 0 | Cupos totales |
 | `filledSlots` | INT | No | 0 ≤ x ≤ totalSlots | Cupos confirmados |
 | `totalCost` | INT | No | ≥ 0, CLP | Arriendo total. 0 = partido gratuito |
+| `prioritizedAt` | TIMESTAMP | Sí | null = no destacado | "Falta uno" destacado (KAN-41): cuándo lo destacó el organizador. Destacado, cada cupo que se aprueba entra gratis |
 | `status` | ENUM | No | OPEN \| FULL \| IN_PROGRESS \| FINISHED \| ARCHIVED \| CANCELLED | Estado del ciclo de vida |
 | `createdAt` | TIMESTAMP | No | default now() | Publicación |
 
@@ -184,6 +215,35 @@ erDiagram
 | `authorizedAt` | TIMESTAMP | Sí | — | Momento de la autorización |
 | `createdAt` | TIMESTAMP | No | default now() | Inicio de la transacción |
 
+### 3.6 `NotificationPreference` — qué avisos acepta cada usuario (HU-10)
+
+| Campo | Tipo | Nulo | Restricción | Descripción |
+|---|---|---|---|---|
+| `userId` | UUID | No | PK, FK → User (CASCADE) | Relación 1:1. Sin fila, ningún aviso activado |
+| `faltaUno` | BOOLEAN | No | default false | Partidos urgentes o destacados dentro del radio: el aviso prioritario |
+| `nearby` | BOOLEAN | No | default false | Partidos nuevos en sus días y horario |
+| `nudges` | BOOLEAN | No | default false | Ánimo para volver a jugar, a lo más uno por semana |
+| `sports` | ENUM[] | No | Sport, sin repetidos (Zod) | Deportes de los que quiere avisos |
+| `days` | INT[] | No | 0 a 6, sin repetidos (Zod) | Días aceptados para "Partidos cerca", en hora de Chile (0 = domingo) |
+| `fromHour` | INT | No | default 18 · CHECK 0 a 23 y menor que `toHour` | Inicio del horario aceptado, en hora de Chile |
+| `toHour` | INT | No | default 23 · CHECK 1 a 24 | Fin del horario aceptado, sin incluirlo |
+| `radiusKm` | INT | No | default 5 · CHECK 1 a 20 | Qué tan lejos cuenta como "cerca" |
+| `lat`, `lng` | DOUBLE | Sí | Zod: ambos o ninguno; obligatorios si activa algún aviso | Punto desde el que se mide la distancia. Se fija al guardar |
+| `updatedAt` | TIMESTAMP | No | — | Último cambio |
+
+### 3.7 `Notification` — bandeja de avisos (HU-10)
+
+| Campo | Tipo | Nulo | Restricción | Descripción |
+|---|---|---|---|---|
+| `id` | UUID | No | PK | Identificador |
+| `userId` | UUID | No | FK → User (CASCADE) | A quién va el aviso |
+| `kind` | ENUM | No | FALTA_UNO \| NEARBY_MATCH \| JOIN_REQUEST \| JOIN_APPROVED \| PRIORITY_OFFER \| NUDGE | Tipo. FALTA_UNO es el prioritario |
+| `matchId` | UUID | Sí | FK → Match (CASCADE) | Partido del aviso; null en el ánimo para jugar |
+| `title`, `body` | VARCHAR | No | — | Texto armado por reglas, sin IA |
+| `readAt` | TIMESTAMP | Sí | null = sin leer | Cuándo lo leyó |
+| `createdAt` | TIMESTAMP | No | default now() | Al renovarse (destacado, nueva postulación) se actualiza y sube en la bandeja |
+| — | — | — | **UNIQUE (userId, kind, matchId)** | El barrido periódico nunca repite un aviso del mismo tipo y partido. NULL no choca: el ánimo para jugar se limita a uno por semana en el servicio |
+
 ---
 
 ## 4. Índices
@@ -204,6 +264,7 @@ CREATE INDEX "User_favoriteSport_idx"          ON "User" ("favoriteSport");
 CREATE INDEX "Participation_userId_status_idx" ON "Participation" ("userId", "status");
 CREATE INDEX "Rating_ratedId_createdAt_idx"    ON "Rating" ("ratedId", "createdAt");
 CREATE INDEX "Payment_status_idx"              ON "Payment" ("status");
+CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification" ("userId", "createdAt");  -- bandeja (HU-10)
 
 -- Unicidad: reglas de negocio garantizadas por la base de datos
 CREATE UNIQUE INDEX "User_email_key"                     ON "User" ("email");
@@ -211,6 +272,7 @@ CREATE UNIQUE INDEX "Participation_matchId_userId_key"   ON "Participation" ("ma
 CREATE UNIQUE INDEX "Rating_matchId_raterId_ratedId_key" ON "Rating" ("matchId", "raterId", "ratedId");
 CREATE UNIQUE INDEX "Payment_participationId_key"        ON "Payment" ("participationId");
 CREATE UNIQUE INDEX "Payment_buyOrder_key"               ON "Payment" ("buyOrder");
+CREATE UNIQUE INDEX "Notification_userId_kind_matchId_key" ON "Notification" ("userId", "kind", "matchId");
 ```
 
 El índice GIST es el que sostiene el argumento de escalabilidad de la competencia C3: convierte la
@@ -241,7 +303,7 @@ justifican más abajo.
 
 | Forma | Qué exige | Cómo la cumple el modelo |
 |---|---|---|
-| **1FN** | Valores atómicos, sin grupos repetidos, clave primaria en cada tabla | Cada tabla tiene un `id` UUID. No hay columnas multivaluadas: los participantes de un partido no son una lista dentro de `Match`, son filas de `Participation`; las reseñas son filas de `Rating`. `location` es un único valor geográfico, no un par de columnas sueltas |
+| **1FN** | Valores atómicos, sin grupos repetidos, clave primaria en cada tabla | Cada tabla tiene clave primaria. No hay columnas multivaluadas, salvo `NotificationPreference.sports` y `days`, justificadas en la §6.3: los participantes de un partido no son una lista dentro de `Match`, son filas de `Participation`; las reseñas son filas de `Rating`. `location` es un único valor geográfico, no un par de columnas sueltas |
 | **2FN** | Ningún atributo depende de solo una parte de una clave compuesta | Todas las claves primarias son simples, así que no puede haber dependencia parcial. En las claves candidatas compuestas la dependencia también es total: `status` y `amountDue` dependen del par `(matchId, userId)`; `punctuality` y `conduct` dependen del trío `(matchId, raterId, ratedId)` |
 | **3FN** | Ningún atributo depende de otro atributo que no sea clave | Los datos del organizador no se copian en `Match`: se llega a ellos por `organizerId`. Los datos del jugador no se copian en `Participation` ni en `Rating`. El detalle de la transacción vive en `Payment`, separado de `Participation`. Los dominios cerrados (`sport`, `level`, estados) son tipos ENUM, no texto libre |
 
@@ -254,6 +316,8 @@ justifican más abajo.
 | `Participation` | `id` | `(matchId, userId)` | `id` → todos · `(matchId, userId)` → `status`, `amountDue`, `attended`, `joinedAt` |
 | `Rating` | `id` | `(matchId, raterId, ratedId)` | `id` → todos · `(matchId, raterId, ratedId)` → `punctuality`, `conduct`, `createdAt` |
 | `Payment` | `id` | `participationId`, `buyOrder` | `id` → todos los atributos |
+| `NotificationPreference` | `userId` | — | `userId` → todos los atributos |
+| `Notification` | `id` | `(userId, kind, matchId)` cuando `matchId` no es null | `id` → todos los atributos |
 
 ### 6.3 Desnormalizaciones deliberadas
 
@@ -265,6 +329,7 @@ dato duplicado quede inconsistente.
 | `User.honorScore`, `attendanceRate`, `punctualityRate`, `fairPlayRate` | Se derivan de `Rating` y `Participation` | La carta de jugador se muestra en cada pin y en cada lista: recalcular sobre 20 reseñas por cada render no escala | Solo `honor.service` los escribe, y lo hace en la misma transacción que guarda la reseña |
 | `User.matchesPlayed` | Es un conteo de `Participation` | Evita un `COUNT` en cada consulta de perfil | Se incrementa al cerrar una participación como asistida |
 | `Match.filledSlots` | Es un conteo de `Participation` aprobadas | Evita un `COUNT` por cada pin del mapa y permite bloquear la fila para no sobrevender cupos | Se actualiza en la misma transacción que aprueba o cancela la participación |
+| `NotificationPreference.sports` y `days` | Son arreglos: un valor con varios elementos, fuera de la 1FN estricta | Son conjuntos cerrados y chicos (3 deportes, 7 días) que siempre se leen y se guardan juntos con la preferencia, y solo se consultan con `= ANY(...)` dentro del mismo `INSERT … SELECT` que reparte los avisos. Dos tablas hijas sumarían dos JOIN a cada aviso sin ganar nada | Zod valida los valores y quita repetidos; `sports` usa el mismo ENUM `Sport` que `Match`, así que la base rechaza un deporte inexistente. Si algún día se filtran por separado, se extraen a tablas hijas |
 | `Match.venueName`, `address`, `location` | Si un recinto se repite, `venueName` determina `address` y `location`: dependencia transitiva | El MVP no administra recintos: cada organizador escribe el lugar de su partido, que puede ser una cancha pública sin dueño | Cada partido conserva su propia copia. Si el producto pasa a gestionar recintos, se extrae una tabla `Venue` y `Match` queda con `venueId` |
 
 Dos atributos parecen derivados pero no lo son: **`Participation.amountDue`** y **`Payment.commission`**.
@@ -277,6 +342,8 @@ si mañana cambia el costo del partido o la tasa de comisión, lo ya cobrado no 
 |---|---|---|
 | `Match` → `Participation`, `Rating` | `CASCADE` | Un partido eliminado no deja filas huérfanas que alteren el cálculo de honor |
 | `Participation` → `Payment` | `CASCADE` | El pago no existe sin su participación |
+| `User` → `NotificationPreference`, `Notification` | `CASCADE` | Las preferencias y los avisos no tienen valor sin su usuario |
+| `Match` → `Notification` | `CASCADE` | Un aviso sobre un partido que ya no existe no se puede abrir |
 | `User` → `Match`, `Participation`, `Rating` | `RESTRICT` | No se puede borrar un usuario con historial: se perdería la trazabilidad de pagos y reseñas |
 
 ---
@@ -295,6 +362,8 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`migrations/20261108200000_participation_asistencia/migration.sql`](../backend/prisma/migrations/20261108200000_participation_asistencia/migration.sql) | Columna `Participation.attended` para registrar la asistencia (KAN-30) |
 | [`migrations/20261115120000_cupos_montos_check/migration.sql`](../backend/prisma/migrations/20261115120000_cupos_montos_check/migration.sql) | `CHECK` de cupos (`filledSlots` entre 0 y `totalSlots`) y de montos (cuota, cobro, retención y comisión) |
 | [`migrations/20261115130000_participation_rechazada/migration.sql`](../backend/prisma/migrations/20261115130000_participation_rechazada/migration.sql) | Valor `REJECTED` en el tipo `PartStatus` (KAN-32) |
+| [`migrations/20261120180000_match_destacado/migration.sql`](../backend/prisma/migrations/20261120180000_match_destacado/migration.sql) | Columna `prioritizedAt` en `Match`: el "Falta uno" destacado (KAN-41) |
+| [`migrations/20261120220000_avisos/migration.sql`](../backend/prisma/migrations/20261120220000_avisos/migration.sql) | Tablas `NotificationPreference` y `Notification`, tipo `NotificationKind`, `UNIQUE (userId, kind, matchId)` y `CHECK` de horario y radio (HU-10) |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el

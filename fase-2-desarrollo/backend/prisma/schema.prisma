@@ -44,6 +44,22 @@ enum PartStatus {
   REJECTED
 }
 
+/// Tipos de aviso (HU-10). FALTA_UNO es el prioritario: va primero y destacado.
+enum NotificationKind {
+  /// Partido urgente o destacado dentro de mi radio.
+  FALTA_UNO
+  /// Partido nuevo que calza con mis deportes, días, horario y radio.
+  NEARBY_MATCH
+  /// Al organizador: alguien pide entrar a su partido.
+  JOIN_REQUEST
+  /// Al jugador: el organizador aprobó su postulación.
+  JOIN_APPROVED
+  /// Al organizador: "¿Lo destacas?" cuando le faltan 1 o 2 a 2 h o menos (KAN-41).
+  PRIORITY_OFFER
+  /// Ánimo para volver a jugar, por reglas y sin IA. A lo más uno por semana.
+  NUDGE
+}
+
 enum PayStatus {
   INITIATED
   AUTHORIZED
@@ -53,12 +69,12 @@ enum PayStatus {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
+  id            String @id @default(uuid())
+  email         String @unique
   passwordHash  String
   name          String
   favoriteSport Sport
-  matchesPlayed Int      @default(0)
+  matchesPlayed Int    @default(0)
 
   /// 0.0–10.0 · NULL = "Sin calificaciones aún". Único número de reputación del producto.
   honorScore      Decimal? @db.Decimal(3, 1)
@@ -70,10 +86,12 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  organizedMatches Match[]         @relation("organizer")
-  participations   Participation[]
-  ratingsGiven     Rating[]        @relation("rater")
-  ratingsReceived  Rating[]        @relation("rated")
+  organizedMatches       Match[]                 @relation("organizer")
+  participations         Participation[]
+  ratingsGiven           Rating[]                @relation("rater")
+  ratingsReceived        Rating[]                @relation("rated")
+  notificationPreference NotificationPreference?
+  notifications          Notification[]
 
   @@index([favoriteSport])
 }
@@ -94,18 +112,22 @@ model Match {
   /// para que `migrate dev` no lo considere sobrante y genere un DROP INDEX.
   location Unsupported("geography(Point, 4326)")
 
-  startsAt    DateTime
-  durationMin Int         @default(60)
-  totalSlots  Int
-  filledSlots Int         @default(0)
+  startsAt      DateTime
+  durationMin   Int         @default(60)
+  totalSlots    Int
+  filledSlots   Int         @default(0)
   /// CLP como entero. Nunca punto flotante para dinero. 0 = partido gratuito.
-  totalCost   Int         @default(0)
-  status      MatchStatus @default(OPEN)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  totalCost     Int         @default(0)
+  status        MatchStatus @default(OPEN)
+  /// "Falta uno" destacado (KAN-41): cuándo lo destacó el organizador; null = no destacado.
+  /// Destacado, cada cupo que se aprueba entra gratis y el grupo cubre esa cuota fuera de la app.
+  prioritizedAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   participations Participation[]
   ratings        Rating[]
+  notifications  Notification[]
 
   @@index([startsAt])
   @@index([sport, status])
@@ -115,17 +137,17 @@ model Match {
 }
 
 model Participation {
-  id      String     @id @default(uuid())
-  matchId String
-  userId  String
-  status  PartStatus @default(PENDING)
+  id        String     @id @default(uuid())
+  matchId   String
+  userId    String
+  status    PartStatus @default(PENDING)
   /// ceil(totalCost / totalSlots), congelado al aprobar la participación.
-  amountDue Int      @default(0)
+  amountDue Int        @default(0)
   /// Asistencia que cierra el organizador al terminar el partido (KAN-30):
   /// null = sin cerrar · true = asistió (suma matchesPlayed) · false = no se presentó (NO_SHOW).
   attended  Boolean?
-  joinedAt  DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  joinedAt  DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id])
@@ -177,4 +199,47 @@ model Payment {
   participation Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
 
   @@index([status])
+}
+
+/// Qué avisos acepta recibir cada usuario (HU-10). Sin fila = ninguno activado.
+model NotificationPreference {
+  userId    String   @id
+  /// "Falta uno" urgentes y destacados cerca: los avisos prioritarios.
+  faltaUno  Boolean  @default(false)
+  /// Partidos nuevos cerca, en mis días y horario.
+  nearby    Boolean  @default(false)
+  /// Ánimo para volver a jugar, a lo más uno por semana.
+  nudges    Boolean  @default(false)
+  sports    Sport[]
+  /// Días de la semana en hora de Chile: 0 = domingo … 6 = sábado.
+  days      Int[]
+  /// Horario aceptado [fromHour, toHour), en hora de Chile.
+  fromHour  Int      @default(18)
+  toHour    Int      @default(23)
+  radiusKm  Int      @default(5)
+  /// Punto desde el que se mide "cerca". Sin él no hay avisos por distancia.
+  lat       Float?
+  lng       Float?
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Bandeja de avisos dentro de la app (HU-10). El push en Android la reutiliza (KAN-42).
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  kind      NotificationKind
+  matchId   String?
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match? @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  /// Un aviso de cada tipo por usuario y partido: el barrido periódico nunca lo repite.
+  @@unique([userId, kind, matchId])
+  @@index([userId, createdAt])
 }

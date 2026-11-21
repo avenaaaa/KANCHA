@@ -16,11 +16,12 @@ Retrospective.
 
 Los sprints 1 y 2 corresponden a la Fase 1. Desde el Sprint 8 no quedan historias por desarrollar: el
 trabajo se mide en tareas, no en puntos. La planificación vigente es la de la replanificación del
-8 de noviembre de 2026: HU-02, HU-06 y HU-07 se terminaron en el Sprint 7 y HU-10 salió del alcance
-del MVP. El detalle está en `CLAUDE.md` §5 y `DESARROLLO.md` §11.
+8 de noviembre de 2026 (HU-02, HU-06 y HU-07 se terminaron en el Sprint 7), ajustada el 20 de noviembre:
+HU-10 volvió al alcance con 8 puntos, partida entre los avisos dentro de la app (Sprint 8) y el push en
+Android (KAN-42, Sprint 9). El detalle está en `CLAUDE.md` §5 y `DESARROLLO.md` §11.
 
-**Velocidad.** 0, 0, 16 y 31 puntos en los sprints 4 a 7. Las nueve historias del MVP (47 puntos)
-quedaron terminadas el 8 de noviembre.
+**Velocidad.** 0, 0, 16 y 31 puntos en los sprints 4 a 7. Las nueve historias del MVP original (47 puntos)
+quedaron terminadas el 8 de noviembre; HU-10 (8 puntos) se reincorporó el 20 de noviembre.
 
 **Gráficos.** Cada documento trae su burndown. Desde el Sprint 6 se dibuja en Mermaid dentro del mismo
 documento y además se guarda como imagen en [`img/`](img/), para usarlo en los documentos de la entrega.

@@ -1,0 +1,133 @@
+Pruebas de rendimiento de Kancha (KAN-35) · 20 de noviembre de 2026
+Plan: fase-2-desarrollo/docs/04-plan-pruebas.md §7 · scripts: fase-2-desarrollo/backend/tests/performance/
+Entorno: docker compose local (Windows 11, Docker Desktop). k6 1.0.0 en su imagen oficial (grafana/k6),
+dentro de la red del compose, contra http://api:3000/api/v1.
+
+======================================================================
+R-05 · Arranque en frío del stack (contenedores ya construidos)
+======================================================================
+docker compose down && docker compose up -d --wait
+API, web y base sanas en 13,3 s (migraciones y seed incluidos). Meta: menos de 60 s. CUMPLE.
+
+======================================================================
+R-01 · GET /matches/nearby con el seed (17 partidos) · 20 usuarios, 1 minuto, sin pausa
+======================================================================
+  █ THRESHOLDS
+    http_req_duration{name:nearby}
+    ✓ 'p(95)<300' p(95)=19.17ms
+    http_req_failed{name:nearby}
+    ✓ 'rate==0' rate=0.00%
+  █ TOTAL RESULTS
+    checks_total.......................: 75974   1261.766809/s
+    checks_succeeded...................: 100.00% 75974 out of 75974
+    checks_failed......................: 0.00%   0 out of 75974
+    ✓ responde 200 con partidos
+    HTTP
+    http_req_duration.......................................................: avg=15.57ms min=12.02ms med=15ms    max=201.54ms p(90)=17.86ms p(95)=19.17ms
+      { expected_response:true }............................................: avg=15.57ms min=12.02ms med=15ms    max=201.54ms p(90)=17.86ms p(95)=19.17ms
+      { name:nearby }.......................................................: avg=15.57ms min=12.02ms med=15ms    max=91.28ms  p(90)=17.86ms p(95)=19.17ms
+    http_req_failed.........................................................: 0.00%  0 out of 75975
+      { name:nearby }.......................................................: 0.00%  0 out of 75974
+    http_reqs...............................................................: 75975  1261.783417/s
+    EXECUTION
+    iteration_duration......................................................: avg=15.78ms min=12.38ms med=15.21ms max=91.79ms  p(90)=18.08ms p(95)=19.39ms
+    iterations..............................................................: 75974  1261.766809/s
+    vus.....................................................................: 20     min=20         max=20
+    vus_max.................................................................: 20     min=20         max=20
+    NETWORK
+    data_received...........................................................: 653 MB 11 MB/s
+    data_sent...............................................................: 28 MB  465 kB/s
+
+======================================================================
+R-03 · Plan de ejecución con 10.017 partidos (datos-sinteticos.sql + plan-busqueda.sql)
+======================================================================
+                                                                                                                                   QUERY PLAN                                                                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit (actual time=10.886..10.908 rows=100 loops=1)
+   Buffers: shared hit=608
+   ->  Sort (actual time=10.885..10.895 rows=100 loops=1)
+         Sort Key: ((round(st_distance(m.location, '0101000020E61000003D0AD7A370A551C03D0AD7A370C540C0'::geography, true)))::integer), m."startsAt"
+         Sort Method: top-N heapsort  Memory: 46kB
+         Buffers: shared hit=608
+         ->  Nested Loop (actual time=7.538..10.704 rows=285 loops=1)
+               Join Filter: (u.id = m."organizerId")
+               Rows Removed by Join Filter: 595
+               Buffers: shared hit=602
+               ->  Bitmap Heap Scan on "Match" m (actual time=7.491..9.123 rows=285 loops=1)
+                     Filter: (("filledSlots" < "totalSlots") AND (status = 'OPEN'::"MatchStatus") AND (("startsAt" AT TIME ZONE 'UTC'::text) > now()) AND st_dwithin(location, '0101000020E61000003D0AD7A370A551C03D0AD7A370C540C0'::geography, '5000'::double precision, true))
+                     Rows Removed by Filter: 161
+                     Heap Blocks: exact=249
+                     Buffers: shared hit=317
+                     ->  Bitmap Index Scan on idx_match_location (actual time=0.090..0.091 rows=464 loops=1)
+                           Index Cond: (location && _st_expand('0101000020E61000003D0AD7A370A551C03D0AD7A370C540C0'::geography, '5000'::double precision))
+                           Buffers: shared hit=8
+               ->  Seq Scan on "User" u (actual time=0.001..0.001 rows=3 loops=285)
+                     Buffers: shared hit=285
+ Planning:
+   Buffers: shared hit=446
+ Planning Time: 8.022 ms
+ Execution Time: 11.099 ms
+(24 rows)
+
+======================================================================
+R-02 · GET /matches/nearby con 10.017 partidos · 20 usuarios, 1 minuto, sin pausa
+======================================================================
+  █ THRESHOLDS
+    http_req_duration{name:nearby}
+    ✓ 'p(95)<500' p(95)=45.46ms
+    http_req_failed{name:nearby}
+    ✓ 'rate==0' rate=0.00%
+  █ TOTAL RESULTS
+    checks_total.......................: 34095   566.149566/s
+    checks_succeeded...................: 100.00% 34095 out of 34095
+    checks_failed......................: 0.00%   0 out of 34095
+    ✓ responde 200 con partidos
+    HTTP
+    http_req_duration.......................................................: avg=34.42ms min=8.82ms  med=33.17ms max=230.36ms p(90)=39.63ms p(95)=45.46ms
+      { expected_response:true }............................................: avg=34.42ms min=8.82ms  med=33.17ms max=230.36ms p(90)=39.63ms p(95)=45.46ms
+      { name:nearby }.......................................................: avg=34.41ms min=8.82ms  med=33.17ms max=230.36ms p(90)=39.62ms p(95)=45.46ms
+    http_req_failed.........................................................: 0.00%  0 out of 34096
+      { name:nearby }.......................................................: 0.00%  0 out of 34095
+    http_reqs...............................................................: 34096  566.166171/s
+    EXECUTION
+    iteration_duration......................................................: avg=35.19ms min=10.27ms med=33.93ms max=231.69ms p(90)=40.41ms p(95)=46.45ms
+    iterations..............................................................: 34095  566.149566/s
+    vus.....................................................................: 20     min=20         max=20
+    vus_max.................................................................: 20     min=20         max=20
+    NETWORK
+    data_received...........................................................: 1.8 GB 29 MB/s
+    data_sent...............................................................: 13 MB  209 kB/s
+
+======================================================================
+R-04 · Registro y login (bcrypt costo 12) · 5 usuarios, 1 minuto
+REGISTER_RATE_LIMIT=100000 solo en el contenedor local durante esta prueba (el límite real, S-12,
+se prueba aparte). Al terminar se restauró la API y el seed borró las 652 cuentas de carga.
+======================================================================
+  █ THRESHOLDS
+    http_req_duration{name:login}
+    ✓ 'p(95)<800' p(95)=311.39ms
+    http_req_duration{name:register}
+    ✓ 'p(95)<800' p(95)=323.78ms
+    http_req_failed
+    ✓ 'rate==0' rate=0.00%
+  █ TOTAL RESULTS
+    checks_total.......................: 1304    21.615949/s
+    checks_succeeded...................: 100.00% 1304 out of 1304
+    checks_failed......................: 0.00%   0 out of 1304
+    ✓ registro 201
+    ✓ login 200
+    HTTP
+    http_req_duration.......................................................: avg=230.59ms min=174.36ms med=214.88ms max=406.54ms p(90)=302.97ms p(95)=319.46ms
+      { expected_response:true }............................................: avg=230.59ms min=174.36ms med=214.88ms max=406.54ms p(90)=302.97ms p(95)=319.46ms
+      { name:login }........................................................: avg=226.17ms min=174.36ms med=211.44ms max=380.97ms p(90)=291.9ms  p(95)=311.39ms
+      { name:register }.....................................................: avg=235.02ms min=177.98ms med=217.56ms max=406.54ms p(90)=310.06ms p(95)=323.78ms
+    http_req_failed.........................................................: 0.00%  0 out of 1304
+    http_reqs...............................................................: 1304   21.615949/s
+    EXECUTION
+    iteration_duration......................................................: avg=461.51ms min=360.48ms med=468.8ms  max=604.7ms  p(90)=528.59ms p(95)=536.11ms
+    iterations..............................................................: 652    10.807974/s
+    vus.....................................................................: 5      min=5         max=5
+    vus_max.................................................................: 5      min=5         max=5
+    NETWORK
+    data_received...........................................................: 2.0 MB 33 kB/s
+    data_sent...............................................................: 294 kB 4.9 kB/s

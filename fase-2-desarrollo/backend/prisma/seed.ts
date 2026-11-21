@@ -74,7 +74,8 @@ const PARTIDOS = [
   // KAN-37 · "Falta uno": uno urgente por deporte. Les falta 1 jugador y empiezan en menos de 2 horas
   // desde que se levanta la demo, así el botón "Falta uno" siempre tiene algo que mostrar.
   { title: 'Fútbol 5 · Falta uno ya',       sport: Sport.FUTBOL,     level: SkillLevel.MEDIO,        venue: 'Cancha Vicuña Mackenna',  calle: 'Av. Vicuña Mackenna', dx: 0.6,  dy: -0.5, slots: 10, filled: 9, cost: 30000, dia: 0, hora: '00:00', enHoras: 1.5 },
-  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1 },
+  // KAN-41: este ya está destacado (quien se une entra gratis); el de fútbol queda para mostrar "¿Lo destacas?".
+  { title: 'Pádel · Falta uno ya',          sport: Sport.PADEL,      level: SkillLevel.PRINCIPIANTE, venue: 'Pádel Rojas Magallanes',  calle: 'Rojas Magallanes',    dx: -1.1, dy: 0.9,  slots: 4,  filled: 3, cost: 20000, dia: 0, hora: '00:00', enHoras: 1, destacado: true },
   { title: 'Básquet 3x3 · Falta uno ya',    sport: Sport.BASQUETBOL, level: SkillLevel.AVANZADO,     venue: 'Multicancha San José',    calle: 'San José de la Estrella', dx: 1.5, dy: 1.1, slots: 6, filled: 5, cost: 0, dia: 0, hora: '00:00', enHoras: 1.75 },
 ];
 
@@ -112,13 +113,14 @@ async function main() {
     const [row] = await prisma.$queryRaw<{ id: string }[]>`
       INSERT INTO "Match"
         ("id","organizerId","title","sport","level","venueName","address","location",
-         "startsAt","durationMin","totalSlots","filledSlots","totalCost","status","createdAt","updatedAt")
+         "startsAt","durationMin","totalSlots","filledSlots","totalCost","status","prioritizedAt","createdAt","updatedAt")
       VALUES
         (gen_random_uuid(), ${organizer.id}, ${p.title}, ${p.sport}::"Sport", ${p.level}::"SkillLevel",
          ${p.venue}, ${`${p.calle}, La Florida`},
          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
          ${p.enHoras !== undefined ? enHoras(p.enHoras) : proximo(p.dia, p.hora)}, ${p.sport === Sport.FUTBOL ? 60 : 90}, ${p.slots}, ${p.filled}, ${p.cost},
-         ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus", NOW(), NOW())
+         ${p.filled >= p.slots ? MatchStatus.FULL : MatchStatus.OPEN}::"MatchStatus",
+         ${'destacado' in p && p.destacado ? new Date() : null}, NOW(), NOW())
       RETURNING "id";
     `;
     partidos.push({ ...p, id: row!.id, organizerId: organizer.id });
@@ -226,6 +228,24 @@ async function main() {
     });
   }
   console.log('   1 partido recién terminado, listo para calificar (Camila, Lukas, Valentina e Ignacio)');
+
+  // HU-10: Camila acepta todos los avisos. Al arrancar, el barrido le avisa de los tres "Falta uno ya"
+  // (el de pádel, destacado, con "entras gratis") y a sus organizadores les ofrece destacarlos.
+  await prisma.notificationPreference.create({
+    data: {
+      userId: usuarios[1]!.id,
+      faltaUno: true,
+      nearby: true,
+      nudges: true,
+      sports: [Sport.FUTBOL, Sport.PADEL, Sport.BASQUETBOL],
+      days: [0, 1, 2, 3, 4, 5, 6],
+      fromHour: 8,
+      toHour: 24,
+      radiusKm: 10,
+      ...CENTRO,
+    },
+  });
+  console.log('   Camila con todos los avisos activados (HU-10)');
 
   console.log('✅ Seed completo. Todas las cuentas usan la contraseña: kancha2026');
   console.log('   Dos usuarios quedan sin reseñas a propósito, para ver "Sin calificaciones aún".');

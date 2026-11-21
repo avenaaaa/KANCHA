@@ -36,6 +36,7 @@ export const openapi = {
     { name: 'Postulaciones', description: 'HU-05 · KAN-11' },
     { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
     { name: 'Calificaciones', description: 'HU-06 · KAN-12 · HU-07 · KAN-13 · Sistema de Honor' },
+    { name: 'Avisos', description: 'HU-10 · KAN-16 · avisos dentro de la app; "Falta uno" es el prioritario' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -133,6 +134,7 @@ export const openapi = {
           totalCost: { type: 'integer' },
           pricePerPlayer: { type: 'integer', description: 'ceil(totalCost / totalSlots)' },
           status: { type: 'string' },
+          priority: { type: 'boolean', description: '"Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más' },
           distanceM: { type: 'integer', description: 'Solo en /matches/nearby' },
           organizer: {
             type: 'object',
@@ -149,6 +151,8 @@ export const openapi = {
             properties: {
               role: { type: 'string', enum: ['ORGANIZER', 'PLAYER'] },
               myStatus: { type: 'string', nullable: true, description: 'Estado de mi postulación; null si organizo' },
+              myAmountDue: { type: 'integer', description: 'Cuota congelada de mi cupo; 0 si entré como invitado (KAN-41)' },
+              canPrioritize: { type: 'boolean', description: 'KAN-41: puedo destacarlo ahora' },
               pendingCount: { type: 'integer', description: 'Postulaciones por revisar (solo si organizo)' },
               ratingWindow: { $ref: '#/components/schemas/RatingWindow' },
             },
@@ -196,12 +200,56 @@ export const openapi = {
                       withinRetentionWindow: { type: 'boolean' },
                     },
                   },
+                  amountDue: {
+                    type: 'integer',
+                    nullable: true,
+                    description: 'Cuota congelada al aprobar; 0 si entró gratis como invitado de un partido destacado (KAN-41)',
+                  },
+                },
+              },
+              priorityOffer: {
+                type: 'object',
+                description: 'KAN-41: si el organizador puede destacarlo ahora y cuánto pone cada uno por el invitado',
+                properties: {
+                  canActivate: { type: 'boolean' },
+                  guestShare: { type: 'integer', description: 'Cuota del invitado, que cubre el grupo fuera de la app' },
+                  perPlayer: { type: 'integer', description: 'guestShare repartido entre los que ya están, hacia arriba' },
                 },
               },
               participants: { type: 'array', items: { type: 'object' } },
             },
           },
         ],
+      },
+      NotificationPreferences: {
+        type: 'object',
+        description: 'Qué avisos acepta el usuario. Días 0 = domingo … 6 = sábado y horario [fromHour, toHour), en hora de Chile.',
+        required: ['faltaUno', 'nearby', 'nudges', 'sports', 'days', 'fromHour', 'toHour', 'radiusKm', 'lat', 'lng'],
+        properties: {
+          faltaUno: { type: 'boolean', description: 'Partidos urgentes o destacados cerca: los avisos prioritarios' },
+          nearby: { type: 'boolean', description: 'Partidos nuevos cerca, en mis días y horario' },
+          nudges: { type: 'boolean', description: 'Ánimo para volver a jugar, a lo más uno por semana' },
+          sports: { type: 'array', items: { $ref: '#/components/schemas/Sport' }, maxItems: 3 },
+          days: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 6 }, maxItems: 7 },
+          fromHour: { type: 'integer', minimum: 0, maximum: 23, example: 18 },
+          toHour: { type: 'integer', minimum: 1, maximum: 24, example: 23 },
+          radiusKm: { type: 'integer', minimum: 1, maximum: 20, example: 5 },
+          lat: { type: 'number', nullable: true, example: -33.5227 },
+          lng: { type: 'number', nullable: true, example: -70.5983 },
+        },
+      },
+      Notification: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          kind: { type: 'string', enum: ['FALTA_UNO', 'NEARBY_MATCH', 'JOIN_REQUEST', 'JOIN_APPROVED', 'PRIORITY_OFFER', 'NUDGE'] },
+          matchId: { type: 'string', format: 'uuid', nullable: true },
+          title: { type: 'string', example: '¡Falta uno cerca! Entras gratis' },
+          body: { type: 'string', example: 'Falta 1 jugador para Fútbol 5, a las 19:30 en Cancha Los Quillayes. Vas de invitado: no pagas.' },
+          read: { type: 'boolean' },
+          urgent: { type: 'boolean', description: '"Falta uno" sin leer con el partido abierto y sin empezar: va destacado' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
       },
     },
   },
@@ -348,6 +396,28 @@ export const openapi = {
         responses: { 200: { description: 'Detalle', content: json('MatchDetail') }, 404: error({ code: 'MATCH_NOT_FOUND', message: 'El partido no existe' }) },
       },
     },
+    '/matches/{id}/priority': {
+      patch: {
+        tags: ['Partidos'],
+        summary: '"Falta uno" destacado (KAN-41)',
+        description:
+          'El organizador destaca su partido cuando le faltan 1 o 2 jugadores y empieza dentro de URGENT_WINDOW_HOURS. ' +
+          'Aparece primero en la búsqueda y en "Falta uno"; quien se une entra gratis (al tiro con honor 7 o más; si no, ' +
+          'lo aprueba el organizador) y el grupo cubre esa cuota fuera de la app. Se decide con la fila del partido bloqueada.',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'Partido destacado',
+            content: { 'application/json': { example: { matchId: '9b1c…', prioritizedAt: '2026-11-20T21:00:00.000Z' } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo el organizador puede destacar su partido' }),
+          409: {
+            ...error({ code: 'PRIORITY_TOO_EARLY', message: 'Se puede destacar desde 2 horas antes del partido' }),
+            description: 'PRIORITY_TOO_EARLY · PRIORITY_NOT_AVAILABLE (le faltan 0 o más de 2) · ALREADY_PRIORITY · MATCH_STARTED · MATCH_NOT_OPEN',
+          },
+        },
+      },
+    },
     '/matches/{id}/join': {
       post: {
         tags: ['Postulaciones'],
@@ -356,7 +426,7 @@ export const openapi = {
         parameters: [idParam],
         responses: {
           201: {
-            description: 'Postulación registrada como pendiente',
+            description: 'Postulación registrada como pendiente; en un partido destacado (KAN-41) entra gratis, y aprobada al tiro si el honor es 7 o más',
             content: { 'application/json': { example: { participationId: '3f8a…', status: 'PENDING' } } },
           },
           409: {
@@ -586,6 +656,61 @@ export const openapi = {
           200: { description: 'Comprobante: pago aprobado o no completado', content: { 'text/html': {} } },
           404: error({ code: 'PAYMENT_NOT_FOUND', message: 'No encontramos este pago' }),
           422: error({ code: 'VALIDATION_ERROR', message: 'Falta el token de Webpay' }),
+        },
+      },
+    },
+    '/users/me/notifications': {
+      get: {
+        tags: ['Avisos'],
+        summary: 'Mi bandeja de avisos (HU-10)',
+        description: 'Los últimos 50. Los "Falta uno" sin leer van primero; el resto, del más nuevo al más viejo.',
+        responses: {
+          200: {
+            description: 'Cuántos no leí y la lista',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    unread: { type: 'integer' },
+                    notifications: { type: 'array', items: { $ref: '#/components/schemas/Notification' } },
+                  },
+                },
+              },
+            },
+          },
+          401: error({ code: 'UNAUTHORIZED', message: 'Falta el token de autenticación' }),
+        },
+      },
+    },
+    '/notifications/{id}/read': {
+      patch: {
+        tags: ['Avisos'],
+        summary: 'Marcar un aviso como leído (HU-10)',
+        parameters: [idParam],
+        responses: {
+          200: { description: 'El aviso, leído', content: json('Notification') },
+          404: error({ code: 'NOTIFICATION_NOT_FOUND', message: 'El aviso no existe' }),
+        },
+      },
+    },
+    '/users/me/notification-preferences': {
+      get: {
+        tags: ['Avisos'],
+        summary: 'Qué avisos acepto (HU-10)',
+        description: 'Sin preferencias guardadas, todo apagado y con el deporte favorito marcado.',
+        responses: { 200: { description: 'Preferencias', content: json('NotificationPreferences') } },
+      },
+      put: {
+        tags: ['Avisos'],
+        summary: 'Guardar qué avisos acepto (HU-10)',
+        description:
+          'Activar cualquier aviso exige ubicación y al menos un deporte; "partidos cerca" exige al menos un día. ' +
+          'La base repite con CHECK los límites de horario y radio.',
+        requestBody: { required: true, content: json('NotificationPreferences') },
+        responses: {
+          200: { description: 'Preferencias guardadas', content: json('NotificationPreferences') },
+          422: error({ code: 'VALIDATION_ERROR', message: 'Necesitamos tu ubicación para avisarte de partidos cerca' }),
         },
       },
     },

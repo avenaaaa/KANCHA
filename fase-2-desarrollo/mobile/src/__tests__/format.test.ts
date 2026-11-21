@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatCLP, formatDay, formatDeadline, formatDistance, plural, slotsCta, whenRange } from '@/lib/format';
+import { countdown, formatCLP, formatDay, formatDeadline, formatDistance, plural, slotsCta, whenRange } from '@/lib/format';
 
 describe('formatos de la interfaz', () => {
   it('M-01 · muestra pesos chilenos con punto de miles y "Gratis" para 0', () => {
@@ -48,5 +48,19 @@ describe('formatos de la interfaz', () => {
     expect(plural(1, 'cupo libre', 'cupos libres')).toBe('1 cupo libre');
     expect(plural(3, 'cupo libre', 'cupos libres')).toBe('3 cupos libres');
     expect(plural(0, 'cupo libre', 'cupos libres')).toBe('0 cupos libres');
+  });
+});
+
+describe('countdown · cuenta atrás de la carta de partido', () => {
+  const ahora = new Date('2026-11-21T15:00:00Z');
+  const en = (ms: number) => new Date(ahora.getTime() + ms).toISOString();
+  it('M-39 · días, horas y minutos, y minutos:segundos en la última hora; "En juego" mientras dura', () => {
+    expect(countdown(en(50 * 3_600_000), 60, ahora)).toBe('en 2 días');
+    expect(countdown(en(24 * 3_600_000), 60, ahora)).toBe('en 1 día');
+    expect(countdown(en(5 * 3_600_000 + 7 * 60_000 + 30_000), 60, ahora)).toBe('en 5 h 7 min');
+    expect(countdown(en(42 * 60_000 + 5_000), 60, ahora)).toBe('en 42:05');
+    expect(countdown(en(900), 60, ahora)).toBe('en 00:00');
+    expect(countdown(en(-30 * 60_000), 60, ahora)).toBe('En juego');
+    expect(countdown(en(-61 * 60_000), 60, ahora)).toBeNull();
   });
 });

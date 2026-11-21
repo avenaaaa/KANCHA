@@ -140,6 +140,7 @@ Componente de fondo `#2A2A2A`, bordes redondeados (border-radius 12px), sin somb
 
 - El ícono de deporte en la esquina superior izquierda cambia según el deporte: balón de fútbol / raqueta de pádel / aro de básquet.
 - La barra de progreso de jugadores usa `#F0A500` como color de relleno.
+- **Cuenta atrás** bajo la hora, en Roboto Bold 12 con cifras de ancho fijo: "en 2 días" y "en 5 h 7 min" en gris `#B0B0B0`; en la última hora "en 42:05", que avanza cada segundo, en ámbar `#F39C12`; "En juego" en verde `#2ECC71` mientras dura. Los lectores de pantalla la omiten: el día y la hora ya van en la etiqueta de la carta (KAN-43).
 - El botón "UNIRSE" es el CTA principal en naranja.
 
 ### 4.3 Botón "Falta 1"
@@ -176,12 +177,49 @@ El Sistema de Honor es el "Perfil de Confianza" del jugador. Mide tres métricas
 
 Botón del mapa que deja a la vista solo los partidos urgentes: les falta exactamente un jugador y empiezan en 2 horas o menos (la regla está en `DESARROLLO.md` §5.2). No es el CTA de la §4.3: aquel une al jugador a un partido; este filtra el mapa.
 
-- **Ubicación:** en el celular, justo sobre la barra horizontal de partidos, a la izquierda de "Publicar". En pantallas anchas, bajo los filtros del panel y sobre la lista.
-- **Forma:** píldora de 44 px de alto, texto "Falta uno" en Roboto Bold 15px.
-- **Inactivo:** fondo `#2A2A2A` al 94 % (superficie flotante sobre el mapa), borde y texto `#F0A500`, ícono ">>".
-- **Activo:** fondo `#F0A500`, texto `#1A1A1A`, ícono de visto.
+- **Ubicación:** en el celular, en la fila de botones del panel de partidos, ocupando casi todo el ancho junto a "Publicar". En pantallas anchas, a todo el ancho del panel lateral, bajo los filtros.
+- **Forma:** píldora de 60 px de alto, fondo `#F0A500`, texto "Falta uno" en Anton 24 px y `#1A1A1A`. Es el botón más visible del mapa (KAN-39).
+- **Apagado:** late y suelta una onda amarilla que se expande y se desvanece cada 1,5 s, sin parar, para que se vea apenas se abre la app. Con "reducir movimiento" activado no se anima.
+- **Encendido:** el mismo amarillo con borde blanco de 3 px e ícono de visto. Deja de latir.
 - Con el filtro activo el contador dice "N partidos necesitan un jugador en 2 h o menos". Si no hay ninguno, se muestra un mensaje propio con el botón "Ver todos los partidos", nunca una lista vacía.
 - Urgente significa ahora: activar "Falta uno" vuelve el horario a "Cuando sea", y elegir un día lo apaga.
+
+### 4.7 Panel de partidos del mapa (celular)
+
+Las cartas de partidos van en un panel inferior que se desliza (KAN-39), para que el mapa ocupe casi toda la pantalla.
+
+- **Cerrado** (al abrir la app): se ven el asa, con el contador de partidos y una flecha, y la fila de botones ("Falta uno" y "Publicar").
+- **Abierto:** suma el carrusel de cartas. Se abre al tocar un pin o "Falta uno"; se cierra al tocar el mapa vacío.
+- Se arrastra hacia arriba o hacia abajo desde el asa o desde la fila de botones, o se alterna tocando el asa. Al soltar, un gesto rápido manda; si fue lento, queda en la posición más cercana.
+- Fondo `#1A1A1A` con esquinas superiores de 24 px y borde `#3A3A3A`, para que las cartas (`#2A2A2A`) resalten sobre él.
+
+### 4.8 Pines de canchas al publicar
+
+En "Publicar partido" el mapa muestra las canchas de La Florida como pines (KAN-40), distintos de los de partidos:
+
+- **Pin:** círculo de 32 px, fondo `#2A2A2A`, borde `#F0A500` de 2 px y el ícono del deporte en naranja. Si la cancha se arrienda, lleva una insignia "$" naranja.
+- **Elegido:** relleno `#F0A500`, ícono `#1A1A1A`, crece al 130 %.
+- Solo se ven las canchas del deporte elegido. La cancha ya elegida se ve siempre, aunque después se cambie de deporte.
+- Bajo el mapa, una tarjeta con el nombre y el tipo: "Abierta al público" en verde (`#2ECC71`), "Municipal · se arrienda" o "Privada · se arrienda" en naranja.
+- Una leyenda sobre el mapa explica los dos pines. El mapa abre encuadrado para que se vean todas las canchas.
+
+### 4.9 "Falta uno" destacado
+
+Cuando a un partido le faltan 1 o 2 jugadores y empieza en 2 horas o menos, el organizador puede destacarlo (KAN-41).
+
+- **Aviso al organizador:** tarjeta `#2A2A2A` con borde `#F0A500` de 2 px en el detalle del partido: "Te falta 1 jugador y el partido es a las 13:30", qué pasa si lo destaca, cuánto pone cada uno por el invitado y el botón primario "Destacar partido". En "Mis partidos", su carta dice "Te falta 1 jugador · Destácalo" en naranja.
+- **Para el jugador:** la carta del partido muestra "Entra gratis »" en el botón naranja en vez de "Falta 1"; el pin lleva borde blanco y late (en la web) con un halo naranja; el detalle lleva la insignia "Destacado · entra gratis" y el botón "Únete gratis".
+- **Invitado confirmado:** "Entraste como invitado: no pagas nada. Nos vemos en la cancha.", en verde y sin botón de pago.
+- **Invitado por confirmar** (novato o honor bajo 7): "Solicitud enviada. Como aún no tienes buen honor, el organizador te confirma; si te acepta, entras gratis.", en ámbar, como cualquier postulación pendiente.
+
+### 4.10 Avisos (HU-10)
+
+- **Pestaña "Avisos"** con ícono de campana entre "Mis partidos" y "Perfil". Los no leídos se cuentan en un globo naranja `#F0A500` con texto `#1A1A1A` ("9+" desde diez).
+- **"Falta uno" vigente:** tarjeta con borde `#F0A500` de 2 px y fondo naranja translúcido, título en Anton mayúscula naranja e ícono de reloj sobre círculo naranja. Va primero, antes que cualquier otro aviso; el de un partido destacado, primero entre ellos. Al leerse, o cuando su partido se llena o empieza, pasa a tarjeta normal.
+- **Sobre el mapa:** el primer "Falta uno" vigente aparece como franja naranja bajo el logo, con título en Anton y el texto del aviso en `#1A1A1A`. Tocarla abre el partido; la X la descarta. Las dos acciones lo marcan como leído.
+- **Demás avisos:** tarjeta `#2A2A2A` con borde `#3A3A3A`, ícono gris por tipo (pin, usuario, check, flecha, calendario) y un punto naranja mientras no se lean. Debajo, "hace 5 min".
+- **"Elegir avisos":** tres interruptores en tarjetas: "Falta uno" en la primera, con borde naranja y título en Anton; luego "Partidos cerca" (días como chips, horario con contadores) y "Ánimo para jugar". Si hay alguno activo aparecen los deportes y la distancia. Interruptor encendido: pista naranja y círculo blanco.
+- Con "reducir movimiento", el pin no late.
 
 ---
 

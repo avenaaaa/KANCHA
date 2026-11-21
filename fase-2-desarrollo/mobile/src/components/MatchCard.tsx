@@ -3,7 +3,8 @@ import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
 import { levelLabel, sportLabel } from '@/theme/sports';
-import { formatCLP, formatDistance, formatWhen, plural, slotsCta } from '@/lib/format';
+import { countdown, formatCLP, formatDistance, formatWhen, plural, slotsCta } from '@/lib/format';
+import { useNow } from '@/hooks/useNow';
 import type { MatchSummary } from '@/api/types';
 import { Icon } from '@/components/icons/Icon';
 import { SportBadge } from './SportBadge';
@@ -33,7 +34,7 @@ export function MatchCard({ match, onPress, selected = false, index = 0, footer 
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}`}
+      accessibilityLabel={`${match.title}, ${sportLabel(match.sport)}, ${formatWhen(match.startsAt)}, ${match.venueName}, ${plural(match.slotsLeft, 'cupo libre', 'cupos libres')}${match.priority ? ', destacado: entra gratis' : ''}`}
       style={({ pressed }) => [s.card, selected && s.selected, pressed && s.pressed]}
     >
       <View style={s.top}>
@@ -46,6 +47,7 @@ export function MatchCard({ match, onPress, selected = false, index = 0, footer 
             <View style={s.when}>
               <Text style={s.day}>{when.slice(0, cut)}</Text>
               <Text style={s.time}>{when.slice(cut + 1)}</Text>
+              <Countdown startsAt={match.startsAt} durationMin={match.durationMin} />
             </View>
           </View>
           <View style={s.metaRow}>
@@ -80,13 +82,34 @@ export function MatchCard({ match, onPress, selected = false, index = 0, footer 
           Organiza {match.organizer.name.split(' ')[0]}
         </Text>
         <View style={[s.cta, match.slotsLeft <= 0 && s.ctaFull]}>
-          <Text style={[s.ctaText, match.slotsLeft <= 0 && s.ctaTextFull]}>{slotsCta(match.slotsLeft)}</Text>
+          <Text style={[s.ctaText, match.slotsLeft <= 0 && s.ctaTextFull]}>
+            {match.priority && match.slotsLeft > 0 ? 'Entra gratis' : slotsCta(match.slotsLeft)}
+          </Text>
           {match.slotsLeft > 0 && <Icon name="forward" size={13} color={colors.onAccent} strokeWidth={2.6} />}
         </View>
       </View>
       {footer}
     </Pressable>
     </FadeIn>
+  );
+}
+
+const HOUR = 3_600_000;
+
+/**
+ * Cuenta atrás bajo la hora. Componente aparte para que el tic de cada segundo redibuje solo este
+ * texto. Late cada segundo en la última hora y cada 30 s antes: no hace falta más precisión.
+ */
+function Countdown({ startsAt, durationMin }: { startsAt: string; durationMin: number }) {
+  const lastHour = new Date(startsAt).getTime() - Date.now() < HOUR;
+  const now = useNow(lastHour ? 1000 : 30_000);
+  const text = countdown(startsAt, durationMin, now);
+  if (!text) return null;
+  const live = text === 'En juego';
+  return (
+    <Text style={[s.countdown, lastHour && s.countdownSoon, live && s.countdownLive]} accessibilityElementsHidden>
+      {text}
+    </Text>
   );
 }
 
@@ -108,6 +131,9 @@ const s = StyleSheet.create({
   when: { alignItems: 'flex-end' },
   day: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.8, color: colors.textMuted, textTransform: 'uppercase' },
   time: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: colors.text },
+  countdown: { fontFamily: fonts.bold, fontSize: 12, color: colors.textMuted, fontVariant: ['tabular-nums'] },
+  countdownSoon: { color: colors.warning },
+  countdownLive: { color: colors.success },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   meta: { ...type.caption, fontSize: 13, color: colors.textMuted, flex: 1 },
   slots: { gap: 8 },

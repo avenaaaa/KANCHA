@@ -11,6 +11,7 @@ import {
   useCancelParticipation,
   useJoinMatch,
   useMatch,
+  usePrioritizeMatch,
   useRecordAttendance,
   useRejectParticipation,
   useStartPayment,
@@ -50,6 +51,7 @@ function MatchDetailView() {
   const pay = useStartPayment(id);
   const cancel = useCancelParticipation(id);
   const attendance = useRecordAttendance(id);
+  const prioritize = usePrioritizeMatch(id);
 
   // "No vino" baja el honor del jugador y no se puede corregir después: se confirma antes.
   async function onNoShow(p: Participant) {
@@ -114,6 +116,11 @@ function MatchDetailView() {
             <Text style={s.heroMeta}>
               {sportLabel(m.sport)} · {levelLabel(m.level)}
             </Text>
+            {m.priority && m.slotsLeft > 0 ? (
+              <View style={s.priorityBadge}>
+                <Text style={s.priorityBadgeText}>Destacado · entra gratis</Text>
+              </View>
+            ) : null}
           </FadeIn>
         </View>
 
@@ -136,6 +143,38 @@ function MatchDetailView() {
           </View>
           <SlotBar filled={m.filledSlots} total={m.totalSlots} breathe={m.slotsLeft > 0} height={12} />
         </View>
+
+        {/* KAN-41: el organizador destaca su partido cuando le faltan 1 o 2 y empieza pronto. */}
+        {m.viewer.isOrganizer && (m.priorityOffer.canActivate || (m.priority && m.slotsLeft > 0)) ? (
+          <View style={s.priorityCard}>
+            {m.priority ? (
+              <>
+                <Text style={s.priorityTitle}>Tu partido está destacado</Text>
+                <Text style={s.priorityText}>
+                  Aparece primero en "Falta uno" para los jugadores cercanos. Quien se una entra gratis, como invitado
+                  {m.totalCost > 0 ? ', y su cuota la cubren entre los que ya están, fuera de la app.' : '.'} Los jugadores con
+                  buen honor entran al tiro; a los nuevos los apruebas tú más abajo.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={s.priorityTitle}>
+                  {m.slotsLeft === 1 ? 'Te falta 1 jugador' : `Te faltan ${m.slotsLeft} jugadores`} y el partido es a las{' '}
+                  {formatTime(new Date(m.startsAt))}
+                </Text>
+                <Text style={s.priorityText}>
+                  ¿Lo destacas? Aparecerá primero en "Falta uno" para los jugadores cercanos y quien se una entrará gratis,
+                  como invitado.{' '}
+                  {m.priorityOffer.guestShare > 0
+                    ? `Su cuota (${formatCLP(m.priorityOffer.guestShare)}) la cubren entre los ${m.filledSlots} que ya están: ${formatCLP(m.priorityOffer.perPlayer)} cada uno, fuera de la app.`
+                    : 'La cancha es gratis, así que a nadie le cuesta nada.'}
+                </Text>
+                {prioritize.isError ? <Text style={s.priorityError}>{errorMessage(prioritize.error)}</Text> : null}
+                <Button label="Destacar partido" onPress={() => prioritize.mutate()} loading={prioritize.isPending} forward />
+              </>
+            )}
+          </View>
+        ) : null}
 
         <View style={s.block}>
           <Text style={s.sectionLabel}>Organiza</Text>
@@ -353,7 +392,14 @@ function JoinCta({
   if (status === 'PENDING') {
     return (
       <View style={{ gap: spacing.sm }}>
-        <StatusLine tone="warning" text="Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe." />
+        <StatusLine
+          tone="warning"
+          text={
+            m.priority
+              ? 'Solicitud enviada. Como aún no tienes buen honor, el organizador te confirma; si te acepta, entras gratis.'
+              : 'Postulación enviada. Esta pantalla se actualiza sola cuando el organizador la apruebe.'
+          }
+        />
         {errorText}
         {cancelButton}
       </View>
@@ -374,12 +420,21 @@ function JoinCta({
     );
   }
   if (status === 'APPROVED') {
-    const free = m.pricePerPlayer === 0;
+    // La cuota se congela al aprobar: 0 si el partido es gratis o si entró como invitado (KAN-41).
+    const owed = m.viewer.amountDue ?? m.pricePerPlayer;
+    const free = owed === 0;
+    const guest = free && m.pricePerPlayer > 0;
     return (
       <View style={{ gap: spacing.sm }}>
         <StatusLine
           tone={free ? 'success' : 'warning'}
-          text={free ? 'Estás confirmado. Nos vemos en la cancha.' : 'Confirmado. Paga tu parte para asegurar el cupo.'}
+          text={
+            guest
+              ? 'Entraste como invitado: no pagas nada. Nos vemos en la cancha.'
+              : free
+                ? 'Estás confirmado. Nos vemos en la cancha.'
+                : 'Confirmado. Paga tu parte para asegurar el cupo.'
+          }
         />
         {errorText}
         {free ? null : (
@@ -409,12 +464,16 @@ function JoinCta({
       ) : null}
       {errorText}
       <Button
-        label={m.slotsLeft > 0 ? slotsCta(m.slotsLeft) : 'Partido completo'}
+        label={m.slotsLeft === 0 ? 'Partido completo' : m.priority ? 'Únete gratis' : slotsCta(m.slotsLeft)}
         onPress={onJoin}
         loading={joining}
         disabled={m.slotsLeft === 0}
         forward={m.slotsLeft > 0}
-        accessibilityHint="Envía tu postulación al organizador"
+        accessibilityHint={
+          m.priority
+            ? 'Te invitan gratis: con buen honor entras al tiro; si no, te confirma el organizador'
+            : 'Envía tu postulación al organizador'
+        }
       />
     </View>
   );
@@ -437,6 +496,25 @@ const s = StyleSheet.create({
   heroPhoto: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.scrim },
   heroText: { padding: spacing.lg, gap: spacing.sm },
+  priorityBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.accent,
+    borderRadius: radius.chip,
+    paddingHorizontal: spacing.md - 4,
+    paddingVertical: 5,
+  },
+  priorityBadgeText: { fontFamily: fonts.display, fontSize: 14, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.onAccent },
+  priorityCard: {
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    borderRadius: radius.card,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    backgroundColor: colors.surface,
+  },
+  priorityTitle: { ...type.h3, fontFamily: fonts.bold, color: colors.text },
+  priorityText: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  priorityError: { ...type.caption, fontSize: 13, color: colors.error },
   heroMeta: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.text },
   h1: { ...type.display, color: colors.text },
   h2: { ...type.h2, color: colors.text },

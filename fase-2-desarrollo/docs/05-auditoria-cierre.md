@@ -183,7 +183,7 @@ el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defect
 |---|---|---|---|---|
 | Alta | S | Mis partidos | Mostrar el cierre de cada cupo: pills de color (Confirmado y pagado, Falta pagar, Cancelado, No asististe) y una sección 'Historial' separada de 'Juegas' y 'Organizas'. | Es la pantalla del recorrido de HU-08, HU-09 y KAN-30 y hoy mezcla estados. Con estados visibles la demo se entiende sin explicación. |
 | Alta | M | Carta de partido (MatchCard) | Agregar el CTA naranja visible 'Falta 1 >>' (o 'Faltan N') dentro de la carta, como pide DESIGN.md §4.2/§4.3, y enriquecer el label accesible. | Hoy toda la carta es un botón sin llamada a la acción: el 'Falta 1', que es la marca del producto, solo aparece en el detalle. En la lista es lo que la comisión va a ver más. |
-| Alta | M | Mapa (móvil) | Dejar visibles los 3 chips de deporte y mover Cuándo y Radio a un panel 'Filtros'. Mostrar un contador de filtros activos y un indicador sutil de recarga al cambiar filtros. | A 360 px el radio queda fuera de pantalla y el mapa se reduce a unos 150 px. Al cambiar de filtro hoy no hay ningún feedback mientras carga (placeholderData conserva la lista anterior). |
+| Alta | M | Mapa (móvil) | **Hecho en parte el 20-nov (KAN-39):** las cartas pasaron a un panel deslizable y cerrado al inicio, así que el mapa recupera casi toda la pantalla. Pendiente: dejar visibles los 3 chips de deporte y mover Cuándo y Radio a un panel 'Filtros'. Mostrar un contador de filtros activos y un indicador sutil de recarga al cambiar filtros. | A 360 px el radio queda fuera de pantalla y el mapa se reduce a unos 150 px. Al cambiar de filtro hoy no hay ningún feedback mientras carga (placeholderData conserva la lista anterior). |
 | Alta | M | Identidad (app.json, AuthHero, header del mapa) | Crear el ícono, splash, favicon y logo (figura + '>>') y usarlos en el hero de login y en el header. Usar la versión reducida del logo en el header de las pestañas. | Es lo primero que se ve (ícono en el teléfono, splash) y hoy es el de Expo. Cierra la brecha con DESIGN.md §1. |
 | Alta | S | Detalle de partido (asistencia y calificación) | **Hecho en parte.** Agregar confirmación para 'No vino', botones de 44 px, check verde 'Asistió', y apilar la fila a 360 px. Hacer lo mismo con 'Aprobar'. | Es una acción irreversible que afecta el honor de otra persona y hoy se puede disparar con un toque accidental. |
 | Alta | S | Tab bar y navegación | **Hecho en parte.** Calcular la altura con useSafeAreaInsets y probar en un iPhone con barra inferior y en un Android con navegación de 3 botones. Verificar también el teclado en Android (KeyboardAvoidingView). | Riesgos reales de los que la prueba en dispositivo del Sprint 8 debe dar fe antes de la defensa. |
@@ -209,7 +209,7 @@ el rediseño visual. Las marcadas **Hecho** se resolvieron al corregir un defect
 |---|---|
 | Probar la app en un iPhone y en un Android reales: barra inferior y teclado | KAN-29, Sprint 8 |
 | Desplegar en Render y Supabase: contenedor sin root, PostGIS y permisos de las tablas | KAN-34, Sprint 8 |
-| Pruebas de rendimiento con k6 (R-01 a R-05) | KAN-35, Sprint 8 |
+| Pruebas de rendimiento con k6 (R-01 a R-05) | **Hecho el 20-nov:** las cinco cumplen sus metas (KAN-35) |
 | Cancelar un partido completo desde el organizador | Fuera del MVP |
 | Reputación resistente a cuentas falsas | Fuera del MVP |
 | Rediseño visual y pruebas de pantallas completas | KAN-33, etapa 2 del plan de cierre |

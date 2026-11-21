@@ -36,14 +36,32 @@ classDiagram
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation
         +reject(participationId, actorId) Participation
+        +prioritize(matchId, actorId) Priority
     }
 
     class MatchService {
         <<service>>
         +assertFutureStart(startsAt, now) void
+        +checkCanPrioritize(match, actorId, now) AppError
         +publish(organizerId, input) MatchDetail
         +getDetail(id, viewerId) MatchDetail
         +listForUser(userId) MyMatch[]
+    }
+
+    class NotificationService {
+        <<service>>
+        +faltaUnoMessage(match) Message
+        +nearbyMessage(match) Message
+        +nudgeMessage(candidate, now) Message
+        +sortInbox(list, now) Notification[]
+        +isUrgent(notification, now) Boolean
+        +onMatchPublished(match) void
+        +onMatchPrioritized(matchId) void
+        +onJoinRequested(match) void
+        +onJoinApproved(participation) void
+        +runSweep(now) SweepResult
+        +inbox(userId) Inbox
+        +savePreferences(userId, input) Preferences
     }
 
     class AuthService {
@@ -83,6 +101,7 @@ classDiagram
         +Number RETENTION_RATE
         +Number RATING_WINDOW_HOURS
         +Int HONOR_SAMPLE_SIZE
+        +Number NOTIFY_SWEEP_MINUTES
     }
 
     class User
@@ -90,6 +109,8 @@ classDiagram
     class Participation
     class Rating
     class Payment
+    class Notification
+    class NotificationPreference
 
     HonorService ..> HonorBreakdown : devuelve
     PaymentService ..> RefundBreakdown : devuelve
@@ -109,3 +130,8 @@ classDiagram
     MatchService ..> Match : publica y detalla
     AuthService ..> User : registra y autentica
     MatchService ..> PaymentService : cuota y comisión
+    MatchService ..> NotificationService : avisa al publicar
+    MatchingService ..> NotificationService : avisa al destacar, postular y aprobar
+    NotificationService ..> Notification : reparte sin repetir
+    NotificationService ..> NotificationPreference : filtra por radio, deporte, día y hora
+    NotificationService ..> Env : lee

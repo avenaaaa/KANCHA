@@ -5,10 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { fonts, type } from '@/theme/typography';
-import { SKILL_LEVELS, type SkillLevelKey, type SportKey } from '@/theme/sports';
-import { LA_FLORIDA } from '@/theme/geo';
+import { SKILL_LEVELS, sportLabel, type SkillLevelKey, type SportKey } from '@/theme/sports';
 import { formatCLP, formatDay } from '@/lib/format';
-import { VENUES, insideComuna, reverseGeocode } from '@/lib/places';
+import { VENUES, VENUE_KIND_LABEL, insideComuna, reverseGeocode, venuesForSport, type Venue } from '@/lib/places';
 import { usePublishMatch } from '@/api/hooks';
 import { ApiRequestError, errorMessage } from '@/api/client';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -20,7 +19,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import KanchaMap from '@/components/KanchaMap';
-import type { LatLng } from '@/components/KanchaMap/types';
+import { zoomForRadius, type LatLng } from '@/components/KanchaMap/types';
 
 /** Cupos sugeridos por deporte; el organizador los ajusta. */
 const DEFAULT_SLOTS: Record<SportKey, number> = { FUTBOL: 10, PADEL: 4, BASQUETBOL: 6 };
@@ -29,6 +28,18 @@ const TIMES = Array.from({ length: 34 }, (_, i) => {
   const minutes = 7 * 60 + i * 30;
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${minutes % 60 === 0 ? '00' : '30'}`;
 });
+
+/** Encuadre inicial del mapa de Publicar: todas las canchas a la vista, no el centro fijo de la comuna. */
+const VENUES_VIEW = (() => {
+  const lats = VENUES.map((v) => v.lat);
+  const lngs = VENUES.map((v) => v.lng);
+  const center = { lat: (Math.min(...lats) + Math.max(...lats)) / 2, lng: (Math.min(...lngs) + Math.max(...lngs)) / 2 };
+  const spanM = Math.max(
+    (Math.max(...lats) - Math.min(...lats)) * 111_320,
+    (Math.max(...lngs) - Math.min(...lngs)) * 111_320 * Math.cos((center.lat * Math.PI) / 180),
+  );
+  return { center, zoom: zoomForRadius(spanM / 2 + 400, center.lat, 300) };
+})();
 
 /** Comisión de la plataforma, igual que payment.service (10 %, redondeo al peso). */
 const serviceFee = (amount: number) => Math.round(amount * 0.1);
@@ -53,6 +64,7 @@ function PublishForm() {
   const [venueName, setVenueName] = useState('');
   const [address, setAddress] = useState('');
   const [picked, setPicked] = useState<LatLng | null>(null);
+  const [venueId, setVenueId] = useState<string | null>(null);
   const [dayOffset, setDayOffset] = useState(0);
   const [time, setTime] = useState<string | null>(null);
   const [duration, setDuration] = useState<(typeof DURATIONS)[number]>(60);
@@ -82,7 +94,7 @@ function PublishForm() {
   // Marcar un punto propone su dirección. Si llega una respuesta vieja, se descarta.
   const [locating, setLocating] = useState(false);
   const lookup = useRef(0);
-  function pick(p: LatLng) {
+  function pick(p: LatLng, knownAddress?: string) {
     if (!insideComuna(p)) {
       setErrors((e) => ({ ...e, location: 'Ese punto está fuera de La Florida. Marca uno dentro del límite naranja.' }));
       return false;
@@ -90,6 +102,13 @@ function PublishForm() {
     setPicked(p);
     fix('location');
     const id = ++lookup.current;
+    // Las canchas investigadas traen su dirección: no hace falta preguntarle al servicio.
+    if (knownAddress) {
+      setLocating(false);
+      setAddress(knownAddress);
+      fix('address');
+      return true;
+    }
     setLocating(true);
     void reverseGeocode(p).then((found) => {
       if (id !== lookup.current) return;
@@ -102,11 +121,28 @@ function PublishForm() {
     return true;
   }
 
-  function chooseVenue(v: (typeof VENUES)[number]) {
-    if (!pick(v)) return;
+  function chooseVenue(v: Venue) {
+    if (!pick(v, v.address)) return;
+    setVenueId(v.id);
     setVenueName(v.name);
     fix('venueName');
   }
+
+  // Pines de las canchas donde se juega el deporte elegido; sin deporte, todas. La elegida se ve
+  // siempre, aunque después se cambie a un deporte que no tiene: si no, su punto quedaría invisible.
+  const mapVenues = useMemo(
+    () =>
+      [...venuesForSport(sport), ...VENUES.filter((v) => v.id === venueId && sport && !v.sports.includes(sport))].map((v) => ({
+        id: v.id,
+        lat: v.lat,
+        lng: v.lng,
+        name: v.name,
+        paid: v.kind !== 'PUBLICA',
+        sport: sport && v.sports.includes(sport) ? sport : v.sports.length === 1 ? v.sports[0] : undefined,
+      })),
+    [sport, venueId],
+  );
+  const venue = venueId ? VENUES.find((v) => v.id === venueId) : undefined;
 
   function chooseSport(next: SportKey) {
     setSport(next);
@@ -182,25 +218,55 @@ function PublishForm() {
         </Section>
 
         <Section title="¿Dónde?">
-          <Text style={s.lead}>Elige una cancha de La Florida o marca otro punto en el mapa.</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsScroll}>
-            {VENUES.map((v) => (
-              <Chip key={v.name} label={v.name} icon="pin" active={venueName === v.name} onPress={() => chooseVenue(v)} />
-            ))}
-          </ScrollView>
-          <TextField label="Cancha o recinto" value={venueName} onChangeText={(v) => (setVenueName(v), fix('venueName'))} error={errors['venueName']} placeholder="Ej.: Complejo Walker Martínez" maxLength={80} />
-          <TextField label={locating ? 'Dirección (buscando…)' : 'Dirección'} value={address} onChangeText={(v) => (setAddress(v), fix('address'))} error={errors['address']} placeholder="Calle, número y comuna" maxLength={160} />
+          <Text style={s.lead}>
+            {venuesForSport(sport).length} canchas{sport ? ` de ${sportLabel(sport).toLowerCase()}` : ''} en La Florida. Toca un pin para
+            elegirla o toca el mapa para marcar otro punto.
+          </Text>
+          <View style={s.legend} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <View style={s.legendItem}>
+              <View style={s.legendDot} />
+              <Text style={s.legendText}>Abierta al público</Text>
+            </View>
+            <View style={s.legendItem}>
+              <View style={s.legendFee}>
+                <Text style={s.legendFeeText}>$</Text>
+              </View>
+              <Text style={s.legendText}>Se arrienda</Text>
+            </View>
+          </View>
           <View style={[s.mapBox, !!errors['location'] && { borderColor: colors.error }]}>
-            <KanchaMap center={picked ?? LA_FLORIDA} zoom={picked ? 15.5 : 11.6} picked={picked} onPick={(p) => {
-              // Mover el pin a mano deja de ser la cancha elegida de la lista.
-              if (pick(p) && VENUES.some((v) => v.name === venueName)) setVenueName('');
-            }} />
+            <KanchaMap
+              center={picked ?? VENUES_VIEW.center}
+              zoom={picked ? 14.5 : VENUES_VIEW.zoom}
+              venues={mapVenues}
+              selectedId={venueId}
+              onSelect={(id) => {
+                const v = VENUES.find((x) => x.id === id);
+                if (v) chooseVenue(v);
+              }}
+              // Con una cancha elegida su propio pin ya se destaca: el marcador de punto sobra.
+              picked={venueId ? null : picked}
+              onPick={(p) => {
+                // Marcar un punto a mano deja de ser la cancha elegida.
+                if (!pick(p)) return;
+                if (venueId) setVenueName('');
+                setVenueId(null);
+              }}
+            />
             {!picked && (
               <View style={s.mapHint} pointerEvents="none">
-                <Text style={s.mapHintText}>Toca el mapa para marcar la cancha</Text>
+                <Text style={s.mapHintText}>Toca un pin o marca otro punto</Text>
               </View>
             )}
           </View>
+          {venue ? (
+            <View style={s.venueCard}>
+              <Text style={s.venueName}>{venue.name}</Text>
+              <Text style={[s.venueKind, venue.kind !== 'PUBLICA' && { color: colors.accent }]}>{VENUE_KIND_LABEL[venue.kind]}</Text>
+            </View>
+          ) : null}
+          <TextField label="Cancha o recinto" value={venueName} onChangeText={(v) => (setVenueName(v), fix('venueName'))} error={errors['venueName']} placeholder="Ej.: Complejo Walker Martínez" maxLength={80} />
+          <TextField label={locating ? 'Dirección (buscando…)' : 'Dirección'} value={address} onChangeText={(v) => (setAddress(v), fix('address'))} error={errors['address']} placeholder="Calle, número y comuna" maxLength={160} />
           {errors['location'] ? <Text style={s.error}>{errors['location']}</Text> : null}
         </Section>
 
@@ -279,7 +345,7 @@ const s = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chipsScroll: { flexDirection: 'row', gap: spacing.sm },
   mapBox: {
-    height: 240,
+    height: 320,
     borderRadius: radius.card,
     overflow: 'hidden',
     borderWidth: 1,
@@ -295,6 +361,15 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   mapHintText: { fontFamily: fonts.bold, fontSize: 13, color: colors.text },
+  legend: { flexDirection: 'row', gap: spacing.md },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: colors.accent, backgroundColor: colors.surface },
+  legendFee: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  legendFeeText: { fontFamily: fonts.bold, fontSize: 10, color: colors.onAccent },
+  legendText: { ...type.caption, color: colors.textMuted },
+  venueCard: { backgroundColor: colors.surface, borderRadius: radius.tile, padding: spacing.md, gap: 4 },
+  venueName: { fontFamily: fonts.bold, fontSize: 16, color: colors.text },
+  venueKind: { ...type.label, color: colors.success },
   lead: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.textMuted },
   error: { ...type.caption, fontSize: 13, color: colors.error },
   ctaBar: {

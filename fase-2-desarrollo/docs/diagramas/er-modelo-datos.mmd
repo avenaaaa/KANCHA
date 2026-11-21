@@ -6,6 +6,9 @@ erDiagram
     USER ||--o{ RATING : "califica como rater"
     USER ||--o{ RATING : "recibe como rated"
     MATCH ||--o{ RATING : "contextualiza"
+    USER ||--o| NOTIFICATION_PREFERENCE : "elige sus avisos"
+    USER ||--o{ NOTIFICATION : "recibe"
+    MATCH |o--o{ NOTIFICATION : "origina"
 
     USER {
         uuid     id PK
@@ -36,6 +39,7 @@ erDiagram
         int       totalSlots
         int       filledSlots
         int       totalCost "CLP entero"
+        datetime  prioritizedAt "null = no destacado (KAN-41)"
         enum      status
         datetime  createdAt
     }
@@ -71,5 +75,31 @@ erDiagram
         string   sessionId
         string   token "token_ws de Webpay"
         datetime authorizedAt
+        datetime createdAt
+    }
+
+    NOTIFICATION_PREFERENCE {
+        uuid     userId PK "FK a User, 1 a 1"
+        boolean  faltaUno "el aviso prioritario"
+        boolean  nearby
+        boolean  nudges
+        enum     sports "arreglo de Sport"
+        int      days "arreglo, 0 domingo a 6 sabado"
+        int      fromHour "CHECK 0 a 23"
+        int      toHour "CHECK 1 a 24, mayor que fromHour"
+        int      radiusKm "CHECK 1 a 20"
+        float    lat
+        float    lng
+        datetime updatedAt
+    }
+
+    NOTIFICATION {
+        uuid     id PK
+        uuid     userId FK
+        enum     kind "FALTA_UNO y otros 5"
+        uuid     matchId FK "null en el animo para jugar"
+        string   title
+        string   body
+        datetime readAt "null = sin leer"
         datetime createdAt
     }

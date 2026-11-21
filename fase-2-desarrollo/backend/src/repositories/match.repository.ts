@@ -32,6 +32,8 @@ export interface MatchRow {
   filledSlots: number;
   totalCost: number;
   status: string;
+  /** KAN-41: null = no destacado. */
+  prioritizedAt: Date | null;
   organizerId: string;
   organizerName: string;
   organizerHonor: number | null;
@@ -43,6 +45,8 @@ export interface NearbyMatchRow extends MatchRow {
 
 export interface MyMatchRow extends MatchRow {
   myStatus: string | null;
+  /** Cuota congelada al aprobar: 0 si entró como invitado de un partido destacado (KAN-41). */
+  myAmountDue: number | null;
   pendingCount: number;
 }
 
@@ -107,7 +111,7 @@ export const matchRepository = {
              ST_Y(m."location"::geometry)::float8 AS "lat",
              ST_X(m."location"::geometry)::float8 AS "lng",
              m."startsAt", m."durationMin", m."totalSlots", m."filledSlots", m."totalCost",
-             m."status"::text AS "status",
+             m."status"::text AS "status", m."prioritizedAt",
              u."id" AS "organizerId", u."name" AS "organizerName",
              u."honorScore"::float8 AS "organizerHonor",
              ROUND(ST_Distance(m."location", ST_MakePoint(${f.lng}, ${f.lat})::geography))::int AS "distanceM"
@@ -120,9 +124,11 @@ export const matchRepository = {
         AND (${f.level}::text IS NULL OR m."level"::text = ${f.level}::text)
         AND (${iso(f.from)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') >= ${iso(f.from)}::timestamptz)
         AND (${iso(f.to)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') <= ${iso(f.to)}::timestamptz)
-        AND (${f.slotsLeft}::int IS NULL OR m."totalSlots" - m."filledSlots" = ${f.slotsLeft}::int)
+        -- KAN-41: un partido destacado entra en "Falta uno" aunque le falten dos.
+        AND (${f.slotsLeft}::int IS NULL OR m."totalSlots" - m."filledSlots" = ${f.slotsLeft}::int OR m."prioritizedAt" IS NOT NULL)
         AND ST_DWithin(m."location", ST_MakePoint(${f.lng}, ${f.lat})::geography, ${f.radiusM})
-      ORDER BY "distanceM" ASC, m."startsAt" ASC
+      -- Los destacados (KAN-41) van primero.
+      ORDER BY (m."prioritizedAt" IS NULL), "distanceM" ASC, m."startsAt" ASC
       LIMIT 100;
     `;
   },
@@ -134,7 +140,7 @@ export const matchRepository = {
              ST_Y(m."location"::geometry)::float8 AS "lat",
              ST_X(m."location"::geometry)::float8 AS "lng",
              m."startsAt", m."durationMin", m."totalSlots", m."filledSlots", m."totalCost",
-             m."status"::text AS "status",
+             m."status"::text AS "status", m."prioritizedAt",
              u."id" AS "organizerId", u."name" AS "organizerName",
              u."honorScore"::float8 AS "organizerHonor"
       FROM "Match" m
@@ -152,10 +158,10 @@ export const matchRepository = {
              ST_Y(m."location"::geometry)::float8 AS "lat",
              ST_X(m."location"::geometry)::float8 AS "lng",
              m."startsAt", m."durationMin", m."totalSlots", m."filledSlots", m."totalCost",
-             m."status"::text AS "status",
+             m."status"::text AS "status", m."prioritizedAt",
              u."id" AS "organizerId", u."name" AS "organizerName",
              u."honorScore"::float8 AS "organizerHonor",
-             p."status"::text AS "myStatus",
+             p."status"::text AS "myStatus", p."amountDue" AS "myAmountDue",
              (SELECT COUNT(*)::int FROM "Participation" pp
                WHERE pp."matchId" = m."id" AND pp."status" = 'PENDING') AS "pendingCount"
       FROM "Match" m

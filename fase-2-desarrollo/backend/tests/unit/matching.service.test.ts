@@ -4,6 +4,7 @@ import {
   checkCanJoin,
   decideApproval,
   decideRejection,
+  isTrustedGuest,
   urgentWindow,
 } from '../../src/services/matching.service.js';
 import type { LockedMatch } from '../../src/repositories/participation.repository.js';
@@ -50,6 +51,7 @@ describe('decideApproval (HU-05)', () => {
     totalCost: 24000,
     status: 'OPEN',
     startsAt: manana,
+    prioritizedAt: null,
   };
 
   it('U-42 · aprueba, suma un cupo y congela la cuota individual', () => {
@@ -123,5 +125,35 @@ describe('urgentWindow · filtro "Falta uno" (KAN-37)', () => {
     const despues = new Date('2026-11-17T00:00:00Z');
     expect(urgentWindow({ urgent: true, to: antes }, ahora).to).toEqual(antes);
     expect(urgentWindow({ urgent: true, to: despues }, ahora).to).toEqual(enDosHoras);
+  });
+});
+
+describe('decideApproval en un partido destacado (KAN-41)', () => {
+  it('U-89 · mientras el partido está destacado, el cupo que se aprueba entra gratis', () => {
+    const destacado: LockedMatch = {
+      id: 'm2',
+      organizerId: 'organizador',
+      totalSlots: 4,
+      filledSlots: 3,
+      totalCost: 24000,
+      status: 'OPEN',
+      startsAt: manana,
+      prioritizedAt: ahora,
+    };
+    expect(decideApproval({ status: 'PENDING' }, destacado, 'organizador', ahora)).toEqual({
+      ok: true,
+      filledSlots: 4,
+      status: 'FULL',
+      amountDue: 0,
+    });
+  });
+});
+
+describe('isTrustedGuest · verificación del invitado de un partido destacado (KAN-41)', () => {
+  it('U-90 · entra al tiro con honor 7 o más; un novato o un honor bajo esperan al organizador', () => {
+    expect(isTrustedGuest(null)).toBe(false);
+    expect(isTrustedGuest(6.9)).toBe(false);
+    expect(isTrustedGuest(7)).toBe(true);
+    expect(isTrustedGuest(9.5)).toBe(true);
   });
 });

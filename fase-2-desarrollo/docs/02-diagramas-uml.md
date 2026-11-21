@@ -28,14 +28,14 @@ flowchart LR
         UC8["UC8 · Cancelar con retención<br/>HU-09"]
         UC9["UC9 · Calificar compañeros<br/>HU-06"]
         UC10["UC10 · Recalcular puntaje de honor<br/>HU-07"]
-        UC11["UC11 · Recibir notificación de cupo<br/>HU-10 · fuera del MVP"]
+        UC11["UC11 · Elegir y recibir avisos<br/>HU-10 · Falta uno prioritario"]
         UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
         UC13["UC13 · Registrar asistencia<br/>KAN-30"]
         UC14["UC14 · Rechazar postulación<br/>KAN-32"]
     end
 
     AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
-    OR --> UC1 & UC3 & UC6 & UC9 & UC13 & UC14
+    OR --> UC1 & UC3 & UC6 & UC9 & UC11 & UC13 & UC14
     AD --> UC12
 
     UC7 -.-> TBK
@@ -44,17 +44,18 @@ flowchart LR
     UC4 -.-> MAP
     UC11 -.-> PUSH
     UC3 -.->|"trigger"| UC11
+    UC5 -.->|"trigger"| UC11
     UC13 -.->|"include"| UC10
 
-    style UC11 stroke-dasharray: 5 5
     style UC12 stroke-dasharray: 5 5
     style KANCHA fill:#1A1A1A,color:#FFFFFF
 ```
 
-**Lectura:** los casos de uso con línea continua forman el MVP entregado (HU-01 a HU-09, más el
-registro de asistencia de KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32). UC11 y UC12 aparecen punteados:
-HU-10 salió del alcance el 8 de noviembre de 2026 y HU-11 está marcada `Won't have this phase`; ambas
-viven en el backlog.
+**Lectura:** los casos de uso con línea continua forman el MVP entregado (HU-01 a HU-10, más el
+registro de asistencia de KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32).
+UC11 volvió al alcance el 20 de noviembre de 2026: publicar y postular disparan avisos dentro de la app, y
+la flecha a Expo Push es el push en Android de KAN-42. UC12 aparece punteado: HU-11 está marcada
+`Won't have this phase` y vive en el backlog.
 Las flechas punteadas hacia la derecha marcan la dependencia de sistemas externos.
 
 ---
@@ -326,6 +327,7 @@ classDiagram
         +Int totalSlots
         +Int filledSlots
         +Int totalCost
+        +DateTime prioritizedAt
         +MatchStatus status
         +DateTime createdAt
         +DateTime updatedAt
@@ -365,6 +367,41 @@ classDiagram
         +DateTime authorizedAt
         +DateTime createdAt
         +DateTime updatedAt
+    }
+
+    class NotificationPreference {
+        +UUID userId
+        +Boolean faltaUno
+        +Boolean nearby
+        +Boolean nudges
+        +Sport[] sports
+        +Int[] days
+        +Int fromHour
+        +Int toHour
+        +Int radiusKm
+        +Float lat
+        +Float lng
+    }
+
+    class Notification {
+        +UUID id
+        +UUID userId
+        +NotificationKind kind
+        +UUID matchId
+        +String title
+        +String body
+        +DateTime readAt
+        +DateTime createdAt
+    }
+
+    class NotificationKind {
+        <<enumeration>>
+        FALTA_UNO
+        NEARBY_MATCH
+        JOIN_REQUEST
+        JOIN_APPROVED
+        PRIORITY_OFFER
+        NUDGE
     }
 
     class Sport {
@@ -417,6 +454,9 @@ classDiagram
     Match "1" *-- "0..*" Rating : contextualiza
     User "1" --> "0..*" Rating : califica (rater)
     User "1" --> "0..*" Rating : es calificado (rated)
+    User "1" *-- "0..1" NotificationPreference : elige sus avisos
+    User "1" *-- "0..*" Notification : recibe
+    Match "0..1" <-- "0..*" Notification : sobre
 
     User ..> Sport
     Match ..> Sport
@@ -424,6 +464,8 @@ classDiagram
     Match ..> MatchStatus
     Participation ..> PartStatus
     Payment ..> PayStatus
+    Notification ..> NotificationKind
+    NotificationPreference ..> Sport
 ```
 
 **Lectura:** el rombo relleno es composición: una participación, una reseña o un pago no existen sin
@@ -477,14 +519,32 @@ classDiagram
         +join(matchId, userId) Participation
         +approve(participationId, actorId) Participation
         +reject(participationId, actorId) Participation
+        +prioritize(matchId, actorId) Priority
     }
 
     class MatchService {
         <<service>>
         +assertFutureStart(startsAt, now) void
+        +checkCanPrioritize(match, actorId, now) AppError
         +publish(organizerId, input) MatchDetail
         +getDetail(id, viewerId) MatchDetail
         +listForUser(userId) MyMatch[]
+    }
+
+    class NotificationService {
+        <<service>>
+        +faltaUnoMessage(match) Message
+        +nearbyMessage(match) Message
+        +nudgeMessage(candidate, now) Message
+        +sortInbox(list, now) Notification[]
+        +isUrgent(notification, now) Boolean
+        +onMatchPublished(match) void
+        +onMatchPrioritized(matchId) void
+        +onJoinRequested(match) void
+        +onJoinApproved(participation) void
+        +runSweep(now) SweepResult
+        +inbox(userId) Inbox
+        +savePreferences(userId, input) Preferences
     }
 
     class AuthService {
@@ -524,6 +584,7 @@ classDiagram
         +Number RETENTION_RATE
         +Number RATING_WINDOW_HOURS
         +Int HONOR_SAMPLE_SIZE
+        +Number NOTIFY_SWEEP_MINUTES
     }
 
     class User
@@ -531,6 +592,8 @@ classDiagram
     class Participation
     class Rating
     class Payment
+    class Notification
+    class NotificationPreference
 
     HonorService ..> HonorBreakdown : devuelve
     PaymentService ..> RefundBreakdown : devuelve
@@ -550,15 +613,21 @@ classDiagram
     MatchService ..> Match : publica y detalla
     AuthService ..> User : registra y autentica
     MatchService ..> PaymentService : cuota y comisión
+    MatchService ..> NotificationService : avisa al publicar
+    MatchingService ..> NotificationService : avisa al destacar, postular y aprobar
+    NotificationService ..> Notification : reparte sin repetir
+    NotificationService ..> NotificationPreference : filtra por radio, deporte, día y hora
+    NotificationService ..> Env : lee
 ```
 
 **Lectura:** todas las operaciones existen en `backend/src/services/`, un archivo `*.service.ts` por
 servicio. Las que empiezan con `calculate`, `check`, `decide`, `build` o `assert` son funciones puras y
-se prueban sin base de datos (84 pruebas unitarias). Las demás orquestan el acceso a datos a través de
-`repositories/` y se prueban contra PostGIS real (83 pruebas de integración).
+se prueban sin base de datos, igual que los textos de los avisos (103 pruebas unitarias). Las demás
+orquestan el acceso a datos a través de `repositories/` y se prueban contra PostGIS real (93 pruebas de
+integración).
 `Env` reúne los parámetros de negocio configurables, para que cambiar la comisión o la ventana de
 retención no exija tocar código.
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 15 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 3, septiembre 2026 · actualizado el 20 de noviembre de 2026*

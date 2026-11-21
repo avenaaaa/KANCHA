@@ -2,18 +2,18 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 17 de noviembre de 2026 (Sprint 8).
+> Corte del documento: 20 de noviembre de 2026 (Sprint 8).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Al 17 de noviembre están ejecutados los casos de
-las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Siguen sin
-ejecutar las pruebas de rendimiento y las unitarias pendientes de la sección 4.4.
+se automatiza cuando exista el código que prueba). Al 20 de noviembre están ejecutados los casos de
+las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Las cinco pruebas de
+rendimiento se ejecutaron el 20 de noviembre. Siguen sin ejecutar las unitarias pendientes de la sección 4.4.
 
 ---
 
 ## 1. Objetivo y alcance
 
-**Objetivo.** Demostrar que las reglas de negocio del MVP (HU-01 a HU-09; HU-10 salió del alcance el 8 de noviembre) se cumplen, que los
+**Objetivo.** Demostrar que las reglas de negocio del MVP (HU-01 a HU-10; HU-10 volvió al alcance el 20 de noviembre) se cumplen, que los
 componentes se integran sin errores y que la aplicación resiste los abusos y la carga que puede
 recibir en una demo y en un piloto en La Florida.
 
@@ -29,12 +29,12 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 17-nov |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **87 del backend y 31 de la app, todas pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 40 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **86 ejecutadas contra PostGIS real, todas pasan** |
-| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | Diseñadas · se ejecutan en el Sprint 8 |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **103 del backend y 40 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
+| **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
 | **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 17 de 18 controles verificados; S-11 parcial |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
@@ -63,11 +63,11 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 17 de noviembre de 2026 |
-| Archivos de prueba del backend | 17 (8 unitarios y 9 de integración) |
-| Casos del backend | 173 ejecutados · 173 pasan · 0 fallan (87 unitarias, 86 de integración) |
-| Cobertura de `services/` y `utils/` | 98,93 % de líneas · 91,66 % de ramas · 98,52 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 31 ejecutados · 31 pasan · el CI los corre en cada push desde el 15-nov |
+| Fecha | 20 de noviembre de 2026 |
+| Archivos de prueba del backend | 20 (9 unitarios y 11 de integración) |
+| Casos del backend | 196 ejecutados · 196 pasan · 0 fallan (103 unitarias, 93 de integración) · seis corridas seguidas en verde |
+| Cobertura de `services/` y `utils/` | 98,12 % de líneas · 91,61 % de ramas · 98,05 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
+| Casos de la app (Jest + React Native Testing Library) | 40 ejecutados · 40 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
@@ -142,6 +142,23 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 |---|---|---|---|
 | U-80 a U-82 | `matching.service` · `urgentWindow` | Sin el filtro no cambia nada; con el filtro exige exactamente 1 cupo libre y un inicio dentro de 2 h; si además viene un horario, manda el límite que termina antes | KAN-37 |
 
+Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
+
+| IDs | Módulo | Qué prueban | Origen |
+|---|---|---|---|
+| U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si faltan 1 o 2 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 3 faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41 |
+| U-88 | `payment.service` · `guestShare` | La cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros; en cancha gratis es 0 | KAN-41 |
+| U-89 | `matching.service` · `decideApproval` | Con el partido destacado, el cupo que se aprueba entra gratis (amountDue 0) | KAN-41 |
+| U-90 | `matching.service` · `isTrustedGuest` | Entra al tiro a un destacado con honor 7 o más; un novato (NULL) o un honor de 6,9 esperan al organizador | KAN-41 |
+| U-91 | `notification.service` · `faltaUnoMessage` | Dice cuántos faltan, la hora de Chile (22:30 Z son las 19:30 en noviembre) y, si está destacado, "Entras gratis" | HU-10 |
+| U-92 | `notification.service` · `nearbyMessage` | Deporte, día, hora y recinto del partido nuevo | HU-10 |
+| U-93 | `notification.service` · `joinRequestMessage`, `joinApprovedMessage` | Al organizador, la postulación (urgente si es un destacado); al jugador, su aprobación, con o sin pago | HU-10 |
+| U-94 | `notification.service` · `priorityOfferMessage` | "¿Lo destacas?" con 1 o 2 faltantes | HU-10, KAN-41 |
+| U-95 | `notification.service` · `nudgeMessage` | Ánimo distinto para quien nunca jugó ("Tu primer partido te espera") y para quien lleva 16 días sin jugar | HU-10 |
+| U-96 | `notification.service` · `sortInbox`, `isUrgent` | Los "Falta uno" vigentes primero y, entre ellos, los destacados; uno lleno, empezado o leído deja de destacarse | HU-10 |
+| U-97 | `notification.service` · `defaultPreferences` | Sin preferencias guardadas no hay nada activado; viene marcado el deporte favorito | HU-10 |
+| U-98 | `notification.schema` · `preferencesSchema` | Horario que termina después de empezar, ubicación y deporte si activa algo, días si activa "cerca", radio y días válidos, sin repetidos | HU-10 |
+
 ### 4.3 Pruebas de la app
 
 | ID | Componente | Caso | Resultado |
@@ -162,6 +179,15 @@ Casos agregados el 16 de noviembre (Sprint 8, botón "Falta uno"):
 | M-27 | `filterStore` | "Falta uno" se activa y se apaga; activarlo limpia el día elegido y elegir un día lo apaga (KAN-37) | Pasa |
 | M-28 a M-30 | `lib/places.ts` | El centro de La Florida cae dentro del límite real y Ñuñoa o Santiago centro, fuera; todas las canchas ofrecidas están dentro de la comuna; la dirección se arma con calle y número, y sin calle no se propone nada (KAN-38) | Pasa |
 | M-31 | `lib/places.ts` · `reverseGeocode` | La dirección sale del servicio de OpenStreetMap; si el servicio responde mal o no hay conexión, no se inventa nada y el campo queda para escribirlo (KAN-38, DEF-22) | Pasa |
+| M-32 | `DragSheet` · `sheetSnap` | Al soltar el panel de partidos, un gesto rápido manda (hacia arriba abre, hacia abajo cierra) y si fue lento gana la posición más cercana (KAN-39) | Pasa |
+| M-33 | `UrgentButton` | "Falta uno" avisa a los lectores de pantalla si está encendido y responde al toque (KAN-37, KAN-39) | Pasa |
+| M-34 | `lib/places.ts` · `venuesForSport` | Las canchas se filtran por deporte; cada una tiene tipo (pública, municipal o privada), al menos un deporte e identificador único (KAN-40) | Pasa |
+| M-35 | `MatchCard` | Un partido destacado dice "Entra gratis" en vez de cuántos faltan, y lo anuncia a los lectores de pantalla (KAN-41) | Pasa |
+| M-36 | `lib/notifications.ts` · `firstUrgent` | Sobre el mapa se destaca el primer "Falta uno" que la API marca como vigente; uno lleno no (HU-10) | Pasa |
+| M-37 | `lib/notifications.ts` · `timeAgo` | "ahora", "hace 5 min", "hace 2 h", "ayer", "hace 3 días" (HU-10) | Pasa |
+| M-38 | `lib/notifications.ts` · `toggleIn`, `hourLabel` | Elegir días y deportes, y la hora del horario (HU-10) | Pasa |
+| M-39 | `lib/format.ts` · `countdown` | Cuenta atrás de la carta: días, horas y minutos, minutos:segundos en la última hora, "En juego" mientras dura y nada al terminar (KAN-43) | Pasa |
+| M-40 | `data/laFlorida.json` · `venuesForSport` | Las multicanchas de pasto sintético no se ofrecen para básquetbol, y ninguna cancha pública ofrece pádel (KAN-43) | Pasa |
 
 ### 4.4 Unitarias pendientes
 
@@ -224,6 +250,13 @@ exista.
 | CN-38 | KAN-32 | Límite | Aprobar y rechazar la misma postulación a la vez | Una gana, la otra recibe 409 y los cupos calzan | Cubierto (integración) |
 | CN-39 | KAN-37 | Equivalencia | Filtro "Falta uno" con tres partidos: 1 cupo libre en 1 h; 2 cupos libres en 1 h; 1 cupo libre en 3 h | Solo aparece el primero; sin el filtro aparecen los tres | Cubierto (U-80, U-81 e integración) |
 | CN-40 | KAN-37 | Límite | Partido que empieza en 1 h 59 min y otro en 2 h 01 min; `urgent=quizas` | Aparece el primero y no el segundo; 422 | Cubierto (integración) |
+| CN-41 | KAN-41 | Equivalencia | Destacar un partido al que le faltan 2 y que empieza en 1,5 h; se unen un jugador con honor 8 y un novato | Va primero en "Falta uno" aunque le falten dos; el de honor 8 queda `APPROVED` al tiro y el novato `PENDING` hasta que el organizador lo aprueba; ambos con cuota 0, y pagar responde 409 `NOTHING_TO_PAY` | Cubierto (integración) |
+| CN-42 | KAN-41 | Límite | Destacar siendo otro usuario, dos veces, con 3 h de anticipación, con 3 faltantes, con un id inválido | 403; 409 `ALREADY_PRIORITY`, `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`; 422 | Cubierto (U-83 a U-87 e integración) |
+| CN-43 | HU-10 | Equivalencia | Leer las preferencias sin haber guardado nada; guardarlas; guardar con un aviso activo y sin ubicación, o con el horario al revés; leer la bandeja sin token | Todo apagado y el deporte favorito; se guardan; 422; 422; 401 | Cubierto (integración) |
+| CN-44 | HU-10 | Equivalencia | Publicar un pádel a 1 km ante seis usuarios: uno que acepta partidos cerca y cinco que no calzan (apagado, otro deporte, otro día, otra hora, a 20 km) | Solo el primero recibe "Partido de pádel cerca"; ni los otros ni el organizador | Cubierto (integración) |
+| CN-45 | HU-10 | Equivalencia | Partido al que le falta 1 y empieza en 1 h; barrido dos veces; otro al que le faltan 2, que el organizador destaca; el primero se llena | Un solo "Falta uno", primero en la bandeja; al organizador, "¿Lo destacas?" (leído al destacar); al destacar, "Entras gratis"; lleno, deja de destacarse; marcar el aviso de otro, 404 | Cubierto (integración) |
+| CN-46 | HU-10 | Equivalencia | Un jugador postula y el organizador lo aprueba | El organizador recibe "Tienes postulaciones por revisar" y el jugador "Te aceptaron", con "Paga tu parte" | Cubierto (integración) |
+| CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y otro que acaba de postular, ambos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al segundo, nada | Cubierto (integración) |
 
 ---
 
@@ -243,7 +276,7 @@ se prueba en su camino feliz y en su error principal.
 | I-07 | API + Transbank | Pago rechazado deja `Payment = FAILED` y libera el cupo (HU-08) | 7 | **Pasa** · también el pago anulado y el último cupo que vuelve a `OPEN` |
 | I-08 | API + PostgreSQL | Cancelar dentro de la ventana registra `retained` (HU-09) | 7 | **Pasa** (`cancellations.int.test.ts`): también dos cancelaciones simultáneas reembolsan una sola vez y un fallo de Transbank no cambia nada · reembolso real verificado en Integración (`evidencias/sprint-07/`) |
 | I-09 | API + PostgreSQL | Una reseña recalcula `honorScore` del calificado (HU-06, HU-07) | 7 | **Pasa** (`ratings.int.test.ts`): el honor se ve en la carta pública sin correo y dos reseñas simultáneas al mismo jugador no se pisan (fila bloqueada) · verificado a mano en `docker compose` (`evidencias/sprint-07/`) |
-| I-10 | API + Expo Push | Liberar un cupo dispara la notificación (HU-10) | — | Fuera de alcance: HU-10 salió del MVP el 8 de noviembre |
+| I-10 | API + PostGIS | Publicar, destacar, postular y aprobar reparten avisos con un `INSERT … SELECT` filtrado por `ST_DWithin` desde el punto de cada usuario, sin repetirlos (HU-10) | 8 | **Pasa** (`notifications.int.test.ts`) · recorrido completo verificado en `docker compose` (`evidencias/sprint-08/25` a `27`). El push en Android es KAN-42 |
 | I-11 | API + PostgreSQL | El organizador cierra la asistencia: "asistió" suma un partido jugado y recalcula el honor (KAN-30) | 7 | **Pasa** (`attendance.int.test.ts`) · verificado a mano en `docker compose` (`evidencias/sprint-07/08-asistencia-KAN30.jpg`) |
 | I-12 | API + Transbank | Cancelar con Webpay abierto cierra el pago: terminarlo después no confirma ni cobra (DEF-08) | 8 | **Pasa** (`payments.int.test.ts`) |
 | I-13 | API + Transbank | Si el cupo se cancela mientras Transbank confirma, se devuelve todo lo cobrado (DEF-08) | 8 | **Pasa** |
@@ -270,12 +303,47 @@ PostGIS en el modelo de datos.
 | R-04 | Registro y login (bcrypt costo 12) | 5 usuarios virtuales, 1 minuto | p95 bajo 800 ms | k6 |
 | R-05 | Arranque en frío del stack | `docker compose up --build` | API sana en menos de 60 s desde contenedores construidos | Docker |
 
-Los umbrales son metas del proyecto para una demo y un piloto comunal. Los endpoints ya existen;
-las pruebas se ejecutan en el Sprint 8 (KAN-35) y sus resultados se guardan en `docs/evidencias/`.
+Los umbrales son metas del proyecto para una demo y un piloto comunal.
 
-**Medición preliminar (14-nov-2026).** 100 búsquedas por radio seguidas contra la API en Docker: mediana
-de 4 ms y p95 de 5 ms. Es un solo usuario y los 12 partidos del seed, así que **no reemplaza a R-01**:
-solo descarta un problema grueso antes de la prueba de carga real.
+### 7.1 Resultado de la ejecución (20 de noviembre de 2026, KAN-35)
+
+Entorno: `docker compose` local en el notebook de desarrollo. k6 1.0.0 corre desde su imagen oficial
+(`grafana/k6`) dentro de la red del compose, así que no hay que instalar nada. Los usuarios virtuales
+no hacen pausas entre peticiones: es más exigente que la misma cantidad de personas reales.
+
+| ID | Resultado | Meta | Cumple |
+|---|---|---|---|
+| R-01 | p95 de **19 ms**, 0 % de errores · 75.974 búsquedas en 1 minuto (unas 1.260 por segundo) | p95 < 300 ms · 0 % de errores | Sí |
+| R-02 | p95 de **45 ms**, 0 % de errores · 34.095 búsquedas en 1 minuto, con 10.017 partidos en la base | p95 < 500 ms | Sí |
+| R-03 | `Bitmap Index Scan on idx_match_location`: de 10.017 partidos, el índice deja 464 candidatos y la consulta tarda **11 ms**. La tabla de partidos no se recorre completa | Uso del índice GIST, sin recorrido secuencial | Sí |
+| R-04 | Registro p95 de **324 ms** y login p95 de **311 ms**, 0 % de errores · 652 cuentas | p95 < 800 ms | Sí |
+| R-05 | API, web y base sanas en **13,3 s**, con migraciones y seed | < 60 s | Sí |
+
+Notas:
+
+- **R-03:** el plan recorre completa la tabla de usuarios, que en la demo tiene 8 filas: con tan pocas,
+  PostgreSQL elige leerla entera porque es más barato que usar su índice. El criterio se refiere a la
+  tabla de partidos, que es la que crece.
+- **R-04:** el límite de registros (S-12, 20 por hora) se elevó solo en el contenedor local durante la
+  medición, porque lo que se mide es el costo de bcrypt. Al terminar se restauró la API y el seed borró
+  las cuentas de carga.
+- **Alcance:** es una medición local. En la nube (Render y Supabase en capa gratuita) los tiempos
+  serán mayores por la red y por el servidor más chico.
+
+Cómo se repiten, con `docker compose up` arriba y desde la raíz del repositorio:
+
+```bash
+docker run --rm -i --network kancha_default -e P95_MS=300 grafana/k6:1.0.0 run - < fase-2-desarrollo/backend/tests/performance/nearby.k6.js
+docker compose exec -T db psql -U kancha -d kancha < fase-2-desarrollo/backend/tests/performance/datos-sinteticos.sql
+docker compose exec -T db psql -U kancha -d kancha < fase-2-desarrollo/backend/tests/performance/plan-busqueda.sql
+docker run --rm -i --network kancha_default -e P95_MS=500 grafana/k6:1.0.0 run - < fase-2-desarrollo/backend/tests/performance/nearby.k6.js
+```
+
+R-04 usa `auth.k6.js` y necesita `REGISTER_RATE_LIMIT` elevado en la API. Salida completa en
+`evidencias/sprint-08/pruebas-rendimiento.txt`.
+
+**Medición preliminar (14-nov-2026), reemplazada por R-01.** 100 búsquedas seguidas con un solo usuario:
+mediana de 4 ms y p95 de 5 ms.
 
 ---
 
@@ -303,6 +371,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-16 | Manipulación del pago | Anular el pago de otro jugador con su orden de compra, que es predecible | 404, sin tocar el pago | **Verificado** (`payments.int.test.ts`): la vuelta "tiempo agotado" exige el id de sesión aleatorio del pago (DEF-12) |
 | S-17 | Acceso a objetos ajenos | Rechazar una postulación de un partido ajeno | 403 | **Verificado** (`participations.int.test.ts`, U-79) |
 | S-18 | Sesión | Usar la sesión de un usuario que ya no existe (la demo regenera los datos en cada arranque) | 401, y la app vuelve al login | **Verificado** (`auth.int.test.ts`) · comprobado en la app el 17-nov (DEF-21) |
+| S-19 | Acceso a objetos ajenos | Marcar como leído el aviso de otro usuario | 404, sin revelar que existe | **Verificado** (`notifications.int.test.ts`, CN-45) |
 
 ---
 
@@ -312,18 +381,21 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 |---|---|---|---|---|---|
 | HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12, S-18 |
 | HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
-| HU-03 | Publicar partido | U-23 a U-30 | CN-04 a CN-06 | I-03 | S-05 |
-| HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
+| HU-03 | Publicar partido | U-23 a U-30, M-34 | CN-04 a CN-06 | I-03 | S-05 |
+| HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27, M-32 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46, M-22 a M-24 | CN-11, CN-12, CN-35 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10, U-69, U-70, M-17 | CN-13 a CN-17 | I-09 | S-05, S-14 |
 | HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
 | HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07, I-12 a I-15 | S-03, S-08, S-13, S-16 |
 | HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68, U-72 | CN-26 a CN-28, CN-33, CN-36 | I-08 | S-03 |
-| HU-10 | Notificación de cupo | — | — | — | — · fuera de alcance desde el 8-nov |
+| HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-98, M-36 a M-38 | CN-43 a CN-47 | I-10 | S-19 |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
-| KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27 | CN-39, CN-40 | I-04 | S-04 |
+| KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
+| KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
+| KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
+| KAN-43 | Cuenta atrás y equipamiento real de las canchas | M-39, M-40 | — · verificado a mano en la app (`evidencias/sprint-08/28` y `29`) y foto satelital de cada cancha (`fuentes-canchas-KAN40.md`) | — | — |
 
 ---
 
@@ -340,7 +412,7 @@ endpoint está documentado en OpenAPI.
 - `docker compose up` sigue levantando todo sin intervención manual.
 
 **El MVP sale de pruebas** (Fase 3) cuando además se cumplen los umbrales de rendimiento de la
-sección 7 y los diecisiete controles de seguridad de la sección 8.
+sección 7 (cumplidos el 20 de noviembre) y los dieciocho controles de seguridad de la sección 8.
 
 ---
 
@@ -383,4 +455,4 @@ Las capturas del CI en verde, los reportes de cobertura y los resultados de k6 s
 
 ---
 
-*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 17 de noviembre de 2026*
+*Kancha · Portafolio de Título · Lukas Guerrero · Sprint 8 · actualizado el 20 de noviembre de 2026*

@@ -1,4 +1,4 @@
-import { formatAddress, insideComuna, reverseGeocode, VENUES } from '@/lib/places';
+import { formatAddress, insideComuna, reverseGeocode, VENUE_KIND_LABEL, VENUES, venuesForSport } from '@/lib/places';
 import { describe, expect, it, jest } from '@jest/globals';
 import { LA_FLORIDA } from '@/theme/geo';
 import { matchPollInterval, playerStatus } from '@/lib/status';
@@ -24,6 +24,7 @@ describe('matchPollInterval · refresco del detalle (DEF-16)', () => {
     status: null,
     payment: null,
     refundIfCancelled: null,
+    amountDue: null,
   };
   const partido = (v: Partial<MatchDetail['viewer']>, ratingWindow: RatingWindow = 'NOT_FINISHED') => ({
     ratingWindow,
@@ -89,6 +90,33 @@ describe('La Florida: límite real y direcciones (KAN-38)', () => {
   it('M-29 · todas las canchas ofrecidas existen dentro de la comuna', () => {
     expect(VENUES.length).toBeGreaterThan(10);
     expect(VENUES.filter((v) => !insideComuna(v))).toEqual([]);
+  });
+
+  it('M-34 · las canchas se filtran por deporte y cada una dice si es pública o se arrienda (KAN-40)', () => {
+    const padel = venuesForSport('PADEL');
+    expect(padel.length).toBeGreaterThan(0);
+    expect(padel.every((v) => v.sports.includes('PADEL'))).toBe(true);
+    expect(venuesForSport(null)).toHaveLength(VENUES.length);
+    expect(VENUES.every((v) => v.kind in VENUE_KIND_LABEL && v.sports.length > 0)).toBe(true);
+    expect(new Set(VENUES.map((v) => v.id)).size).toBe(VENUES.length);
+    expect(VENUES.some((v) => v.kind === 'PUBLICA')).toBe(true);
+    expect(VENUES.some((v) => v.kind !== 'PUBLICA')).toBe(true);
+  });
+
+  it('M-40 · las multicanchas de pasto sintético no se ofrecen para básquetbol, y el pádel solo donde hay canchas de pádel (KAN-43)', () => {
+    const basket = venuesForSport('BASQUETBOL').map((v) => v.id);
+    for (const sintetica of [
+      'multicancha-geronimo-de-alderete-con-manutara',
+      'multicancha-las-gardenias-con-los-clarines',
+      'multicancha-los-quillayes-rio-1-con-oriente',
+      'multicancha-san-jose-de-la-estrella-con-punta-arenas',
+      'multicancha-vicuna-mackenna-con-toledo',
+    ]) {
+      expect(basket).not.toContain(sintetica);
+      expect(VENUES.find((v) => v.id === sintetica)?.sports).toEqual(['FUTBOL']);
+    }
+    // Ninguna cancha pública tiene pádel: exige muros y vidrio.
+    expect(venuesForSport('PADEL').every((v) => v.kind !== 'PUBLICA')).toBe(true);
   });
 
   it('M-30 · la dirección se arma con calle y número; sin calle no se propone nada', () => {
