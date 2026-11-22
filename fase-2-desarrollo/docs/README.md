@@ -9,10 +9,10 @@
 |---|---|---|
 | Diagrama de Arquitectura: componentes | [03-arquitectura.md](03-arquitectura.md#1-diagrama-de-componentes) | Listo · actualizado al 16-nov |
 | Diagrama de Arquitectura: despliegue | [03-arquitectura.md](03-arquitectura.md#2-diagrama-de-despliegue) | Listo · la nube se despliega en el Sprint 8 |
-| Modelo relacional normalizado | [01-modelo-datos.md](01-modelo-datos.md) · normalización en la [sección 6](01-modelo-datos.md#6-normalización) | Listo · nueve migraciones |
-| Diagrama de clases | [02-diagramas-uml.md](02-diagramas-uml.md#7-diagrama-de-clases--modelo-de-dominio), secciones 7 y 8 | Listo · corresponde al código del 16-nov |
+| Modelo relacional normalizado | [01-modelo-datos.md](01-modelo-datos.md) · normalización en la [sección 6](01-modelo-datos.md#6-normalización) | Listo · once migraciones, con la moderación (HU-11) |
+| Diagrama de clases | [02-diagramas-uml.md](02-diagramas-uml.md#7-diagrama-de-clases--modelo-de-dominio), secciones 7 y 8 | Listo · corresponde al código del 22-nov, con `ModerationService` |
 | Diagramas de secuencia de las funcionalidades principales | [02-diagramas-uml.md](02-diagramas-uml.md), secciones 2, 3 y 4 | Listo · búsqueda, pago y honor como quedaron implementados |
-| Plan de pruebas (unitarias, caja negra, integración, rendimiento, seguridad) | [04-plan-pruebas.md](04-plan-pruebas.md) | 198 pruebas del backend y 41 de la app, y las 5 de rendimiento, todas pasan · cobertura del 98,9 %, medida por el CI |
+| Plan de pruebas (unitarias, caja negra, integración, rendimiento, seguridad) | [04-plan-pruebas.md](04-plan-pruebas.md) | 218 pruebas del backend y 43 de la app, y las 5 de rendimiento, todas pasan · cobertura del 98,25 %, medida por el CI |
 | Auditoría de cierre (no la pide la pauta; es evidencia adicional de C1) | [05-auditoria-cierre.md](05-auditoria-cierre.md) | 71 hallazgos verificados · 45 corregidos · backlog visual para el rediseño |
 
 Además: diagrama de casos de uso y diagrama de estados del partido en
