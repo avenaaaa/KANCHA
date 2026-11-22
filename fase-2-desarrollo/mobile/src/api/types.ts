@@ -38,7 +38,7 @@ export interface MatchSummary {
   totalCost: number;
   pricePerPlayer: number;
   status: string;
-  /** "Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más. */
+  /** "Falta uno" destacado que rige ahora: le falta 1 y quien se une entra gratis (KAN-41, KAN-44). Lo decide la API. */
   priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;

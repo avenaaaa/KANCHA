@@ -13,7 +13,7 @@ import { userRepository } from '../repositories/user.repository.js';
 import type { SportValue } from '../schemas/common.schema.js';
 import type { PreferencesInput } from '../schemas/notification.schema.js';
 import { notFound } from '../utils/errors.js';
-import { MAX_PRIORITY_SLOTS } from './match.service.js';
+import { isPriorityActive, MAX_PRIORITY_SLOTS } from './match.service.js';
 import { guestShare } from './payment.service.js';
 
 /**
@@ -253,7 +253,7 @@ function infoOf(m: MatchRow): MatchInfo {
     venueName: m.venueName,
     startsAt: new Date(m.startsAt),
     slotsLeft: Number(m.totalSlots) - Number(m.filledSlots),
-    priority: m.prioritizedAt != null,
+    priority: isPriorityActive(m),
   };
 }
 

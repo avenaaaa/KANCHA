@@ -185,9 +185,11 @@ Comuna del piloto El mapa dibuja el límite real de La Florida (OpenStreetMap). 
 
 Falta uno         Si a un partido le falta 1 jugador y empieza en 2 h o menos, el organizador puede
 destacado         destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se une
-                  entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o tiene
-                  menos, queda pendiente y lo aprueba el organizador. Si faltan 2 o más no hay entrada
-                  gratis: quien entra paga su parte. La cuota del invitado la cubre el grupo fuera de
+                  entra gratis, como invitado: al tiro si su honor es 7 o más y lo calificaron al
+                  menos 3 personas distintas; si no, queda pendiente y lo aprueba el organizador. Si
+                  faltan 2 o más no hay entrada gratis, aunque el partido ya esté destacado (una
+                  cancelación lo deja así): quien entra paga su parte y el partido sale de "Falta uno"
+                  hasta que vuelva a faltar 1. La cuota del invitado la cubre el grupo fuera de
                   la app: al destacar, cada confirmado recibe cuánto pone, y Kancha no cobra comisión
                   por ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. Cobrar la cuota en la
                   app con tarjeta inscrita es HU-12. (KAN-41, KAN-44)
@@ -200,8 +202,10 @@ Avisos            Cada usuario elige qué avisos acepta; sin elegir, ninguno. "F
                   jugador, su aprobación; los confirmados de un destacado, cuánto pone cada uno por
                   el invitado (llega aunque no hayan elegido avisos: es dinero, KAN-44).
                   "Ánimo para jugar": a quien lleva 14 días sin postular ni
-                  organizar y tiene partidos cerca, a lo más uno por semana. Disparadores por reglas,
-                  sin IA, costo $0. UNIQUE (userId, kind, matchId) impide repetir un aviso. (HU-10)
+                  organizar (si nunca lo hizo, 14 días desde que se registró) y tiene partidos cerca,
+                  a lo más uno por semana. Disparadores por reglas, sin IA, costo $0. UNIQUE (userId,
+                  kind, matchId) impide repetir un aviso; el de ánimo no tiene partido y su tope
+                  semanal lo pone la consulta del barrido. (HU-10)
 
 Partidos jugados  matchesPlayed se incrementa al cerrar una participación como asistida. Se muestra
                   en la carta de jugador. Al terminar el partido, el organizador marca a cada
@@ -339,4 +343,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 21 de noviembre de 2026 (Sprint 8)*
+*Última actualización: 22 de noviembre de 2026 (Sprint 8)*

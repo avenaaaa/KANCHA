@@ -44,7 +44,7 @@ export interface MatchSummary {
   /** Cuota individual: ceil(totalCost / totalSlots). */
   pricePerPlayer: number;
   status: string;
-  /** "Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más. */
+  /** "Falta uno" destacado que rige ahora (isPriorityActive): quien se une entra gratis (KAN-41, KAN-44). */
   priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;
@@ -97,6 +97,15 @@ export interface MyMatch extends MatchSummary {
 export const MAX_PRIORITY_SLOTS = 1;
 
 /**
+ * KAN-44: un destacado da entrada gratis solo mientras falte 1. Si una cancelación deja 2 libres,
+ * quien entra paga su parte; cuando vuelve a faltar 1, el destacado vuelve a regir. Lleno sigue
+ * destacado: el invitado ya entró y no queda cupo que regalar.
+ */
+export function isPriorityActive(m: { prioritizedAt: Date | null; totalSlots: number; filledSlots: number }): boolean {
+  return m.prioritizedAt != null && Number(m.totalSlots) - Number(m.filledSlots) <= MAX_PRIORITY_SLOTS;
+}
+
+/**
  * KAN-41: ¿puede el organizador destacar su partido ahora? Solo si le falta 1 jugador, empieza dentro de
  * la ventana de urgencia (URGENT_WINDOW_HOURS) y no está destacado. Devuelve el motivo si no.
  */
@@ -147,7 +156,7 @@ export function toMatchSummary(row: MatchRow | NearbyMatchRow): MatchSummary {
     totalCost: Number(row.totalCost),
     pricePerPlayer: calculateAmountDue(Number(row.totalCost), Number(row.totalSlots)),
     status: row.status,
-    priority: row.prioritizedAt != null,
+    priority: isPriorityActive(row),
     organizer: {
       id: row.organizerId,
       name: row.organizerName,

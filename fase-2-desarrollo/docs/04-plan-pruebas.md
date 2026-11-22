@@ -35,7 +35,7 @@ recibir en una demo y en un piloto en La Florida.
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 22 controles: 19 verificados, S-11 parcial, S-21 y S-22 a la espera del CI (22-nov) |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 22 controles: 21 verificados y S-11 parcial (22-nov) |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -149,7 +149,7 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | U-83 a U-87 | `match.service` · `checkCanPrioritize` | Se destaca si falta 1 y empieza en 2 h o menos (2 h justas entran); solo el organizador; no con 2 o más faltantes, antes de la ventana, dos veces, ya iniciado o cerrado | KAN-41, KAN-44 |
 | U-88 | `payment.service` · `guestShare` | La cuota del invitado se reparte entre los que ya están, hacia arriba y en pesos enteros; en cancha gratis es 0 | KAN-41 |
 | U-89 | `matching.service` · `decideApproval` | Con el partido destacado, el cupo que se aprueba entra gratis (amountDue 0) | KAN-41 |
-| U-90 | `matching.service` · `isTrustedGuest` | Entra al tiro a un destacado con honor 7 o más; un novato (NULL) o un honor de 6,9 esperan al organizador | KAN-41 |
+| U-90 | `matching.service` · `isTrustedGuest` | Entra al tiro a un destacado con honor 7 o más y 3 calificadores; un novato (NULL) o un honor de 6,9 esperan al organizador | KAN-41 |
 | U-91 | `notification.service` · `faltaUnoMessage` | Dice cuántos faltan, la hora de Chile (22:30 Z son las 19:30 en noviembre) y, si está destacado, "Entras gratis" | HU-10 |
 | U-92 | `notification.service` · `nearbyMessage` | Deporte, día, hora y recinto del partido nuevo | HU-10 |
 | U-93 | `notification.service` · `joinRequestMessage`, `joinApprovedMessage` | Al organizador, la postulación (urgente si es un destacado); al jugador, su aprobación, con o sin pago | HU-10 |
@@ -159,6 +159,9 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | U-97 | `notification.service` · `defaultPreferences` | Sin preferencias guardadas no hay nada activado; viene marcado el deporte favorito | HU-10 |
 | U-98 | `notification.schema` · `preferencesSchema` | Horario que termina después de empezar, ubicación y deporte si activa algo, días si activa "cerca", radio y días válidos, sin repetidos | HU-10 |
 | U-99 | `notification.service` · `guestCoverMessage` | A los confirmados de un destacado: la cuota del invitado y cuánto pone cada uno, en pesos con punto de miles | KAN-44 |
+| U-100 | `matching.service` · `decideApproval` | Destacado al que una cancelación dejó con 2 libres: quien entra paga su parte ($6.000) | KAN-44 · DEF-28 |
+| U-101 | `matching.service` · `isTrustedGuest` | Con menos de 3 personas distintas que lo calificaron, ni un honor de 10 entra al tiro | KAN-41 · DEF-30 |
+| U-102 | `match.service` · `isPriorityActive` | El destacado rige con 1 libre y lleno (ya entró el invitado); con 2 libres o sin destacar, no | KAN-44 · DEF-28 |
 
 ### 4.3 Pruebas de la app
 
@@ -258,8 +261,10 @@ exista.
 | CN-44 | HU-10 | Equivalencia | Publicar un pádel a 1 km ante seis usuarios: uno que acepta partidos cerca y cinco que no calzan (apagado, otro deporte, otro día, otra hora, a 20 km) | Solo el primero recibe "Partido de pádel cerca"; ni los otros ni el organizador | Cubierto (integración) |
 | CN-45 | HU-10 | Equivalencia | Partido al que le falta 1 y empieza en 1 h; barrido dos veces; otro al que le falta 1 y empieza en 1,5 h, que el organizador destaca; el primero se llena | Un solo "Falta uno", primero en la bandeja; al organizador, "¿Lo destacas?" (leído al destacar); al destacar, el "Falta uno" del otro pasa a "Entras gratis"; lleno, deja de destacarse; marcar el aviso de otro, 404 | Cubierto (integración) |
 | CN-46 | HU-10 | Equivalencia | Un jugador postula y el organizador lo aprueba | El organizador recibe "Tienes postulaciones por revisar" y el jugador "Te aceptaron", con "Paga tu parte" | Cubierto (integración) |
-| CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y otro que acaba de postular, ambos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al segundo, nada | Cubierto (integración) |
+| CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y se registró hace 15 días, uno recién registrado y otro que acaba de postular, todos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al recién registrado y al que postuló, nada (DEF-29) | Escrita el 22-nov; se verifica en CI |
 | CN-48 | KAN-44 | Equivalencia | Partido de $24.000 para 4 con un confirmado y un pendiente; el organizador lo destaca con 1 faltante | El confirmado recibe "Entra un invitado gratis": $6.000 entre los 3 que ya están, $2.000 cada uno; el organizador y el pendiente no lo reciben | Cubierto (integración) |
+| CN-49 | KAN-44 | Límite | Destacar con 1 libre; un confirmado cancela y quedan 2; postula un jugador con honor 8 y 3 calificadores; el organizador lo aprueba | Sin destacar en el detalle y fuera de "Falta uno"; queda `PENDING` y paga su parte ($6.000); con 1 libre otra vez, el destacado rige (DEF-28) | Escrita el 22-nov; se verifica en CI |
+| CN-50 | KAN-41 | Equivalencia | Un jugador con honor 10 calificado por solo 2 personas se une a un destacado | Queda `PENDING` sin ocupar el cupo: lo aprueba el organizador (DEF-30) | Escrita el 22-nov; se verifica en CI |
 
 ---
 
@@ -285,7 +290,7 @@ se prueba en su camino feliz y en su error principal.
 | I-13 | API + Transbank | Si el cupo se cancela mientras Transbank confirma, se devuelve todo lo cobrado (DEF-08) | 8 | **Pasa** |
 | I-14 | API + Transbank | Si la respuesta del commit se pierde, se consulta el estado real y el pago queda registrado (DEF-10) | 8 | **Pasa** · si Transbank tampoco responde el estado, el pago sigue iniciado y se informa 502 |
 | I-15 | API + Transbank | Reintentar un pago que Transbank ya aprobó no cobra dos veces: 409 (DEF-10) | 8 | **Pasa** |
-| I-15b | API + Transbank | Tocar "Pagar" dos veces seguidas reusa el cobro abierto: no pisa su token y pagar en la primera pestaña confirma (DEF-27) | 8 | Escrita el 22-nov; se verifica en CI |
+| I-15b | API + Transbank | Tocar "Pagar" dos veces seguidas reusa el cobro abierto: no pisa su token y pagar en la primera pestaña confirma (DEF-27) | 8 | **Pasa** (CI, 22-nov) |
 | I-16 | API | Ruta inexistente (404), JSON mal formado (400), recurso inexistente (404) e id que no es UUID (422), todos con el formato único de error | 8 | **Pasa** (`auth.int.test.ts`) |
 | I-17 | API + PostgreSQL | Rechazar deja la postulación `REJECTED`, no mueve cupos y el jugador puede volver a postular (KAN-32) | 8 | **Pasa** (`participations.int.test.ts`) · verificado a mano en `docker compose` (`evidencias/sprint-08/`) |
 | I-18 | Docker Compose | `docker compose up` deja los tres contenedores sanos, con datos de demostración | 5 | **Automatizada en el CI desde el 15-nov**: levanta el stack, consulta `/health`, entra con una cuenta de demo y pide la web |
@@ -377,8 +382,8 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-18 | Sesión | Usar la sesión de un usuario que ya no existe (la demo regenera los datos en cada arranque) | 401, y la app vuelve al login | **Verificado** (`auth.int.test.ts`) · comprobado en la app el 17-nov (DEF-21) |
 | S-19 | Acceso a objetos ajenos | Marcar como leído el aviso de otro usuario | 404, sin revelar que existe | **Verificado** (`notifications.int.test.ts`, CN-45) |
 | S-20 | Abuso de recursos | Enviar un arreglo de 10.000 elementos en un campo que Zod limita a 7 | 413 antes de validar, sin agotar la memoria | **Verificado** el 22-nov (`health.int.test.ts`, sin base de datos) · DEF-24 |
-| S-21 | Abuso de recursos | Publicar partidos en ráfaga con una misma cuenta | 429 al pasar `PUBLISH_RATE_LIMIT` por hora; otra cuenta en la misma IP sigue publicando | Escrita el 22-nov (`ratelimit.int.test.ts`); se verifica en CI · DEF-26 |
-| S-22 | Exposición de datos | Revisar que las tablas de la app no queden abiertas a la Data API de Supabase | Toda tabla de `public` con RLS activo, también las nuevas | Escrita el 22-nov (`rls.int.test.ts`); se verifica en CI · DEF-25 |
+| S-21 | Abuso de recursos | Publicar partidos en ráfaga con una misma cuenta | 429 al pasar `PUBLISH_RATE_LIMIT` por hora; otra cuenta en la misma IP sigue publicando | **Verificado** el 22-nov en CI (`ratelimit.int.test.ts`) · DEF-26 |
+| S-22 | Exposición de datos | Revisar que las tablas de la app no queden abiertas a la Data API de Supabase | Toda tabla de `public` con RLS activo, también las nuevas | **Verificado** el 22-nov en CI (`rls.int.test.ts`) · DEF-25 |
 
 ---
 
@@ -401,9 +406,9 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
 | KAN-38 | Límite de la comuna, canchas existentes y dirección | M-28 a M-31 | — · verificado a mano en la app (`evidencias/sprint-08/10` a `16`) | — | — |
 | KAN-40 | Canchas como pines al publicar | M-29, M-34 | — · verificado a mano en la app (`evidencias/sprint-08/20` y `21`) | — | — |
-| KAN-41 | "Falta uno" destacado | U-83 a U-90, M-35 | CN-41, CN-42 | I-04, I-05 | S-02 |
+| KAN-41 | "Falta uno" destacado | U-83 a U-90, U-101, M-35 | CN-41, CN-42, CN-50 | I-04, I-05 | S-02 |
 | KAN-43 | Cuenta atrás y equipamiento real de las canchas | M-39, M-40 | — · verificado a mano en la app (`evidencias/sprint-08/28` y `29`) y foto satelital de cada cancha (`fuentes-canchas-KAN40.md`) | — | — |
-| KAN-44 | Invitado gratis solo si falta 1 y aviso a los confirmados | U-83, U-85, U-91, U-94, U-99 | CN-41, CN-42, CN-45, CN-48 · verificado en la app (`evidencias/sprint-08/30`) | — | — |
+| KAN-44 | Invitado gratis solo si falta 1 y aviso a los confirmados | U-83, U-85, U-91, U-94, U-99, U-100, U-102 | CN-41, CN-42, CN-45, CN-48, CN-49 · verificado en la app (`evidencias/sprint-08/30`) | — | — |
 | KAN-29 | La app en iPhone y Android | M-41 | — · falta verlo en el iPhone del autor | — | — |
 
 ---
@@ -452,10 +457,13 @@ sección 7 (cumplidos el 20 de noviembre) y los dieciocho controles de seguridad
 | DEF-21 | 17-nov-2026 | Tras regenerar los datos de la demo, una sesión abierta seguía entrando con un usuario que ya no existía: `/users/me` respondía 404 y la app no cerraba la sesión | Media | Cerrado el 17-nov: responde 401 y la app valida la sesión al entrar (S-18) |
 | DEF-22 | 17-nov-2026 | La dirección automática usaba `AbortSignal.timeout`, que React Native no trae: en un teléfono nunca se habría completado (KAN-38) | Media | Cerrado el 17-nov, antes de integrarse: el límite de tiempo se arma con `AbortController` (M-31). Falta verlo en un teléfono real |
 | DEF-23 | 20-nov-2026 | En el iPhone del autor, los títulos, el honor y los números en Anton salían cortados arriba; en un Samsung S23 se veían bien. iOS apoya la letra abajo cuando el alto de línea es menor que el de la fuente (KAN-29) | Media | Corregido el 21-nov: todo texto en Anton con alto de línea pasa por `antonLine` (M-41). Falta verlo en el iPhone |
-| DEF-24 | 22-nov-2026 | Con el cuerpo limitado a 1 MB, un arreglo enorme en las preferencias de avisos hacía que Zod armara un error por elemento: una petición subía 222 MB de memoria y dos o tres botaban la API gratuita (auditoría del 22-nov) | Alta | Corregido el 22-nov en `fix/auditoria-sprint9`: límite de 16 KB (S-20) |
-| DEF-25 | 22-nov-2026 | Las tablas en Supabase no tenían RLS: con la URL del proyecto y la clave anon, su Data API leía y escribía correos y hashes. Era el punto pendiente 3.6 #10 de la auditoría de cierre | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: migración con RLS en las 7 tablas (S-22). Se aplica en Supabase al desplegar |
-| DEF-26 | 22-nov-2026 | Publicar partidos no tenía límite: un script llenaba "Falta uno" de partidos falsos y disparaba avisos a todos los cercanos | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: 10 por cuenta cada hora (S-21) |
-| DEF-27 | 22-nov-2026 | En la web, tocar "Pagar" dos veces creaba otro cobro y pisaba el token del primero: pagar en la primera pestaña volvía sin pago que confirmar (HU-08) | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: dentro de 2 minutos se reusa el cobro abierto (I-15b) |
+| DEF-24 | 22-nov-2026 | Con el cuerpo limitado a 1 MB, un arreglo enorme en las preferencias de avisos hacía que Zod armara un error por elemento: una petición subía 222 MB de memoria y dos o tres botaban la API gratuita (auditoría del 22-nov) | Alta | Cerrado el 22-nov (PR #38): límite de 16 KB (S-20) |
+| DEF-25 | 22-nov-2026 | Las tablas en Supabase no tenían RLS: con la URL del proyecto y la clave anon, su Data API leía y escribía correos y hashes. Era el punto pendiente 3.6 #10 de la auditoría de cierre | Media | Cerrado el 22-nov (PR #38): migración con RLS en las 7 tablas (S-22). Se aplica en Supabase al desplegar |
+| DEF-26 | 22-nov-2026 | Publicar partidos no tenía límite: un script llenaba "Falta uno" de partidos falsos y disparaba avisos a todos los cercanos | Media | Cerrado el 22-nov (PR #38): 10 por cuenta cada hora (S-21) |
+| DEF-27 | 22-nov-2026 | En la web, tocar "Pagar" dos veces creaba otro cobro y pisaba el token del primero: pagar en la primera pestaña volvía sin pago que confirmar (HU-08) | Media | Cerrado el 22-nov (PR #38): dentro de 2 minutos se reusa el cobro abierto (I-15b) |
+| DEF-28 | 22-nov-2026 | Un destacado al que una cancelación dejaba con 2 libres seguía dando entrada gratis y aparecía en "Falta uno", contra la regla "si faltan 2 o más no hay entrada gratis" (KAN-44) | Alta | Corregido el 22-nov en `fix/KAN-44-reglas-pendientes`: el destacado rige solo mientras falte 1 (`isPriorityActive`; U-100, U-102, CN-49) |
+| DEF-29 | 22-nov-2026 | "Ánimo para jugar" le llegaba a una cuenta recién creada en el primer barrido; la regla dice 14 días sin postular ni organizar (HU-10) | Baja | Corregido el 22-nov en `fix/KAN-44-reglas-pendientes`: quien nunca jugó cuenta sus 14 días desde el registro (CN-47) |
+| DEF-30 | 22-nov-2026 | Con dos cuentas propias se inventaba un partido, se ponía un 10 y se entraba gratis y sin aprobación a cualquier destacado (KAN-41) | Media | Corregido el 22-nov en `fix/KAN-44-reglas-pendientes`: además del honor 7, hacen falta 3 calificadores distintos (`GUEST_MIN_RATERS`; U-101, CN-50) |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.

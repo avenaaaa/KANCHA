@@ -134,7 +134,11 @@ export const openapi = {
           totalCost: { type: 'integer' },
           pricePerPlayer: { type: 'integer', description: 'ceil(totalCost / totalSlots)' },
           status: { type: 'string' },
-          priority: { type: 'boolean', description: '"Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más' },
+          priority: {
+            type: 'boolean',
+            description:
+              '"Falta uno" destacado (KAN-41) que rige ahora: le falta 1 (KAN-44). Quien se une entra gratis; al tiro con honor 7 o más y 3 calificadores distintos',
+          },
           distanceM: { type: 'integer', description: 'Solo en /matches/nearby' },
           organizer: {
             type: 'object',
@@ -405,8 +409,9 @@ export const openapi = {
         description:
           'El organizador destaca su partido cuando le falta 1 jugador y empieza dentro de URGENT_WINDOW_HOURS (KAN-44: ' +
           'si faltan más, quienes entran pagan su parte). Aparece primero en la búsqueda y en "Falta uno"; quien se une ' +
-          'entra gratis (al tiro con honor 7 o más; si no, lo aprueba el organizador) y el grupo cubre esa cuota fuera de ' +
-          'la app: los confirmados reciben el aviso GUEST_COVER con lo que pone cada uno. Se decide con la fila del partido bloqueada.',
+          'entra gratis (al tiro con honor 7 o más y 3 calificadores distintos; si no, lo aprueba el organizador) y el grupo ' +
+          'cubre esa cuota fuera de la app: los confirmados reciben el aviso GUEST_COVER con lo que pone cada uno. Si una ' +
+          'cancelación deja 2 libres, deja de dar entrada gratis hasta que vuelva a faltar 1. Se decide con la fila del partido bloqueada.',
         parameters: [idParam],
         responses: {
           200: {
@@ -429,7 +434,9 @@ export const openapi = {
         parameters: [idParam],
         responses: {
           201: {
-            description: 'Postulación registrada como pendiente; en un partido destacado (KAN-41) entra gratis, y aprobada al tiro si el honor es 7 o más',
+            description:
+              'Postulación registrada como pendiente; en un partido destacado al que le falta 1 (KAN-41, KAN-44) entra gratis, ' +
+              'y aprobada al tiro con honor 7 o más y 3 calificadores distintos',
             content: { 'application/json': { example: { participationId: '3f8a…', status: 'PENDING' } } },
           },
           409: {
