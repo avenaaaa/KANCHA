@@ -88,6 +88,12 @@ export const ratingRepository = {
     return { ...m, members: [m.organizer, ...m.participations.map((p) => p.user)] };
   },
 
+  /** Cuántas personas distintas calificaron a este usuario, en cualquier partido. */
+  async countRaters(userId: string): Promise<number> {
+    const rows = await prisma.rating.groupBy({ by: ['raterId'], where: { ratedId: userId } });
+    return rows.length;
+  },
+
   async ratedBy(matchId: string, raterId: string): Promise<string[]> {
     const rows = await prisma.rating.findMany({ where: { matchId, raterId }, select: { ratedId: true } });
     return rows.map((r) => r.ratedId);

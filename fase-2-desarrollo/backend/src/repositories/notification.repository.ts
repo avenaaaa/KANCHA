@@ -179,7 +179,8 @@ export const notificationRepository = {
                GREATEST(
                  (SELECT max(p."joinedAt") FROM "Participation" p WHERE p."userId" = pref."userId"),
                  (SELECT max(o."createdAt") FROM "Match" o WHERE o."organizerId" = pref."userId")
-               ) AS "lastActiveAt"
+               ) AS "lastActiveAt",
+               (SELECT u."createdAt" FROM "User" u WHERE u."id" = pref."userId") AS "registeredAt"
         FROM "NotificationPreference" pref
         WHERE pref."nudges"
           AND NOT EXISTS (
@@ -194,7 +195,8 @@ export const notificationRepository = {
       JOIN "Match" m ON m."status" = 'OPEN' AND m."filledSlots" < m."totalSlots"
         AND m."startsAt" > ${utc(now)} AND m."startsAt" <= ${utc(until)}
         AND ${reaches}
-      WHERE np."lastActiveAt" IS NULL OR np."lastActiveAt" < ${utc(inactiveSince)}
+      -- Quien nunca jugó cuenta sus 14 días desde el registro: una cuenta nueva no recibe ánimo el primer día.
+      WHERE COALESCE(np."lastActiveAt", np."registeredAt") < ${utc(inactiveSince)}
       GROUP BY np."userId", np."lastActiveAt";
     `;
   },

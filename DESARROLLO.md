@@ -454,7 +454,7 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
 | POST | `/matches/:id/join` | HU-05 | ✔ | Crea `Participation` en `PENDING`. 409 `CANCELLED_PAID_SLOT` si canceló un cupo ya pagado en ese partido · **implementado** |
-| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le falta 1 y empieza en 2 h o menos (KAN-44). Quien se una entra gratis: al tiro con honor 7 o más; si no, lo aprueba el organizador. Los confirmados reciben cuánto pone cada uno (`GUEST_COVER`). 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
+| PATCH | `/matches/:id/priority` | KAN-41 | ✔ org | "Falta uno" destacado: el organizador lo destaca si le falta 1 y empieza en 2 h o menos (KAN-44). Quien se una entra gratis: al tiro con honor 7 o más y 3 calificadores distintos; si no, lo aprueba el organizador. Si una cancelación deja 2 libres, deja de dar entrada gratis hasta que vuelva a faltar 1. Los confirmados reciben cuánto pone cada uno (`GUEST_COVER`). 409 `PRIORITY_TOO_EARLY`, `PRIORITY_NOT_AVAILABLE`, `ALREADY_PRIORITY` · **implementado** |
 | PATCH | `/participations/:id/approve` | HU-05 | ✔ org | Organizador aprueba → `APPROVED` · **implementado** |
 | PATCH | `/participations/:id/reject` | KAN-32 | ✔ org | Organizador rechaza una postulación pendiente → `REJECTED`. No mueve cupos; el jugador puede volver a postular · **implementado** |
 | PATCH | `/participations/:id/attendance` | KAN-30 | ✔ org | Con el partido terminado, el organizador marca `{ attended }`: asistió suma `matchesPlayed`, no se presentó deja `NO_SHOW`. Una vez por jugador; recalcula el honor · **implementado** |
@@ -515,8 +515,10 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      falta 1 jugador y empieza dentro de URGENT_WINDOW_HOURS; si faltan más, se
                      paga normal (KAN-44). Destacado, va primero en la búsqueda y en "Falta uno", y
                      quien se une entra gratis (amountDue = 0): al tiro si su honor es 7 o más
-                     (GUEST_MIN_HONOR); un novato o un honor menor queda PENDING y lo aprueba
-                     el organizador. Su
+                     (GUEST_MIN_HONOR) y lo calificaron 3 personas distintas (GUEST_MIN_RATERS);
+                     si no, queda PENDING y lo aprueba el organizador. El destacado rige
+                     mientras falte 1 (isPriorityActive): si una cancelación deja 2 libres,
+                     se paga normal y sale de "Falta uno" hasta que vuelva a faltar 1. Su
                      cuota la cubre el grupo fuera de la app (guestShare la reparte entre los
                      que ya están, y a cada confirmado le llega el aviso GUEST_COVER) y Kancha no
                      cobra comisión por ese cupo. Se decide con la
@@ -532,7 +534,8 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      "Falta uno" que reemplaza al anterior, postular → al organizador,
                      aprobar → al jugador) y por un barrido cada NOTIFY_SWEEP_MINUTES
                      (5) que avisa los partidos que entran en la ventana de urgencia,
-                     ofrece destacarlos y anima a quien no juega hace 14 días. Fan-out en
+                     ofrece destacarlos y anima a quien no juega hace 14 días (desde el
+                     registro, si nunca jugó). Fan-out en
                      un solo INSERT … SELECT con ST_DWithin desde el punto de cada usuario;
                      UNIQUE (userId, kind, matchId) impide repetirlos. Si un aviso falla,
                      la acción principal (postular, aprobar) no se deshace.

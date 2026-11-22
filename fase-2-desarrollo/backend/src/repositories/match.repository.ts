@@ -124,11 +124,11 @@ export const matchRepository = {
         AND (${f.level}::text IS NULL OR m."level"::text = ${f.level}::text)
         AND (${iso(f.from)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') >= ${iso(f.from)}::timestamptz)
         AND (${iso(f.to)}::timestamptz IS NULL OR (m."startsAt" AT TIME ZONE 'UTC') <= ${iso(f.to)}::timestamptz)
-        -- KAN-41: un partido destacado entra en "Falta uno" aunque le falten dos.
-        AND (${f.slotsLeft}::int IS NULL OR m."totalSlots" - m."filledSlots" = ${f.slotsLeft}::int OR m."prioritizedAt" IS NOT NULL)
+        -- KAN-44: un destacado al que una cancelación dejó con 2 libres tampoco es "Falta uno".
+        AND (${f.slotsLeft}::int IS NULL OR m."totalSlots" - m."filledSlots" = ${f.slotsLeft}::int)
         AND ST_DWithin(m."location", ST_MakePoint(${f.lng}, ${f.lat})::geography, ${f.radiusM})
-      -- Los destacados (KAN-41) van primero.
-      ORDER BY (m."prioritizedAt" IS NULL), "distanceM" ASC, m."startsAt" ASC
+      -- Los destacados (KAN-41) van primero, mientras les falte 1 (MAX_PRIORITY_SLOTS, KAN-44).
+      ORDER BY (m."prioritizedAt" IS NULL OR m."totalSlots" - m."filledSlots" > 1), "distanceM" ASC, m."startsAt" ASC
       LIMIT 100;
     `;
   },

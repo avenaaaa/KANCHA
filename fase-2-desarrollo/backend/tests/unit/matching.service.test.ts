@@ -147,13 +147,32 @@ describe('decideApproval en un partido destacado (KAN-41)', () => {
       amountDue: 0,
     });
   });
+
+  it('U-100 · destacado al que una cancelación dejó con 2 libres: quien entra paga su parte (KAN-44)', () => {
+    const conDosLibres: LockedMatch = {
+      id: 'm3',
+      organizerId: 'organizador',
+      totalSlots: 4,
+      filledSlots: 2,
+      totalCost: 24000,
+      status: 'OPEN',
+      startsAt: manana,
+      prioritizedAt: ahora,
+    };
+    expect(decideApproval({ status: 'PENDING' }, conDosLibres, 'organizador', ahora)).toMatchObject({ ok: true, amountDue: 6000 });
+  });
 });
 
 describe('isTrustedGuest · verificación del invitado de un partido destacado (KAN-41)', () => {
   it('U-90 · entra al tiro con honor 7 o más; un novato o un honor bajo esperan al organizador', () => {
-    expect(isTrustedGuest(null)).toBe(false);
-    expect(isTrustedGuest(6.9)).toBe(false);
-    expect(isTrustedGuest(7)).toBe(true);
-    expect(isTrustedGuest(9.5)).toBe(true);
+    expect(isTrustedGuest(null, 5)).toBe(false);
+    expect(isTrustedGuest(6.9, 5)).toBe(false);
+    expect(isTrustedGuest(7, 3)).toBe(true);
+    expect(isTrustedGuest(9.5, 5)).toBe(true);
+  });
+
+  it('U-101 · con menos de 3 personas distintas que lo calificaron, ni un 10 entra al tiro (auditoría del 22-nov)', () => {
+    expect(isTrustedGuest(10, 2)).toBe(false);
+    expect(isTrustedGuest(10, 0)).toBe(false);
   });
 });
