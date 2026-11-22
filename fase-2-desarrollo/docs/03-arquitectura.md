@@ -51,7 +51,6 @@ Versión interactiva: [`diagramas/arquitectura/componentes.html`](diagramas/arqu
 | Servicio | Para qué | Quién lo llama |
 |---|---|---|
 | Transbank Webpay Plus (Integración) | Pago fraccionado del arriendo y reembolsos, sin dinero real | `payment.service`, a través de `webpay.repository` |
-| Expo Push API | Push en Android de los avisos (HU-10) | Pendiente: KAN-42, Sprint 9. Los avisos ya llegan dentro de la app: `notification.service` los guarda y la app los pide cada 30 s. Un barrido dentro del proceso de la API (`startSweep`, cada `NOTIFY_SWEEP_MINUTES`) crea los que dependen del tiempo |
 | OpenFreeMap | Tiles del mapa oscuro, sin clave de API | `KanchaMap` |
 
 ---

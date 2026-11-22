@@ -3,7 +3,6 @@ flowchart LR
     OR(["👤 Organizador"])
     AD(["👤 Administrador"])
     TBK(["⚙️ Transbank Webpay"])
-    PUSH(["⚙️ Expo Push API"])
     MAP(["⚙️ Tiles OSM / MapLibre"])
 
     subgraph KANCHA["Sistema Kancha"]
@@ -32,7 +31,6 @@ flowchart LR
     UC8 -.-> TBK
     UC9 -.->|"include"| UC10
     UC4 -.-> MAP
-    UC11 -.->|"fuera: KAN-42"| PUSH
     UC3 -.->|"trigger"| UC11
     UC5 -.->|"trigger"| UC11
     UC13 -.->|"include"| UC10

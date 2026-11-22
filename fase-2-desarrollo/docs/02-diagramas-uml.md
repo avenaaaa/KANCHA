@@ -14,7 +14,6 @@ flowchart LR
     OR(["👤 Organizador"])
     AD(["👤 Administrador"])
     TBK(["⚙️ Transbank Webpay"])
-    PUSH(["⚙️ Expo Push API"])
     MAP(["⚙️ Tiles OSM / MapLibre"])
 
     subgraph KANCHA["Sistema Kancha"]
@@ -43,7 +42,6 @@ flowchart LR
     UC8 -.-> TBK
     UC9 -.->|"include"| UC10
     UC4 -.-> MAP
-    UC11 -.->|"fuera: KAN-42"| PUSH
     UC3 -.->|"trigger"| UC11
     UC5 -.->|"trigger"| UC11
     UC13 -.->|"include"| UC10
@@ -54,9 +52,7 @@ flowchart LR
 
 **Lectura:** los casos de uso forman el MVP entregado (HU-01 a HU-11, más el registro de asistencia de
 KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32). UC11 volvió al alcance el
-20 de noviembre de 2026: publicar y postular disparan avisos dentro de la app. La flecha a Expo Push es el
-push con la app cerrada (KAN-42), que quedó fuera el 22 de noviembre porque Expo Go no lo recibe en
-Android. Ese mismo día entraron UC12 y UC15 (HU-11): un compañero de partido reporta y el administrador
+20 de noviembre de 2026: publicar y postular disparan avisos dentro de la app. El 22 de noviembre entraron UC12 y UC15 (HU-11): un compañero de partido reporta y el administrador
 suspende 7 días o descarta; la sanción dispara un aviso al sancionado.
 Las flechas punteadas hacia la derecha marcan la dependencia de sistemas externos.
 
@@ -233,7 +229,6 @@ flowchart TB
 
     subgraph EXT["Servicios externos"]
         E1["Transbank Webpay<br/>ambiente Integración"]
-        E2["Expo Push API"]
         E3["Tiles OSM / OpenFreeMap"]
     end
 
@@ -243,7 +238,7 @@ flowchart TB
     R2 -->|"HTTPS"| R1
     R1 -->|"SSL"| S1
     M1 -->|"HTTPS"| R1
-    C2 -.-> E1 & E2
+    C2 -.-> E1
     C3 -.-> E3
     M1 -.-> E3
 
@@ -310,7 +305,6 @@ classDiagram
         +Decimal attendanceRate
         +Decimal punctualityRate
         +Decimal fairPlayRate
-        +String expoPushToken
         +DateTime createdAt
         +DateTime updatedAt
     }

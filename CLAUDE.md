@@ -87,7 +87,7 @@ La estructura detallada está en `DESARROLLO.md` §3.
 | E4 | KAN-26 | Búsqueda geolocalizada | Alta | HU-04 |
 | E5 | KAN-27 | Postulación a partidos | Alta | HU-05 |
 | E6 | KAN-3 | Sistema de Honor | Alta | HU-06, HU-07 |
-| E7 | KAN-4 | Pago fraccionado | Alta | HU-08 · HU-12 en el backlog |
+| E7 | KAN-4 | Pago fraccionado | Alta | HU-08 |
 | E8 | KAN-28 | Retención por deserción | Alta | HU-09 |
 | E9 | KAN-5 | Notificaciones | Media | HU-10 · reincorporada el 20-nov |
 | E10 | KAN-6 | Moderación | Baja | HU-11 |
@@ -116,12 +116,11 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
 | HU-10 | KAN-16 | E9 | Avisos de partidos cercanos y de "Falta uno" | Should | 8 | 8 |
 | HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Could | 5 | 9 |
-| HU-12 | KAN-45 | E7 | Pagar con tarjeta inscrita y cubrir al invitado dentro de la app | Won't (esta fase) | 8 | Backlog |
 
 **Total del MVP: 60 puntos en 11 historias.** HU-01 a HU-09 (47 puntos) quedaron terminadas al 8 de
 noviembre de 2026 (Sprint 7); HU-10 (8 puntos) se reincorporó el 20 de noviembre y se hizo dentro de la app
-en el Sprint 8; HU-11 (5 puntos) entró el 22 de noviembre. El push con la app cerrada (**KAN-42**) salió
-ese mismo día: Expo Go no recibe push en Android y la app no se publica en las tiendas.
+en el Sprint 8; HU-11 (5 puntos) entró el 22 de noviembre y se terminó ese mismo día. Las once están
+entregadas.
 La columna Sprint refleja la replanificación del 20 de noviembre de 2026, vigente en Jira. Además,
 la tarea **KAN-30** implementó la regla "Partidos jugados" (registro de asistencia), que ninguna
 historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre del 14 de noviembre
@@ -131,8 +130,7 @@ interfaz y **KAN-38** dibuja el límite real de La Florida, ofrece canchas exist
 completa la dirección; **KAN-40** reemplazó esa lista por 36 canchas investigadas que se eligen
 como pines en el mapa, y **KAN-41** agregó el "Falta uno" destacado: el invitado entra gratis. **KAN-43** puso una cuenta atrás en
 las cartas y verificó con foto satelital qué deportes admite de verdad cada cancha. **KAN-44** dejó
-la entrada gratis solo para cuando falta 1 jugador y avisa a los confirmados cuánto pone cada uno;
-cobrar esa cuota dentro de la app con tarjeta inscrita (Oneclick) es HU-12, en el backlog.
+la entrada gratis solo para cuando falta 1 jugador y avisa a los confirmados cuánto pone cada uno.
 
 ### Reglas de negocio transversales (aplican a varias HU)
 
@@ -192,8 +190,7 @@ destacado         destacarlo: va primero en "Falta uno" para los jugadores cerca
                   cancelación lo deja así): quien entra paga su parte y el partido sale de "Falta uno"
                   hasta que vuelva a faltar 1. La cuota del invitado la cubre el grupo fuera de
                   la app: al destacar, cada confirmado recibe cuánto pone, y Kancha no cobra comisión
-                  por ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. Cobrar la cuota en la
-                  app con tarjeta inscrita es HU-12. (KAN-41, KAN-44)
+                  por ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. (KAN-41, KAN-44)
 
 Avisos            Cada usuario elige qué avisos acepta; sin elegir, ninguno. "Falta uno" (partido
                   urgente o destacado dentro de su radio y deportes) es el prioritario: va primero y
@@ -255,16 +252,11 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 >
 > **Replanificación del 20 de noviembre de 2026.** El autor reincorporó HU-10: sin avisos, el "Falta uno"
 > depende de que el jugador abra la app justo a tiempo. Se reescribió (avisos que el usuario elige, con
-> "Falta uno" como prioritario) y se estimó en 8 puntos. Para no arriesgar el despliegue se partió en dos:
-> los avisos dentro de la app y sus disparadores en el Sprint 8 (KAN-16), y el push en Android en el
-> Sprint 9 (KAN-42), porque exige compilar la app con la cuenta gratuita de Expo. El push en iPhone queda
-> fuera: requiere la cuenta de desarrollador de Apple, que no es gratis. El MVP suma 10 historias y 55 puntos.
+> "Falta uno" como prioritario), se estimó en 8 puntos y se hizo dentro de la app en el Sprint 8 (KAN-16).
+> El MVP suma 10 historias y 55 puntos.
 >
-> **Replanificación del 22 de noviembre de 2026.** La app se queda en la web y en Expo Go: publicarla en
-> las tiendas cuesta y el MVP no lo necesita. KAN-42 sale del alcance (desde el SDK 53 Expo Go no recibe
-> push en Android; los avisos siguen llegando dentro de la app) y HU-11 entra al Sprint 9 como *Could*.
-> Quedan 11 de 12 historias del backlog y 60 puntos. HU-12 (Oneclick) sigue en el backlog: tocar los pagos
-> antes de la defensa es el riesgo mayor.
+> **Replanificación del 22 de noviembre de 2026.** HU-11 entra al Sprint 9 como *Could* y se termina ese
+> mismo día. El backlog queda en 11 historias y 60 puntos, todas entregadas.
 
 ---
 

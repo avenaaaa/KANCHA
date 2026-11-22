@@ -20,7 +20,6 @@ flowchart TB
 
     subgraph EXT["Servicios externos"]
         E1["Transbank Webpay<br/>ambiente Integración"]
-        E2["Expo Push API"]
         E3["Tiles OSM / OpenFreeMap"]
     end
 
@@ -30,7 +29,7 @@ flowchart TB
     R2 -->|"HTTPS"| R1
     R1 -->|"SSL"| S1
     M1 -->|"HTTPS"| R1
-    C2 -.-> E1 & E2
+    C2 -.-> E1
     C3 -.-> E3
     M1 -.-> E3
 

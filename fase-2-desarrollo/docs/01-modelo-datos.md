@@ -51,7 +51,6 @@ erDiagram
         decimal  attendanceRate
         decimal  punctualityRate
         decimal  fairPlayRate
-        string   expoPushToken
         enum     role "PLAYER o ADMIN (HU-11)"
         datetime suspendedUntil "null = sin sancion"
         datetime createdAt
@@ -169,7 +168,6 @@ erDiagram
 | `attendanceRate` | DECIMAL(5,2) | Sí | 0–100 | Calculado: asistidos / (asistidos + no presentados), según `Participation.attended` |
 | `punctualityRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.punctuality` |
 | `fairPlayRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.conduct` |
-| `expoPushToken` | VARCHAR | Sí | — | Reservado para el push con la app cerrada (KAN-42), que quedó fuera el 22-nov: Expo Go no lo recibe en Android. Los avisos dentro de la app (HU-10) no lo usan |
 | `role` | ENUM | No | PLAYER | ADMIN, default PLAYER | ADMIN modera los reportes (HU-11). Se asigna en la base: no hay pantalla para nombrar administradores |
 | `suspendedUntil` | TIMESTAMP | Sí | — | Hasta entonces no publica, no postula ni destaca (HU-11). NULL = sin sanción |
 | `createdAt` | TIMESTAMP | No | default now() | Alta de la cuenta |
@@ -416,6 +414,7 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`migrations/20261121150000_aviso_cubrir_invitado/migration.sql`](../backend/prisma/migrations/20261121150000_aviso_cubrir_invitado/migration.sql) | Valor `GUEST_COVER` en `NotificationKind`: a los confirmados de un destacado, cuánto pone cada uno por el invitado (KAN-44) |
 | [`migrations/20261122120000_rls_supabase/migration.sql`](../backend/prisma/migrations/20261122120000_rls_supabase/migration.sql) | RLS sin políticas en las 7 tablas: la Data API de Supabase no las lee ni las escribe. La API entra como dueña y no se ve afectada (S-22, DEF-25) |
 | [`migrations/20261122200000_moderacion/migration.sql`](../backend/prisma/migrations/20261122200000_moderacion/migration.sql) | Tabla `Report`, tipos `Role`, `ReportReason` y `ReportStatus`, columnas `role` y `suspendedUntil` en `User`, valor `SANCTION` en `NotificationKind`, `CHECK` de no reportarse a sí mismo y del largo del comentario, y RLS en la tabla nueva (HU-11) |
+| [`migrations/20261122230000_sin_push_token/migration.sql`](../backend/prisma/migrations/20261122230000_sin_push_token/migration.sql) | Quita `User.expoPushToken`, que nunca se usó: los avisos (HU-10) llegan dentro de la app |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el

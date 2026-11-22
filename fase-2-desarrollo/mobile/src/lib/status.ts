@@ -32,7 +32,7 @@ export function playerStatus(status: ParticipationStatus | null, mustPay: boolea
 
 /**
  * Cada cuánto se vuelve a pedir el detalle de un partido, o false si no hace falta.
- * Mientras no haya push (KAN-42), es lo que hace que el jugador vea su aprobación y el
+ * Es lo que hace que el jugador vea su aprobación y el
  * organizador las postulaciones nuevas sin salir de la pantalla; los avisos (HU-10) llegan a la bandeja.
  */
 export function matchPollInterval(m: Pick<MatchDetail, 'ratingWindow' | 'viewer'> | undefined): number | false {
