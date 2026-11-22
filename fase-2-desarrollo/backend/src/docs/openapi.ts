@@ -345,6 +345,8 @@ export const openapi = {
         responses: {
           201: { description: 'Partido publicado como OPEN', content: json('MatchDetail') },
           422: error({ code: 'MATCH_IN_PAST', message: 'La fecha y hora del partido ya pasaron' }),
+          // S-21: PUBLISH_RATE_LIMIT partidos por cuenta cada hora.
+          429: error({ code: 'TOO_MANY_REQUESTS', message: 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.' }),
         },
       },
     },

@@ -266,6 +266,9 @@ async function commitOrStatus(token: string): Promise<WebpayCommit> {
   }
 }
 
+/** Ventana del doble toque: más corta que el formulario de Webpay, que da varios minutos para pagar. */
+const REUSE_OPEN_CHECKOUT_MS = 2 * 60_000;
+
 /** Paso 1: crea la transacción en Webpay y deja el pago INITIATED. */
 export async function startPayment(
   participationId: string,
@@ -286,6 +289,16 @@ export async function startPayment(
     const state = await webpayRepository.status(previous.token).catch(() => null);
     if (state && isApproved(state) && (await settleApprovedPayment(previous, now)) !== 'GONE') {
       throw conflict('ALREADY_PAID', 'Tu cupo ya está pagado');
+    }
+    // Doble toque en "Pagar" (en la web el botón vuelve a activarse al abrir la pestaña de Webpay):
+    // si el cobro recién creado sigue abierto, se reusa. Uno nuevo pisaría su token y el pago hecho
+    // en la primera pestaña volvería sin pago que confirmar.
+    if (
+      state?.status === 'INITIALIZED' &&
+      previous.amount === decision.amount &&
+      now.getTime() - previous.updatedAt.getTime() < REUSE_OPEN_CHECKOUT_MS
+    ) {
+      return { paymentId: previous.id, amount: previous.amount, commission: previous.commission };
     }
   }
 

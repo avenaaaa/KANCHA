@@ -17,7 +17,9 @@ export function createApp() {
   app.use(helmet());
   // En la nube se limita al sitio web propio; la app nativa no usa CORS.
   app.use(cors(env.CORS_ORIGINS ? { origin: env.CORS_ORIGINS.split(',').map((o) => o.trim()) } : undefined));
-  app.use(express.json({ limit: '1mb' }));
+  // S-20: ningún cuerpo legítimo pasa de 1 KB. Con 1 MB, un arreglo enorme hacía que Zod armara
+  // un error por elemento y una sola petición agotaba la memoria del servidor gratuito.
+  app.use(express.json({ limit: '16kb' }));
 
   // Documentación navegable del contrato (DESARROLLO.md §6.4).
   app.get('/api/docs.json', (_req, res) => {
