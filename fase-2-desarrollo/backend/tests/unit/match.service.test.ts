@@ -160,11 +160,11 @@ describe('checkCanPrioritize · "Falta uno" destacado (KAN-41)', () => {
 });
 
 describe('isPriorityActive · el destacado rige mientras falte 1 (KAN-44)', () => {
-  it('U-102 · da entrada gratis con 1 libre; con 2 libres, lleno o sin destacar, no', () => {
+  it('U-102 · rige con 1 libre y lleno (ya entró el invitado); con 2 libres o sin destacar, no', () => {
     const destacado = { prioritizedAt: new Date('2026-11-22T18:00:00Z'), totalSlots: 4 };
     expect(isPriorityActive({ ...destacado, filledSlots: 3 })).toBe(true);
+    expect(isPriorityActive({ ...destacado, filledSlots: 4 })).toBe(true);
     expect(isPriorityActive({ ...destacado, filledSlots: 2 })).toBe(false);
-    expect(isPriorityActive({ ...destacado, filledSlots: 4 })).toBe(false);
     expect(isPriorityActive({ prioritizedAt: null, totalSlots: 4, filledSlots: 3 })).toBe(false);
   });
 });

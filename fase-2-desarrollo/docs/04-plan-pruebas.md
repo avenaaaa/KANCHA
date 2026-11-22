@@ -161,7 +161,7 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | U-99 | `notification.service` · `guestCoverMessage` | A los confirmados de un destacado: la cuota del invitado y cuánto pone cada uno, en pesos con punto de miles | KAN-44 |
 | U-100 | `matching.service` · `decideApproval` | Destacado al que una cancelación dejó con 2 libres: quien entra paga su parte ($6.000) | KAN-44 · DEF-28 |
 | U-101 | `matching.service` · `isTrustedGuest` | Con menos de 3 personas distintas que lo calificaron, ni un honor de 10 entra al tiro | KAN-41 · DEF-30 |
-| U-102 | `match.service` · `isPriorityActive` | El destacado rige con 1 libre; con 2 libres, lleno o sin destacar, no | KAN-44 · DEF-28 |
+| U-102 | `match.service` · `isPriorityActive` | El destacado rige con 1 libre y lleno (ya entró el invitado); con 2 libres o sin destacar, no | KAN-44 · DEF-28 |
 
 ### 4.3 Pruebas de la app
 

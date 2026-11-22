@@ -98,11 +98,11 @@ export const MAX_PRIORITY_SLOTS = 1;
 
 /**
  * KAN-44: un destacado da entrada gratis solo mientras falte 1. Si una cancelación deja 2 libres,
- * quien entra paga su parte; cuando vuelve a faltar 1, el destacado vuelve a regir.
+ * quien entra paga su parte; cuando vuelve a faltar 1, el destacado vuelve a regir. Lleno sigue
+ * destacado: el invitado ya entró y no queda cupo que regalar.
  */
 export function isPriorityActive(m: { prioritizedAt: Date | null; totalSlots: number; filledSlots: number }): boolean {
-  const left = Number(m.totalSlots) - Number(m.filledSlots);
-  return m.prioritizedAt != null && left >= 1 && left <= MAX_PRIORITY_SLOTS;
+  return m.prioritizedAt != null && Number(m.totalSlots) - Number(m.filledSlots) <= MAX_PRIORITY_SLOTS;
 }
 
 /**
