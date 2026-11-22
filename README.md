@@ -84,7 +84,7 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-03 · Publicar | Publicar un partido marcando la cancha en el mapa, con día, hora, cupos y arriendo |
 | HU-04 · Mapa | Ver los partidos con cupo en un radio de 2, 5 o 10 km, filtrados por deporte, horario y nivel |
 | Falta uno | Con el botón "Falta uno" del mapa, ver solo los partidos urgentes: les falta un jugador y empiezan en 2 horas o menos |
-| Falta uno destacado | Si al organizador le falta 1 jugador y el partido empieza en 2 horas o menos, la app le ofrece destacarlo: va primero en "Falta uno" y quien se une entra gratis, como invitado: al tiro si su honor es 7 o más, y si no el organizador lo aprueba. Los demás confirmados reciben cuánto pone cada uno por el invitado (KAN-44). Probarlo: entrar como `diego@kancha.cl` y abrir su "Fútbol 5 · Falta uno ya" |
+| Falta uno destacado | Si al organizador le falta 1 jugador y el partido empieza en 2 horas o menos, la app le ofrece destacarlo: va primero en "Falta uno" y quien se une entra gratis, como invitado: al tiro si su honor es 7 o más y lo calificaron al menos 3 personas, y si no el organizador lo aprueba. Si después alguien cancela y faltan 2, deja de ser gratis hasta que vuelva a faltar 1. Los demás confirmados reciben cuánto pone cada uno por el invitado (KAN-44). Probarlo: entrar como `diego@kancha.cl` y abrir su "Fútbol 5 · Falta uno ya" |
 | Avisos | Cada usuario elige qué avisos recibe: los "Falta uno" cerca (los más destacados, también sobre el mapa), partidos nuevos en sus días y horario, quién pide entrar a sus partidos y un ánimo semanal si deja de jugar. Probarlo: entrar como `camila@kancha.cl`, que tiene todos activados, y abrir la pestaña Avisos |
 | Comuna y canchas | El mapa dibuja el límite real de La Florida. Al publicar se elige una de las 36 canchas de la comuna tocando su pin (24 abiertas al público, 5 municipales y 7 privadas; un "$" marca las que se arriendan) o se marca un punto, y la dirección se completa sola. Cada cancha se ofrece solo para los deportes que admite: las de pasto sintético, solo para fútbol |
 | HU-05 · Postular | Postular con "Falta 1", que el organizador apruebe o rechace, y quedar confirmado sin sobreventa del último cupo |
@@ -94,8 +94,9 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-07 · Honor | El puntaje de honor (0 a 10) se recalcula al instante con cada reseña y cada asistencia registrada |
 | HU-02 · Carta | Ver la carta de jugador de cualquier participante: honor, partidos jugados y métricas, sin su correo |
 | Asistencia | El organizador marca quién asistió y quién no se presentó; eso suma partidos jugados y cuenta en el honor |
+| HU-11 · Moderación | Desde la carta de un compañero de partido se reporta su conducta (agresión, lenguaje ofensivo, juego sucio u otro). Un administrador ve el detalle y el historial y suspende 7 días o descarta; suspendido no puede publicar, postular ni destacar, y recibe un aviso. Probarlo: entrar como `admin@kancha.cl`, Perfil → Moderar reportes: Diego tiene un reporte pendiente |
 
-Los avisos (HU-10) volvieron al alcance el 20 de noviembre de 2026: llegan dentro de la app; el push con la app cerrada en Android es la tarea KAN-42, y en iPhone queda fuera porque exige la cuenta de desarrollador de Apple, que no es gratis.
+Los avisos (HU-10) llegan dentro de la app. El push con la app cerrada quedó fuera el 22 de noviembre de 2026: Kancha se usa en la web y en Expo Go, sin tiendas, y desde el SDK 53 Expo Go no recibe push en Android (KAN-42). HU-12 (pagar con tarjeta inscrita) sigue en el backlog.
 
 Los datos geográficos (límite de la comuna, ubicación de las canchas y direcciones) son de © colaboradores
 de [OpenStreetMap](https://www.openstreetmap.org/copyright), bajo licencia ODbL. La lista de canchas sale
@@ -109,7 +110,7 @@ Una carpeta por cada fase del Portafolio de Título.
 | Carpeta | Contenido | Estado |
 |---|---|---|
 | [`fase-1-definicion/`](fase-1-definicion/) | Definición del proyecto: documento consolidado, los diez documentos ágiles, Excel y diagramas | ✅ Entregada · agosto 2026 |
-| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | ✅ Lista para la evaluación del 23 de noviembre de 2026 · las 10 historias del MVP, en la nube · release `v0.9.0` |
+| [`fase-2-desarrollo/`](fase-2-desarrollo/) | La aplicación: `backend/` (API), `mobile/` (app Expo) y [`docs/`](fase-2-desarrollo/docs/) (arquitectura, modelo de datos, UML, plan de pruebas y documentos de cada sprint) | ✅ Lista para la evaluación del 23 de noviembre de 2026 · 11 historias del MVP (60 puntos), en la nube · release `v0.9.0` |
 | [`fase-3-implementacion/`](fase-3-implementacion/) | Despliegue, pruebas de rendimiento, cierre de pruebas y defensa | 🔄 En curso · nube publicada el 21-nov y guía para correr Kancha · defensa en el Sprint 9 (dic 2026) |
 
 Cada fase se ordena igual: `entrega/` reúne lo que se presenta en la evaluación (guía de la asignatura,

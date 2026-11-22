@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertFutureStart, checkCanPrioritize, toMatchSummary } from '../../src/services/match.service.js';
+import { assertFutureStart, checkCanPrioritize, isPriorityActive, toMatchSummary } from '../../src/services/match.service.js';
 import { createMatchSchema, nearbyQuerySchema } from '../../src/schemas/match.schema.js';
 import { AppError } from '../../src/utils/errors.js';
 import type { MatchRow } from '../../src/repositories/match.repository.js';
@@ -156,5 +156,15 @@ describe('checkCanPrioritize · "Falta uno" destacado (KAN-41)', () => {
     expect(codigo(checkCanPrioritize({ ...partido, prioritizedAt: ahora }, 'organizador', ahora))).toBe('ALREADY_PRIORITY');
     expect(codigo(checkCanPrioritize({ ...partido, startsAt: enHoras(-0.1) }, 'organizador', ahora))).toBe('MATCH_STARTED');
     expect(codigo(checkCanPrioritize({ ...partido, status: 'FULL' }, 'organizador', ahora))).toBe('MATCH_NOT_OPEN');
+  });
+});
+
+describe('isPriorityActive · el destacado rige mientras falte 1 (KAN-44)', () => {
+  it('U-102 · rige con 1 libre y lleno (ya entró el invitado); con 2 libres o sin destacar, no', () => {
+    const destacado = { prioritizedAt: new Date('2026-11-22T18:00:00Z'), totalSlots: 4 };
+    expect(isPriorityActive({ ...destacado, filledSlots: 3 })).toBe(true);
+    expect(isPriorityActive({ ...destacado, filledSlots: 4 })).toBe(true);
+    expect(isPriorityActive({ ...destacado, filledSlots: 2 })).toBe(false);
+    expect(isPriorityActive({ prioritizedAt: null, totalSlots: 4, filledSlots: 3 })).toBe(false);
   });
 });

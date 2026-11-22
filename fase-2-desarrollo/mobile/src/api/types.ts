@@ -14,6 +14,9 @@ export interface User {
   punctualityRate: number | null;
   fairPlayRate: number | null;
   createdAt: string;
+  /** Solo en el perfil propio (HU-11). */
+  role?: 'PLAYER' | 'ADMIN';
+  suspendedUntil?: string | null;
 }
 
 export interface Session {
@@ -38,7 +41,7 @@ export interface MatchSummary {
   totalCost: number;
   pricePerPlayer: number;
   status: string;
-  /** "Falta uno" destacado (KAN-41): quien se une entra gratis; al tiro si su honor es 7 o más. */
+  /** "Falta uno" destacado que rige ahora: le falta 1 y quien se une entra gratis (KAN-41, KAN-44). Lo decide la API. */
   priority: boolean;
   organizer: { id: string; name: string; honorScore: number | null };
   distanceM?: number;
@@ -117,7 +120,28 @@ export type NotificationKind =
   | 'JOIN_APPROVED'
   | 'PRIORITY_OFFER'
   | 'NUDGE'
-  | 'GUEST_COVER';
+  | 'GUEST_COVER'
+  | 'SANCTION';
+
+/** HU-11: reportes de conducta y su moderación. */
+export type ReportReason = 'AGRESION' | 'LENGUAJE' | 'JUEGO_SUCIO' | 'OTRO';
+export type ReportStatus = 'PENDING' | 'SANCTIONED' | 'DISMISSED';
+
+export interface Report {
+  id: string;
+  reason: ReportReason;
+  comment: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  match: { id: string; title: string; sport: SportKey; startsAt: string };
+  reporter: { id: string; name: string };
+  reported: { id: string; name: string; honorScore: number | null; matchesPlayed: number; suspendedUntil: string | null };
+  resolution: { by: { id: string; name: string } | null; at: string; note: string | null } | null;
+}
+
+export interface ReportDetail extends Report {
+  history: Report[];
+}
 
 export interface AppNotification {
   id: string;

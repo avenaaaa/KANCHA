@@ -23,6 +23,9 @@ export interface PublicUser {
   punctualityRate: number | null;
   fairPlayRate: number | null;
   createdAt: string;
+  /** Solo en el perfil propio (HU-11): la app muestra el panel de moderación y la suspensión. */
+  role?: User['role'];
+  suspendedUntil?: string | null;
 }
 
 export interface AuthResult {
@@ -35,7 +38,8 @@ export function toPublicUser(u: User, { includeEmail = false } = {}): PublicUser
   return {
     id: u.id,
     name: u.name,
-    ...(includeEmail ? { email: u.email } : {}),
+    // El correo, el rol y la suspensión solo los ve el propio usuario.
+    ...(includeEmail ? { email: u.email, role: u.role, suspendedUntil: u.suspendedUntil?.toISOString() ?? null } : {}),
     favoriteSport: u.favoriteSport,
     matchesPlayed: u.matchesPlayed,
     honorScore: toNumberOrNull(u.honorScore),

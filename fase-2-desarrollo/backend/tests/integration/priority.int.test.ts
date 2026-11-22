@@ -10,11 +10,21 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
   let jugador: Jugador;
   let confiable: Jugador;
 
+  /** Reseñas de `personas` cuentas distintas, en un partido lejos del origen para no aparecer en las búsquedas. */
+  async function calificadoPor(quien: Jugador, personas: number) {
+    const partido = await publishMatch(organizador.token, { ...northOf(60_000), title: 'Partido de las reseñas' });
+    const raters = await Promise.all(Array.from({ length: personas }, (_, i) => registerUser(`Calificador ${i + 1}`)));
+    await prisma.rating.createMany({
+      data: raters.map((r) => ({ matchId: partido.id, raterId: r.user.id, ratedId: quien.user.id, punctuality: 5, conduct: 5 })),
+    });
+  }
+
   beforeAll(async () => {
     organizador = await registerUser('Organizador destacado');
     jugador = await registerUser('Invitado');
     confiable = await registerUser('Invitado con honor');
     await prisma.user.update({ where: { id: confiable.user.id }, data: { honorScore: 8 } });
+    await calificadoPor(confiable, 3);
   });
   afterAll(() => prisma.$disconnect());
 
@@ -115,5 +125,55 @@ describe.skipIf(!hasDb)('"Falta uno" destacado · KAN-41 (integración)', () => 
     expect([r2.status, r2.body.error.code]).toEqual([409, 'PRIORITY_NOT_AVAILABLE']);
 
     expect((await destacar(organizador.token, 'no-es-un-uuid')).status).toBe(422);
+  });
+
+  it('CN-49 · si tras destacar una cancelación deja 2 libres, quien entra paga y sale de "Falta uno"; con 1 libre vuelve a ser gratis (KAN-44)', async () => {
+    const partido = await publishMatch(organizador.token, {
+      ...northOf(1900),
+      totalSlots: 4,
+      filledSlots: 2,
+      totalCost: 24000,
+      startsAt: inHours(1.5),
+      title: 'Destacado que pierde un jugador',
+    });
+    const seBaja = await registerUser('Se baja');
+    const union = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(seBaja.token));
+    await api().patch(`/api/v1/participations/${union.body.participationId}/approve`).set(auth(organizador.token));
+    expect((await destacar(organizador.token, partido.id)).status).toBe(200);
+
+    expect((await api().delete(`/api/v1/participations/${union.body.participationId}`).set(auth(seBaja.token))).status).toBe(200);
+    expect((await detalle(organizador.token, partido.id)).body).toMatchObject({ slotsLeft: 2, priority: false });
+    const urgentes = await api()
+      .get('/api/v1/matches/nearby')
+      .query({ lat: origin.lat, lng: origin.lng, urgent: 'true' })
+      .set(auth(jugador.token));
+    expect(urgentes.body.matches.map((m: { id: string }) => m.id)).not.toContain(partido.id);
+
+    // Con honor 8 y tres calificadores no entra al tiro: no hay entrada gratis que dar. Lo aprueba el organizador y paga su parte.
+    const entra = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(confiable.token));
+    expect([entra.status, entra.body.status]).toEqual([201, 'PENDING']);
+    await api().patch(`/api/v1/participations/${entra.body.participationId}/approve`).set(auth(organizador.token));
+    expect((await detalle(confiable.token, partido.id)).body.viewer).toMatchObject({ status: 'APPROVED', amountDue: 6000 });
+
+    // Vuelve a faltar 1: el destacado rige otra vez.
+    expect((await detalle(jugador.token, partido.id)).body).toMatchObject({ slotsLeft: 1, priority: true });
+  });
+
+  it('CN-50 · honor alto con menos de 3 calificadores distintos no entra al tiro: lo aprueba el organizador (auditoría del 22-nov)', async () => {
+    const inflado = await registerUser('Honor de dos cuentas');
+    await prisma.user.update({ where: { id: inflado.user.id }, data: { honorScore: 10 } });
+    await calificadoPor(inflado, 2);
+    const partido = await publishMatch(organizador.token, {
+      ...northOf(2100),
+      totalSlots: 4,
+      filledSlots: 3,
+      startsAt: inHours(1),
+      title: 'Destacado para el honor inflado',
+    });
+    expect((await destacar(organizador.token, partido.id)).status).toBe(200);
+
+    const res = await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(inflado.token));
+    expect([res.status, res.body.status]).toEqual([201, 'PENDING']);
+    expect((await detalle(organizador.token, partido.id)).body).toMatchObject({ filledSlots: 3, priority: true });
   });
 });

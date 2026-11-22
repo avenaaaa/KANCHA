@@ -115,12 +115,13 @@ implementar una historia, lee su issue en Jira para tener los Gherkin completos 
 | HU-08 | KAN-14 | E7 | Reserva con pago fraccionado | Must | 8 | 7 |
 | HU-09 | KAN-15 | E8 | Retención por deserción | Should | 5 | 7 |
 | HU-10 | KAN-16 | E9 | Avisos de partidos cercanos y de "Falta uno" | Should | 8 | 8 |
-| HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Won't (esta fase) | 5 | Backlog |
+| HU-11 | KAN-17 | E10 | Moderar reportes de usuarios | Could | 5 | 9 |
 | HU-12 | KAN-45 | E7 | Pagar con tarjeta inscrita y cubrir al invitado dentro de la app | Won't (esta fase) | 8 | Backlog |
 
-**Total del MVP: 55 puntos.** HU-01 a HU-09 (47 puntos) quedaron terminadas al 8 de noviembre de 2026
-(Sprint 7); HU-10 (8 puntos) se reincorporó el 20 de noviembre y su parte dentro de la app se hizo en el
-Sprint 8. El push con la app cerrada es la tarea **KAN-42**, después del despliegue.
+**Total del MVP: 60 puntos en 11 historias.** HU-01 a HU-09 (47 puntos) quedaron terminadas al 8 de
+noviembre de 2026 (Sprint 7); HU-10 (8 puntos) se reincorporó el 20 de noviembre y se hizo dentro de la app
+en el Sprint 8; HU-11 (5 puntos) entró el 22 de noviembre. El push con la app cerrada (**KAN-42**) salió
+ese mismo día: Expo Go no recibe push en Android y la app no se publica en las tiendas.
 La columna Sprint refleja la replanificación del 20 de noviembre de 2026, vigente en Jira. Además,
 la tarea **KAN-30** implementó la regla "Partidos jugados" (registro de asistencia), que ninguna
 historia cubría; **KAN-31** corrigió los defectos de la auditoría de cierre del 14 de noviembre
@@ -185,9 +186,11 @@ Comuna del piloto El mapa dibuja el límite real de La Florida (OpenStreetMap). 
 
 Falta uno         Si a un partido le falta 1 jugador y empieza en 2 h o menos, el organizador puede
 destacado         destacarlo: va primero en "Falta uno" para los jugadores cercanos y quien se une
-                  entra gratis, como invitado: al tiro si su honor es 7 o más; si es novato o tiene
-                  menos, queda pendiente y lo aprueba el organizador. Si faltan 2 o más no hay entrada
-                  gratis: quien entra paga su parte. La cuota del invitado la cubre el grupo fuera de
+                  entra gratis, como invitado: al tiro si su honor es 7 o más y lo calificaron al
+                  menos 3 personas distintas; si no, queda pendiente y lo aprueba el organizador. Si
+                  faltan 2 o más no hay entrada gratis, aunque el partido ya esté destacado (una
+                  cancelación lo deja así): quien entra paga su parte y el partido sale de "Falta uno"
+                  hasta que vuelva a faltar 1. La cuota del invitado la cubre el grupo fuera de
                   la app: al destacar, cada confirmado recibe cuánto pone, y Kancha no cobra comisión
                   por ese cupo. El aviso "¿Lo destacas?" llega dentro de la app. Cobrar la cuota en la
                   app con tarjeta inscrita es HU-12. (KAN-41, KAN-44)
@@ -200,13 +203,22 @@ Avisos            Cada usuario elige qué avisos acepta; sin elegir, ninguno. "F
                   jugador, su aprobación; los confirmados de un destacado, cuánto pone cada uno por
                   el invitado (llega aunque no hayan elegido avisos: es dinero, KAN-44).
                   "Ánimo para jugar": a quien lleva 14 días sin postular ni
-                  organizar y tiene partidos cerca, a lo más uno por semana. Disparadores por reglas,
-                  sin IA, costo $0. UNIQUE (userId, kind, matchId) impide repetir un aviso. (HU-10)
+                  organizar (si nunca lo hizo, 14 días desde que se registró) y tiene partidos cerca,
+                  a lo más uno por semana. Disparadores por reglas, sin IA, costo $0. UNIQUE (userId,
+                  kind, matchId) impide repetir un aviso; el de ánimo no tiene partido y su tope
+                  semanal lo pone la consulta del barrido. (HU-10)
 
 Partidos jugados  matchesPlayed se incrementa al cerrar una participación como asistida. Se muestra
                   en la carta de jugador. Al terminar el partido, el organizador marca a cada
                   confirmado como "asistió" o "no se presentó" (NO_SHOW), una sola vez; la tasa
                   de asistencia del honor sale de ese registro. (KAN-30)
+
+Moderación        Solo reporta quien jugó el partido con el reportado (organizador o confirmado),
+                  desde que empezó, una vez por compañero y partido: UNIQUE (matchId, reporterId,
+                  reportedId). El administrador (role ADMIN) ve el detalle y el historial y suspende
+                  7 días o descarta. Suspendido no publica, no postula ni destaca; cada sanción suma
+                  7 días. El sancionado recibe un aviso; la resolución (quién, cuándo y por qué)
+                  queda en el reporte y en el log de la API. (HU-11)
 ```
 
 ---
@@ -225,7 +237,7 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 | 6 | 13–26 oct 2026 | Hecho: HU-01, HU-03, HU-04, HU-05 — registro, publicación, búsqueda en el mapa y postulación | Fase 2 |
 | 7 | 27 oct–09 nov 2026 | Hecho: HU-08, HU-09 — pago fraccionado y retención · adelantadas HU-02, HU-06, HU-07 — carta, calificación y honor · KAN-29 (Expo SDK 58) · KAN-30 (asistencia) | Fase 2 |
 | 8 | 10–23 nov 2026 | Hecho: auditoría de cierre y sus correcciones (KAN-31) · rechazo de postulaciones (KAN-32) · botón "Falta uno" (KAN-37) · rediseño visual (KAN-33) · límite real de la comuna, canchas existentes y dirección automática (KAN-38) · pruebas de rendimiento (KAN-35) · `main` al día (KAN-36) · panel de partidos deslizable (KAN-39) · canchas como pines al publicar (KAN-40) · "Falta uno" destacado, con el invitado verificado por su honor (KAN-41) · avisos dentro de la app (HU-10, KAN-16) · cuenta atrás en las cartas y equipamiento real de las canchas (KAN-43) · invitado gratis solo si falta 1, con aviso a los confirmados (KAN-44) · Kancha en la nube: API y web en Render, base en Supabase (KAN-34) · documentos de la entrega (KAN-23) · releases `v0.6.0` a `v0.9.0` (KAN-36) · pendiente: ver en iPhone el arreglo de las letras (KAN-29) | Fase 3 |
-| 9 | 24 nov–07 dic 2026 | Push en Android con la app compilada (KAN-42) · cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
+| 9 | 24 nov–07 dic 2026 | Moderación de reportes (HU-11, adelantada al 22-nov) · cierre de pruebas C1 · README final, video de respaldo, ensayo y defensa ante la comisión | Fase 3 |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 cerró con 0 de 8 puntos: se usó en
 > dejar operativo el ambiente. Las historias se corrieron un sprint y el desarrollo ahora llega hasta
@@ -247,6 +259,12 @@ Las fechas coinciden con los sprints reales del tablero Jira (board 2).
 > los avisos dentro de la app y sus disparadores en el Sprint 8 (KAN-16), y el push en Android en el
 > Sprint 9 (KAN-42), porque exige compilar la app con la cuenta gratuita de Expo. El push en iPhone queda
 > fuera: requiere la cuenta de desarrollador de Apple, que no es gratis. El MVP suma 10 historias y 55 puntos.
+>
+> **Replanificación del 22 de noviembre de 2026.** La app se queda en la web y en Expo Go: publicarla en
+> las tiendas cuesta y el MVP no lo necesita. KAN-42 sale del alcance (desde el SDK 53 Expo Go no recibe
+> push en Android; los avisos siguen llegando dentro de la app) y HU-11 entra al Sprint 9 como *Could*.
+> Quedan 11 de 12 historias del backlog y 60 puntos. HU-12 (Oneclick) sigue en el backlog: tocar los pagos
+> antes de la defensa es el riesgo mayor.
 
 ---
 
@@ -339,4 +357,4 @@ funcionamiento.
 ---
 
 *Portafolio de Título — Ingeniería en Informática · Sede Plaza Vespucio · Lukas Guerrero · 2026*
-*Última actualización: 21 de noviembre de 2026 (Sprint 8)*
+*Última actualización: 22 de noviembre de 2026 (Sprint 8)*

@@ -11,6 +11,10 @@ import type {
   NewMatch,
   NotificationPreferences,
   PendingRatings,
+  Report,
+  ReportDetail,
+  ReportReason,
+  ReportStatus,
   Session,
   User,
 } from './types';
@@ -247,5 +251,40 @@ export function useSaveNotificationPrefs() {
     mutationFn: (body: NotificationPreferences) =>
       api<NotificationPreferences>('/users/me/notification-preferences', { method: 'PUT', body: JSON.stringify(body) }),
     onSuccess: (saved) => qc.setQueryData(keys.notificationPrefs, saved),
+  });
+}
+
+// ------------------------------------------------------------------ moderación (HU-11)
+
+/** Un compañero del partido reporta la conducta de otro. */
+export function useReportPlayer(matchId: string) {
+  return useMutation({
+    mutationFn: (body: { reportedId: string; reason: ReportReason; comment?: string }) =>
+      api<{ id: string; status: ReportStatus }>(`/matches/${matchId}/reports`, { method: 'POST', body: JSON.stringify(body) }),
+  });
+}
+
+/** Panel del administrador: reportes por estado y cuántos quedan pendientes. */
+export function useAdminReports(status: ReportStatus = 'PENDING') {
+  return useQuery({
+    queryKey: ['admin', 'reports', status],
+    queryFn: () => api<{ reports: Report[]; pending: number }>(`/admin/reports?status=${status}`),
+  });
+}
+
+export function useAdminReport(id: string) {
+  return useQuery({ queryKey: ['admin', 'reports', 'detail', id], queryFn: () => api<ReportDetail>(`/admin/reports/${id}`) });
+}
+
+/** Suspender 7 días o descartar. Refresca el panel completo. */
+export function useResolveReport(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { action: 'SANCTION' | 'DISMISS'; note?: string }) =>
+      api<{ id: string; status: ReportStatus; suspendedUntil: string | null }>(`/admin/reports/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'reports'] }),
   });
 }

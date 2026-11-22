@@ -29,33 +29,35 @@ flowchart LR
         UC9["UC9 · Calificar compañeros<br/>HU-06"]
         UC10["UC10 · Recalcular puntaje de honor<br/>HU-07"]
         UC11["UC11 · Elegir y recibir avisos<br/>HU-10 · Falta uno prioritario"]
-        UC12["UC12 · Moderar reportes<br/>HU-11 · fuera del MVP"]
+        UC12["UC12 · Moderar reportes<br/>HU-11 · suspender 7 días o descartar"]
         UC13["UC13 · Registrar asistencia<br/>KAN-30"]
         UC14["UC14 · Rechazar postulación<br/>KAN-32"]
+        UC15["UC15 · Reportar a un compañero<br/>HU-11"]
     end
 
-    AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11
-    OR --> UC1 & UC3 & UC6 & UC9 & UC11 & UC13 & UC14
+    AL --> UC1 & UC2 & UC4 & UC5 & UC7 & UC8 & UC9 & UC11 & UC15
+    OR --> UC1 & UC3 & UC6 & UC9 & UC11 & UC13 & UC14 & UC15
     AD --> UC12
 
     UC7 -.-> TBK
     UC8 -.-> TBK
     UC9 -.->|"include"| UC10
     UC4 -.-> MAP
-    UC11 -.-> PUSH
+    UC11 -.->|"fuera: KAN-42"| PUSH
     UC3 -.->|"trigger"| UC11
     UC5 -.->|"trigger"| UC11
     UC13 -.->|"include"| UC10
+    UC12 -.->|"trigger"| UC11
 
-    style UC12 stroke-dasharray: 5 5
     style KANCHA fill:#1A1A1A,color:#FFFFFF
 ```
 
-**Lectura:** los casos de uso con línea continua forman el MVP entregado (HU-01 a HU-10, más el
-registro de asistencia de KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32).
-UC11 volvió al alcance el 20 de noviembre de 2026: publicar y postular disparan avisos dentro de la app, y
-la flecha a Expo Push es el push en Android de KAN-42. UC12 aparece punteado: HU-11 está marcada
-`Won't have this phase` y vive en el backlog.
+**Lectura:** los casos de uso forman el MVP entregado (HU-01 a HU-11, más el registro de asistencia de
+KAN-30, que también recalcula el honor, y el rechazo de postulaciones de KAN-32). UC11 volvió al alcance el
+20 de noviembre de 2026: publicar y postular disparan avisos dentro de la app. La flecha a Expo Push es el
+push con la app cerrada (KAN-42), que quedó fuera el 22 de noviembre porque Expo Go no lo recibe en
+Android. Ese mismo día entraron UC12 y UC15 (HU-11): un compañero de partido reporta y el administrador
+suspende 7 días o descarta; la sanción dispara un aviso al sancionado.
 Las flechas punteadas hacia la derecha marcan la dependencia de sistemas externos.
 
 ---
@@ -548,6 +550,18 @@ classDiagram
         +savePreferences(userId, input) Preferences
     }
 
+    class ModerationService {
+        <<service>>
+        +checkCanReport(roster, reporterId, reportedId, now) ReportBlock
+        +isSuspended(suspendedUntil, now) Boolean
+        +suspensionEnd(current, now) Date
+        +reportTeammate(matchId, reporterId, input) Report
+        +assertCanAct(userId, now) void
+        +listReports(adminId, status) Reports
+        +getReport(adminId, reportId) ReportDetail
+        +resolveReport(adminId, reportId, input) Resolution
+    }
+
     class AuthService {
         <<service>>
         +register(input) AuthResult
@@ -595,6 +609,7 @@ classDiagram
     class Payment
     class Notification
     class NotificationPreference
+    class Report
 
     HonorService ..> HonorBreakdown : devuelve
     PaymentService ..> RefundBreakdown : devuelve
@@ -619,6 +634,10 @@ classDiagram
     NotificationService ..> Notification : reparte sin repetir
     NotificationService ..> NotificationPreference : filtra por radio, deporte, día y hora
     NotificationService ..> Env : lee
+    ModerationService ..> Report : crea y resuelve
+    ModerationService ..> User : suspende 7 días
+    ModerationService ..> NotificationService : avisa al sancionado
+    ModerationService ..> AppError : lanza
 ```
 
 **Lectura:** todas las operaciones existen en `backend/src/services/`, un archivo `*.service.ts` por

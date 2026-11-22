@@ -42,4 +42,5 @@ export const KIND_ICON: Record<NotificationKind, IconName> = {
   PRIORITY_OFFER: 'up',
   NUDGE: 'calendar',
   GUEST_COVER: 'wallet',
+  SANCTION: 'shield',
 };

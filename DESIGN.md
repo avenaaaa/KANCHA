@@ -228,6 +228,12 @@ Cuando a un partido le falta 1 jugador y empieza en 2 horas o menos, el organiza
 - **"Elegir avisos":** tres interruptores en tarjetas: "Falta uno" en la primera, con borde naranja y título en Anton; luego "Partidos cerca" (días como chips, horario con contadores) y "Ánimo para jugar". Si hay alguno activo aparecen los deportes y la distancia. Interruptor encendido: pista naranja y círculo blanco.
 - Con "reducir movimiento", el pin no late.
 
+### 4.11 Moderación (HU-11)
+
+- **Reportar:** en la carta de un jugador abierta desde un partido, botón fantasma "Reportar conducta" con ícono de escudo, debajo de la carta. No es naranja: reportar no es la acción principal de la pantalla. Abre una tarjeta `#2A2A2A` con los motivos como chips (el elegido, naranja), un campo opcional con contador "0/280" y "Enviar reporte" naranja. Enviado, queda el texto "Reporte enviado. Lo revisará un administrador."
+- **Cuenta suspendida:** en el Perfil, tarjeta `#2A2A2A` con borde de error `#E74C3C`, título en rojo y la fecha de término. El aviso `SANCTION` usa el ícono de escudo.
+- **Panel del administrador** (Perfil → "Moderar reportes", solo con rol ADMIN): chips Pendientes (con el conteo), Suspendidos y Descartados; cada reporte en una fila `#2A2A2A`. El detalle muestra al jugador con su honor, el motivo y el comentario en cursiva, "Suspender 7 días" naranja (pide confirmación) y "Descartar" secundario, y el historial del jugador al final.
+
 ---
 
 ## 5. Iconografía Multi-deporte

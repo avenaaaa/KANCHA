@@ -6,11 +6,12 @@ import {
   type LockedMatch,
 } from '../repositories/participation.repository.js';
 import { paymentRepository } from '../repositories/payment.repository.js';
+import { ratingRepository } from '../repositories/rating.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
 import { AppError, conflict, forbidden, notFound } from '../utils/errors.js';
 import { isUniqueViolation, toNumberOrNull } from '../utils/db-errors.js';
 import { calculateAmountDue } from './payment.service.js';
-import { checkCanPrioritize, toMatchSummary, type MatchSummary } from './match.service.js';
+import { checkCanPrioritize, isPriorityActive, toMatchSummary, type MatchSummary } from './match.service.js';
 import { onJoinApproved, onJoinRequested, onMatchPrioritized } from './notification.service.js';
 import type { NearbyQuery } from '../schemas/match.schema.js';
 
@@ -81,8 +82,8 @@ export function decideApproval(
     ok: true,
     filledSlots,
     status: filledSlots >= match.totalSlots ? 'FULL' : 'OPEN',
-    // KAN-41: mientras el partido está destacado, cada cupo que se aprueba entra gratis.
-    amountDue: match.prioritizedAt ? 0 : calculateAmountDue(match.totalCost, match.totalSlots),
+    // KAN-41 y KAN-44: entra gratis quien toma el último cupo de un destacado; si faltaban 2, paga.
+    amountDue: isPriorityActive(match) ? 0 : calculateAmountDue(match.totalCost, match.totalSlots),
   };
 }
 
@@ -136,9 +137,11 @@ export async function join(matchId: string, userId: string, now: Date = new Date
   const participation = await createOrReopen(matchId, userId);
   let result = participation;
   // KAN-41: en un partido destacado entra al tiro quien tiene buen honor; al resto lo confirma el organizador.
-  if (match.prioritizedAt) {
-    const player = await userRepository.findById(userId);
-    if (isTrustedGuest(toNumberOrNull(player?.honorScore))) result = (await approveAsGuest(participation.id, now)) ?? participation;
+  if (isPriorityActive(match)) {
+    const [player, raters] = await Promise.all([userRepository.findById(userId), ratingRepository.countRaters(userId)]);
+    if (isTrustedGuest(toNumberOrNull(player?.honorScore), raters)) {
+      result = (await approveAsGuest(participation.id, now)) ?? participation;
+    }
   }
   if (result.status === 'PENDING') await onJoinRequested(match, now); // HU-10: avisa al organizador
   return result;
@@ -147,9 +150,15 @@ export async function join(matchId: string, userId: string, now: Date = new Date
 /** KAN-41: honor mínimo para entrar sin esperar al organizador a un partido destacado. */
 export const GUEST_MIN_HONOR = 7;
 
+/**
+ * Auditoría del 22-nov: personas distintas que deben haberlo calificado. Con dos cuentas propias se
+ * inventaba un partido, se ponía un 10 y se entraba gratis a cualquier destacado.
+ */
+export const GUEST_MIN_RATERS = 3;
+
 /** Un novato (honor NULL) no es un mal jugador, pero aún no tiene historial: lo confirma el organizador. */
-export function isTrustedGuest(honorScore: number | null): boolean {
-  return honorScore !== null && honorScore >= GUEST_MIN_HONOR;
+export function isTrustedGuest(honorScore: number | null, raters: number): boolean {
+  return honorScore !== null && honorScore >= GUEST_MIN_HONOR && raters >= GUEST_MIN_RATERS;
 }
 
 async function createOrReopen(matchId: string, userId: string): Promise<Participation> {
@@ -178,7 +187,7 @@ function approveAsGuest(participationId: string, now: Date): Promise<Participati
   return participationRepository.inApprovalTransaction(async (tx) => {
     const current = await tx.findParticipation(participationId);
     const match = current && (await tx.lockMatch(current.matchId));
-    if (!current || !match?.prioritizedAt) return null;
+    if (!current || !match || !isPriorityActive(match)) return null;
     const decision = decideApproval(current, match, match.organizerId, now);
     if (!decision.ok) return null;
     const approved = await tx.markApproved(participationId, decision.amountDue);

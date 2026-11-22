@@ -35,6 +35,10 @@ erDiagram
     USER ||--o| NOTIFICATION_PREFERENCE : "elige sus avisos"
     USER ||--o{ NOTIFICATION : "recibe"
     MATCH |o--o{ NOTIFICATION : "origina"
+    USER ||--o{ REPORT : "reporta"
+    USER ||--o{ REPORT : "es reportado"
+    USER |o--o{ REPORT : "resuelve como admin"
+    MATCH ||--o{ REPORT : "contextualiza"
 
     USER {
         uuid     id PK
@@ -48,6 +52,8 @@ erDiagram
         decimal  punctualityRate
         decimal  fairPlayRate
         string   expoPushToken
+        enum     role "PLAYER o ADMIN (HU-11)"
+        datetime suspendedUntil "null = sin sancion"
         datetime createdAt
     }
 
@@ -122,12 +128,26 @@ erDiagram
     NOTIFICATION {
         uuid     id PK
         uuid     userId FK
-        enum     kind "FALTA_UNO y otros 5"
+        enum     kind "FALTA_UNO y otros 7"
         uuid     matchId FK "null en el animo para jugar"
         string   title
         string   body
         datetime readAt "null = sin leer"
         datetime createdAt
+    }
+
+    REPORT {
+        uuid     id PK
+        uuid     matchId FK
+        uuid     reporterId FK
+        uuid     reportedId FK "CHECK distinto de reporterId"
+        enum     reason
+        string   comment "CHECK hasta 280"
+        enum     status "PENDING SANCTIONED DISMISSED"
+        datetime createdAt
+        uuid     resolvedById FK "el admin que resolvio"
+        datetime resolvedAt
+        string   resolutionNote
     }
 ```
 
@@ -149,7 +169,9 @@ erDiagram
 | `attendanceRate` | DECIMAL(5,2) | Sí | 0–100 | Calculado: asistidos / (asistidos + no presentados), según `Participation.attended` |
 | `punctualityRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.punctuality` |
 | `fairPlayRate` | DECIMAL(5,2) | Sí | 0–100 | Promedio de `Rating.conduct` |
-| `expoPushToken` | VARCHAR | Sí | — | Token de Expo Push para el push en Android (KAN-42, Sprint 9). Los avisos dentro de la app (HU-10) no lo usan |
+| `expoPushToken` | VARCHAR | Sí | — | Reservado para el push con la app cerrada (KAN-42), que quedó fuera el 22-nov: Expo Go no lo recibe en Android. Los avisos dentro de la app (HU-10) no lo usan |
+| `role` | ENUM | No | PLAYER | ADMIN, default PLAYER | ADMIN modera los reportes (HU-11). Se asigna en la base: no hay pantalla para nombrar administradores |
+| `suspendedUntil` | TIMESTAMP | Sí | — | Hasta entonces no publica, no postula ni destaca (HU-11). NULL = sin sanción |
 | `createdAt` | TIMESTAMP | No | default now() | Alta de la cuenta |
 
 ### 3.2 `Match` — partidos publicados
@@ -246,6 +268,26 @@ erDiagram
 
 ---
 
+### 3.8 `Report` — reportes de conducta (HU-11)
+
+| Campo | Tipo | Nulo | Restricción | Descripción |
+|---|---|---|---|---|
+| `id` | UUID | No | PK | Identificador |
+| `matchId` | UUID | No | FK → Match, ON DELETE CASCADE | Partido en que ocurrió la conducta |
+| `reporterId` | UUID | No | FK → User | Quien reporta: jugó ese partido |
+| `reportedId` | UUID | No | FK → User · CHECK ≠ `reporterId` | Quien es reportado: también lo jugó |
+| `reason` | ENUM | No | AGRESION | LENGUAJE | JUEGO_SUCIO | OTRO | Motivo |
+| `comment` | TEXT | Sí | CHECK ≤ 280 caracteres | Detalle opcional |
+| `status` | ENUM | No | PENDING | SANCTIONED | DISMISSED, default PENDING | Espera al administrador o ya está resuelto |
+| `createdAt` | TIMESTAMP | No | default now() | Cuándo se reportó |
+| `resolvedById` | UUID | Sí | FK → User, ON DELETE SET NULL | El administrador que lo resolvió |
+| `resolvedAt` | TIMESTAMP | Sí | — | Cuándo se resolvió |
+| `resolutionNote` | TEXT | Sí | — | Por qué, para el registro |
+| — | — | — | **UNIQUE (matchId, reporterId, reportedId)** | Un reporte por compañero y partido |
+
+La resolución vive en la misma fila: el reporte es el registro de la moderación (quién, cuándo y por
+qué). Suspender suma 7 días a `User.suspendedUntil` en la misma transacción.
+
 ## 4. Índices
 
 Son los índices que crean las migraciones de `backend/prisma/migrations/`, con sus nombres reales.
@@ -265,6 +307,8 @@ CREATE INDEX "Participation_userId_status_idx" ON "Participation" ("userId", "st
 CREATE INDEX "Rating_ratedId_createdAt_idx"    ON "Rating" ("ratedId", "createdAt");
 CREATE INDEX "Payment_status_idx"              ON "Payment" ("status");
 CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification" ("userId", "createdAt");  -- bandeja (HU-10)
+CREATE INDEX "Report_status_createdAt_idx"       ON "Report" ("status", "createdAt");      -- panel del admin (HU-11)
+CREATE INDEX "Report_reportedId_idx"             ON "Report" ("reportedId");                -- historial (HU-11)
 
 -- Unicidad: reglas de negocio garantizadas por la base de datos
 CREATE UNIQUE INDEX "User_email_key"                     ON "User" ("email");
@@ -273,6 +317,7 @@ CREATE UNIQUE INDEX "Rating_matchId_raterId_ratedId_key" ON "Rating" ("matchId",
 CREATE UNIQUE INDEX "Payment_participationId_key"        ON "Payment" ("participationId");
 CREATE UNIQUE INDEX "Payment_buyOrder_key"               ON "Payment" ("buyOrder");
 CREATE UNIQUE INDEX "Notification_userId_kind_matchId_key" ON "Notification" ("userId", "kind", "matchId");
+CREATE UNIQUE INDEX "Report_matchId_reporterId_reportedId_key" ON "Report" ("matchId", "reporterId", "reportedId");
 ```
 
 El índice GIST es el que sostiene el argumento de escalabilidad de la competencia C3: convierte la
@@ -318,6 +363,7 @@ justifican más abajo.
 | `Payment` | `id` | `participationId`, `buyOrder` | `id` → todos los atributos |
 | `NotificationPreference` | `userId` | — | `userId` → todos los atributos |
 | `Notification` | `id` | `(userId, kind, matchId)` cuando `matchId` no es null | `id` → todos los atributos |
+| `Report` | `id` | `(matchId, reporterId, reportedId)` | `id` → todos los atributos |
 
 ### 6.3 Desnormalizaciones deliberadas
 
@@ -344,6 +390,9 @@ si mañana cambia el costo del partido o la tasa de comisión, lo ya cobrado no 
 | `Participation` → `Payment` | `CASCADE` | El pago no existe sin su participación |
 | `User` → `NotificationPreference`, `Notification` | `CASCADE` | Las preferencias y los avisos no tienen valor sin su usuario |
 | `Match` → `Notification` | `CASCADE` | Un aviso sobre un partido que ya no existe no se puede abrir |
+| `Match` → `Report` | `CASCADE` | El reporte se refiere a la conducta en ese partido |
+| `User` → `Report` (reportante y reportado) | `RESTRICT` | El historial de moderación no se pierde |
+| `User` → `Report` (quien resolvió) | `SET NULL` | Si se borra un administrador, la resolución queda sin autor pero no desaparece |
 | `User` → `Match`, `Participation`, `Rating` | `RESTRICT` | No se puede borrar un usuario con historial: se perdería la trazabilidad de pagos y reseñas |
 
 ---
@@ -366,6 +415,7 @@ PostgreSQL y se aplican solas al levantar el proyecto con Docker.
 | [`migrations/20261120220000_avisos/migration.sql`](../backend/prisma/migrations/20261120220000_avisos/migration.sql) | Tablas `NotificationPreference` y `Notification`, tipo `NotificationKind`, `UNIQUE (userId, kind, matchId)` y `CHECK` de horario y radio (HU-10) |
 | [`migrations/20261121150000_aviso_cubrir_invitado/migration.sql`](../backend/prisma/migrations/20261121150000_aviso_cubrir_invitado/migration.sql) | Valor `GUEST_COVER` en `NotificationKind`: a los confirmados de un destacado, cuánto pone cada uno por el invitado (KAN-44) |
 | [`migrations/20261122120000_rls_supabase/migration.sql`](../backend/prisma/migrations/20261122120000_rls_supabase/migration.sql) | RLS sin políticas en las 7 tablas: la Data API de Supabase no las lee ni las escribe. La API entra como dueña y no se ve afectada (S-22, DEF-25) |
+| [`migrations/20261122200000_moderacion/migration.sql`](../backend/prisma/migrations/20261122200000_moderacion/migration.sql) | Tabla `Report`, tipos `Role`, `ReportReason` y `ReportStatus`, columnas `role` y `suspendedUntil` en `User`, valor `SANCTION` en `NotificationKind`, `CHECK` de no reportarse a sí mismo y del largo del comentario, y RLS en la tabla nueva (HU-11) |
 | [`backend/prisma/seed.ts`](../backend/prisma/seed.ts) | Datos de demo de La Florida |
 
 `User`, `Match`, `Participation` y `Payment` llevan además un campo de auditoría `updatedAt`, que el

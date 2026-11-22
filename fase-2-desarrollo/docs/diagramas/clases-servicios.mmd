@@ -64,6 +64,18 @@ classDiagram
         +savePreferences(userId, input) Preferences
     }
 
+    class ModerationService {
+        <<service>>
+        +checkCanReport(roster, reporterId, reportedId, now) ReportBlock
+        +isSuspended(suspendedUntil, now) Boolean
+        +suspensionEnd(current, now) Date
+        +reportTeammate(matchId, reporterId, input) Report
+        +assertCanAct(userId, now) void
+        +listReports(adminId, status) Reports
+        +getReport(adminId, reportId) ReportDetail
+        +resolveReport(adminId, reportId, input) Resolution
+    }
+
     class AuthService {
         <<service>>
         +register(input) AuthResult
@@ -111,6 +123,7 @@ classDiagram
     class Payment
     class Notification
     class NotificationPreference
+    class Report
 
     HonorService ..> HonorBreakdown : devuelve
     PaymentService ..> RefundBreakdown : devuelve
@@ -135,3 +148,7 @@ classDiagram
     NotificationService ..> Notification : reparte sin repetir
     NotificationService ..> NotificationPreference : filtra por radio, deporte, día y hora
     NotificationService ..> Env : lee
+    ModerationService ..> Report : crea y resuelve
+    ModerationService ..> User : suspende 7 días
+    ModerationService ..> NotificationService : avisa al sancionado
+    ModerationService ..> AppError : lanza

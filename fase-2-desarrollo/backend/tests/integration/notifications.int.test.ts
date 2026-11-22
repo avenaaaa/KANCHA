@@ -142,18 +142,23 @@ describe.skipIf(!hasDb)('Avisos · HU-10 (integración)', () => {
     });
   });
 
-  it('CN-47 · ánimo para jugar: a quien no juega hace 14 días y tiene partidos cerca, a lo más uno por semana', async () => {
+  it('CN-47 · ánimo para jugar: a quien no juega hace 14 días (contados desde el registro si nunca jugó), a lo más uno por semana', async () => {
     const organizador = await registerUser('Organizador ánimo');
-    const [nuevo, activo] = await Promise.all([registerUser('Nunca jugó'), registerUser('Activo')]);
-    await savePrefs(nuevo.token, { nudges: true, ...northOf(40_000) });
-    await savePrefs(activo.token, { nudges: true, ...northOf(40_000) });
+    const [veterano, recien, activo] = await Promise.all([
+      registerUser('Nunca jugó, cuenta de hace 15 días'),
+      registerUser('Recién registrado'),
+      registerUser('Activo'),
+    ]);
+    await prisma.user.update({ where: { id: veterano.user.id }, data: { createdAt: new Date(Date.now() - 15 * 24 * 3_600_000) } });
+    for (const j of [veterano, recien, activo]) await savePrefs(j.token, { nudges: true, ...northOf(40_000) });
     const partido = await publishMatch(organizador.token, { ...northOf(41_000), startsAt: inHours(40) });
     await api().post(`/api/v1/matches/${partido.id}/join`).set(auth(activo.token));
 
     await runSweep();
     await runSweep();
-    const animo = (await inbox(nuevo.token)).notifications.filter((n: { kind: string }) => n.kind === 'NUDGE');
-    expect(animo).toEqual([expect.objectContaining({ title: 'Tu primer partido te espera', matchId: null })]);
-    expect((await inbox(activo.token)).notifications.filter((n: { kind: string }) => n.kind === 'NUDGE')).toEqual([]);
+    const animo = async (token: string) => (await inbox(token)).notifications.filter((n: { kind: string }) => n.kind === 'NUDGE');
+    expect(await animo(veterano.token)).toEqual([expect.objectContaining({ title: 'Tu primer partido te espera', matchId: null })]);
+    expect(await animo(recien.token)).toEqual([]);
+    expect(await animo(activo.token)).toEqual([]);
   });
 });

@@ -7,6 +7,7 @@ import { participationsRouter } from './participations.routes.js';
 import { paymentsRouter } from './payments.routes.js';
 import { ratingsRouter } from './ratings.routes.js';
 import { notificationsRouter } from './notifications.routes.js';
+import { moderationRouter } from './moderation.routes.js';
 
 export const apiRouter = Router();
 
@@ -18,3 +19,4 @@ apiRouter.use(participationsRouter); // HU-05
 apiRouter.use(paymentsRouter); // HU-08, HU-09
 apiRouter.use(ratingsRouter); // HU-06, HU-07
 apiRouter.use(notificationsRouter); // HU-10
+apiRouter.use(moderationRouter); // HU-11
