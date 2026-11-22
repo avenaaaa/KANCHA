@@ -2,11 +2,11 @@
 
 > Fase 2 · Evidencia de la competencia **C1** (pruebas de certificación)
 > Cubre los cinco tipos que pide la pauta: unitarias, caja negra, integración, rendimiento y seguridad.
-> Corte del documento: 20 de noviembre de 2026 (Sprint 8).
+> Corte del documento: 22 de noviembre de 2026 (Sprint 8).
 
 Este plan distingue siempre entre lo **ejecutado** (ya corre y pasa) y lo **diseñado** (caso definido,
-se automatiza cuando exista el código que prueba). Al 20 de noviembre están ejecutados los casos de
-las nueve historias del MVP (HU-01 a HU-09) y de las tareas KAN-30, KAN-32, KAN-37 y KAN-38. Las cinco pruebas de
+se automatiza cuando exista el código que prueba). Al 22 de noviembre están ejecutados los casos de
+las once historias del MVP (HU-01 a HU-11) y de las tareas KAN-30, KAN-32, KAN-37, KAN-38, KAN-41 y KAN-44. Las cinco pruebas de
 rendimiento se ejecutaron el 20 de noviembre. Siguen sin ejecutar las unitarias pendientes de la sección 4.4.
 
 ---
@@ -29,11 +29,11 @@ recibir en una demo y en un piloto en La Florida.
 
 ## 2. Estrategia por tipo de prueba
 
-| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 20-nov |
+| Tipo | Qué responde | Herramienta | Dónde vive | Estado al 22-nov |
 |---|---|---|---|---|
-| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **105 del backend y 41 de la app, todas pasan** |
-| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
-| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
+| **Unitarias** | ¿Cada regla de negocio calcula bien, aislada? | Vitest 2 en el backend · Jest 30 en la app | `backend/tests/unit/` y `mobile/src/__tests__/` | **114 del backend y 43 de la app, todas pasan** |
+| **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 53 casos (CN-01 a CN-53), todos cubiertos |
+| **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **104 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
 | **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 23 controles: 22 verificados y S-11 parcial (22-nov) |
 
@@ -63,11 +63,11 @@ Prueban las funciones puras de `services/`, sin base de datos ni HTTP. Se ejecut
 
 | Dato | Valor |
 |---|---|
-| Fecha | 20 de noviembre de 2026 |
-| Archivos de prueba del backend | 20 (9 unitarios y 11 de integración) |
-| Casos del backend | 198 ejecutados · 198 pasan · 0 fallan (105 unitarias, 93 de integración) |
-| Cobertura de `services/` y `utils/` | 98,12 % de líneas · 91,61 % de ramas · 98,05 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
-| Casos de la app (Jest + React Native Testing Library) | 41 ejecutados · 41 pasan · el CI los corre en cada push desde el 15-nov |
+| Fecha | 22 de noviembre de 2026 |
+| Archivos de prueba del backend | 23 (10 unitarios y 13 de integración) |
+| Casos del backend | 218 ejecutados · 218 pasan · 0 fallan (114 unitarias, 104 de integración) |
+| Cobertura de `services/` y `utils/` | 98,25 % de líneas · 91,14 % de ramas · 98,37 % de funciones · el CI la mide en cada push y falla bajo el 80 % |
+| Casos de la app (Jest + React Native Testing Library) | 43 ejecutados · 43 pasan · el CI los corre en cada push desde el 15-nov |
 | Comando | `npm test` en `fase-2-desarrollo/backend` (con la base `kancha_test` levantada) y en `fase-2-desarrollo/mobile` |
 
 ### 4.2 Casos ejecutados
