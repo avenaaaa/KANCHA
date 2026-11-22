@@ -145,7 +145,7 @@ se comprobó leyendo el código, sin escéptico automático.
 | 7 | PostgreSQL expuesto en todas las interfaces con kancha/kancha · `docker-compose.yml` | Baja | Confirmado | **Corregido** | La base solo escucha en el propio equipo |
 | 8 | La API corre como root y la imagen de producción lleva devDependencies y código fuente · `backend/Dockerfile` | Baja | Confirmado | **Pendiente** | Contenedor sin root e imagen sin dependencias de desarrollo. Sprint 8, junto con el despliegue |
 | 9 | El CI nunca prueba `docker compose up`: el requisito principal no tiene evidencia automática · `.github/workflows/ci.yml` | Media | Confirmado | **Corregido** | El CI levanta el stack, consulta /health, entra con una cuenta de demo y pide la web |
-| 10 | Supabase: PostGIS en el schema equivocado y tablas sin RLS no verificados · `backend/prisma/migrations/20260927193802_init/migration.sql` | Baja | Confirmado | **Pendiente** | Se verifica al desplegar en Supabase. Sprint 8 |
+| 10 | Supabase: PostGIS en el schema equivocado y tablas sin RLS no verificados · `backend/prisma/migrations/20260927193802_init/migration.sql` | Baja | Confirmado | **RLS cerrado** el 22-nov | Migración `20261122120000_rls_supabase` y S-22 (DEF-25). Falta verificar el schema de PostGIS en Supabase |
 | 11 | Apagado sin esperar peticiones en curso: puede dejar un pago cobrado sin registrar · `backend/src/server.ts` | Baja | Confirmado | **Corregido** | La API espera las peticiones en curso antes de apagarse |
 | 12 | DESARROLLO.md §6, §8 y §12 no coinciden con el compose, el Dockerfile ni el .env.example reales · `DESARROLLO.md` | Baja | Sin escéptico (baja) | **Corregido** | DESARROLLO.md §6, §7.4, §8 y §12 actualizados con el compose, el CI y las variables reales |
 

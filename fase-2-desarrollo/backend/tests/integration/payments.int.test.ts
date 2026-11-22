@@ -229,13 +229,29 @@ describe.skipIf(!hasDb)('Pago fraccionado con Webpay · HU-08 (integración)', (
     expect(await estado(participationId)).toEqual({ cupo: 'PAID', pago: 'AUTHORIZED' });
   });
 
-  it('I-15 · reintentar un pago que quedó sin pagar crea un cobro nuevo', async () => {
+  it('I-15 · reintentar minutos después un pago que quedó sin pagar crea un cobro nuevo', async () => {
     const { jugador, participationId, pago } = await iniciarPago();
+    await prisma.$executeRaw`UPDATE "Payment" SET "updatedAt" = now() - interval '3 minutes' WHERE "id" = ${pago.id}`;
     const otraVez = await api().post(`/api/v1/payments/${participationId}/init`).set(auth(jugador.token));
     expect(otraVez.status).toBe(201);
     const nuevo = await prisma.payment.findUniqueOrThrow({ where: { participationId } });
     expect(nuevo.token).not.toBe(pago.token);
     expect(nuevo.status).toBe('INITIATED');
+  });
+
+  it('I-15b · tocar "Pagar" dos veces seguidas reusa el cobro abierto: pagar en la primera pestaña confirma', async () => {
+    const { jugador, participationId, init, pago } = await iniciarPago();
+    webpay.create.mockClear();
+
+    const otraVez = await api().post(`/api/v1/payments/${participationId}/init`).set(auth(jugador.token));
+    expect(otraVez.status).toBe(201);
+    expect(otraVez.body.checkoutPath).toBe(init.body.checkoutPath);
+    expect(webpay.create).not.toHaveBeenCalled();
+    expect((await prisma.payment.findUniqueOrThrow({ where: { participationId } })).token).toBe(pago.token);
+
+    webpay.commit.mockResolvedValue(APROBADO);
+    await api().get(`/api/v1/payments/return?token_ws=${pago.token}`);
+    expect(await estado(participationId)).toEqual({ cupo: 'PAID', pago: 'AUTHORIZED' });
   });
 
   it('S-16 · DEF-12 · "tiempo agotado" con una orden de compra ajena y sin su id de sesión no toca el pago (404)', async () => {

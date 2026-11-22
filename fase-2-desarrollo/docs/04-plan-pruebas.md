@@ -35,7 +35,7 @@ recibir en una demo y en un piloto en La Florida.
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 17 de 18 controles verificados; S-11 parcial |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 22 controles: 19 verificados, S-11 parcial, S-21 y S-22 a la espera del CI (22-nov) |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -285,6 +285,7 @@ se prueba en su camino feliz y en su error principal.
 | I-13 | API + Transbank | Si el cupo se cancela mientras Transbank confirma, se devuelve todo lo cobrado (DEF-08) | 8 | **Pasa** |
 | I-14 | API + Transbank | Si la respuesta del commit se pierde, se consulta el estado real y el pago queda registrado (DEF-10) | 8 | **Pasa** · si Transbank tampoco responde el estado, el pago sigue iniciado y se informa 502 |
 | I-15 | API + Transbank | Reintentar un pago que Transbank ya aprobó no cobra dos veces: 409 (DEF-10) | 8 | **Pasa** |
+| I-15b | API + Transbank | Tocar "Pagar" dos veces seguidas reusa el cobro abierto: no pisa su token y pagar en la primera pestaña confirma (DEF-27) | 8 | Escrita el 22-nov; se verifica en CI |
 | I-16 | API | Ruta inexistente (404), JSON mal formado (400), recurso inexistente (404) e id que no es UUID (422), todos con el formato único de error | 8 | **Pasa** (`auth.int.test.ts`) |
 | I-17 | API + PostgreSQL | Rechazar deja la postulación `REJECTED`, no mueve cupos y el jugador puede volver a postular (KAN-32) | 8 | **Pasa** (`participations.int.test.ts`) · verificado a mano en `docker compose` (`evidencias/sprint-08/`) |
 | I-18 | Docker Compose | `docker compose up` deja los tres contenedores sanos, con datos de demostración | 5 | **Automatizada en el CI desde el 15-nov**: levanta el stack, consulta `/health`, entra con una cuenta de demo y pide la web |
@@ -366,7 +367,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-08 | Manipulación del pago | Llamar a `commit` con un `token_ws` inventado o repetido | Rechazado, sin cambios en `Payment` | **Verificado** (`payments.int.test.ts`): el inventado da 404 y el repetido no vuelve a confirmar |
 | S-09 | Configuración insegura | Revisar cabeceras HTTP de la API | Cabeceras de `helmet` presentes | **Verificado** (`auth.int.test.ts`) |
 | S-10 | Secretos en el repositorio | Buscar claves en el historial de Git | Ningún secreto · `.env` ignorado | Verificado: `.gitignore` excluye `.env` |
-| S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | **Parcial** (8-nov): `npm audit fix` bajó el backend de 11 a 6 (1 crítica, 5 altas). Las 6 exigen versiones mayores y no están en el camino de una petición: `tar` solo corre al instalar `bcrypt`, `deepmerge-ts` en la CLI de Prisma y la de Zod necesita colecciones enormes (Express limita el cuerpo a 100 KB). La app tiene 1 crítica (`maplibre-gl`) y 2 altas que también exigen versiones mayores. Riesgo aceptado para la Fase 2; se revisa en el Sprint 8 |
+| S-11 | Dependencias vulnerables | `npm audit --omit=dev` en backend y app | Sin vulnerabilidades altas ni críticas | **Parcial** (8-nov): `npm audit fix` bajó el backend de 11 a 6 (1 crítica, 5 altas). Las 6 exigen versiones mayores y no están en el camino de una petición: `tar` solo corre al instalar `bcrypt`, `deepmerge-ts` en la CLI de Prisma y la de Zod necesita colecciones enormes. La auditoría del 22-nov mostró que con el límite de 1 MB de entonces una sola petición sí alcanzaba (DEF-24): Express limita el cuerpo a 16 KB desde ese día (S-20). La app tiene 1 crítica (`maplibre-gl`) y 2 altas que también exigen versiones mayores. Riesgo aceptado para la Fase 2; se revisa en el Sprint 8 |
 | S-12 | Abuso de recursos | Ráfaga de contraseñas erradas en el login | Límite de peticiones activo (429) | **Verificado** (`ratelimit.int.test.ts`, 15-nov): a la cuarta contraseña errada responde 429; los ingresos correctos no cuentan. También limita el registro |
 | S-13 | Redirección abierta | La página que lleva a Webpay solo puede enviar el formulario a Transbank | CSP `form-action` limitada a Transbank y token sin JWT | **Verificado** (`payments.int.test.ts`) |
 | S-14 | Acceso a objetos ajenos | Calificar sin haber jugado el partido, calificarse a sí mismo o calificar a quien no lo jugó | 403, 422 y 422 | **Verificado** (`ratings.int.test.ts`, U-70) |
@@ -375,6 +376,9 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-17 | Acceso a objetos ajenos | Rechazar una postulación de un partido ajeno | 403 | **Verificado** (`participations.int.test.ts`, U-79) |
 | S-18 | Sesión | Usar la sesión de un usuario que ya no existe (la demo regenera los datos en cada arranque) | 401, y la app vuelve al login | **Verificado** (`auth.int.test.ts`) · comprobado en la app el 17-nov (DEF-21) |
 | S-19 | Acceso a objetos ajenos | Marcar como leído el aviso de otro usuario | 404, sin revelar que existe | **Verificado** (`notifications.int.test.ts`, CN-45) |
+| S-20 | Abuso de recursos | Enviar un arreglo de 10.000 elementos en un campo que Zod limita a 7 | 413 antes de validar, sin agotar la memoria | **Verificado** el 22-nov (`health.int.test.ts`, sin base de datos) · DEF-24 |
+| S-21 | Abuso de recursos | Publicar partidos en ráfaga con una misma cuenta | 429 al pasar `PUBLISH_RATE_LIMIT` por hora; otra cuenta en la misma IP sigue publicando | Escrita el 22-nov (`ratelimit.int.test.ts`); se verifica en CI · DEF-26 |
+| S-22 | Exposición de datos | Revisar que las tablas de la app no queden abiertas a la Data API de Supabase | Toda tabla de `public` con RLS activo, también las nuevas | Escrita el 22-nov (`rls.int.test.ts`); se verifica en CI · DEF-25 |
 
 ---
 
@@ -384,14 +388,14 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 |---|---|---|---|---|---|
 | HU-01 | Registro de agente libre | U-01, U-47 a U-54, U-73 a U-75 | CN-01 a CN-03 | I-02 | S-01, S-06, S-07, S-12, S-18 |
 | HU-02 | Carta de jugador | U-01, U-47 a U-49, M-07, M-08, M-18, M-19 | CN-18 | I-09 | S-06 |
-| HU-03 | Publicar partido | U-23 a U-30, M-34 | CN-04 a CN-06 | I-03 | S-05 |
+| HU-03 | Publicar partido | U-23 a U-30, M-34 | CN-04 a CN-06 | I-03 | S-05, S-21 |
 | HU-04 | Buscar partidos cercanos | U-80 a U-82, M-14 a M-16, M-26, M-27, M-32 | CN-07 a CN-10, CN-34, CN-39, CN-40 | I-04 | S-04 |
 | HU-05 | Postularme a un partido | U-37 a U-46, M-22 a M-24 | CN-11, CN-12, CN-35 | I-05 | S-02 |
 | HU-06 | Calificar compañeros | U-07 a U-10, U-69, U-70, M-17 | CN-13 a CN-17 | I-09 | S-05, S-14 |
 | HU-07 | Cálculo de honor | U-01 a U-06, U-71 | CN-18 a CN-21, CN-31 | I-09, I-11 | S-15 |
-| HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07, I-12 a I-15 | S-03, S-08, S-13, S-16 |
+| HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07, I-12 a I-15, I-15b | S-03, S-08, S-13, S-16 |
 | HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68, U-72 | CN-26 a CN-28, CN-33, CN-36 | I-08 | S-03 |
-| HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-99, M-36 a M-38 | CN-43 a CN-48 | I-10 | S-19 |
+| HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-99, M-36 a M-38 | CN-43 a CN-48 | I-10 | S-19, S-20 |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
@@ -448,6 +452,10 @@ sección 7 (cumplidos el 20 de noviembre) y los dieciocho controles de seguridad
 | DEF-21 | 17-nov-2026 | Tras regenerar los datos de la demo, una sesión abierta seguía entrando con un usuario que ya no existía: `/users/me` respondía 404 y la app no cerraba la sesión | Media | Cerrado el 17-nov: responde 401 y la app valida la sesión al entrar (S-18) |
 | DEF-22 | 17-nov-2026 | La dirección automática usaba `AbortSignal.timeout`, que React Native no trae: en un teléfono nunca se habría completado (KAN-38) | Media | Cerrado el 17-nov, antes de integrarse: el límite de tiempo se arma con `AbortController` (M-31). Falta verlo en un teléfono real |
 | DEF-23 | 20-nov-2026 | En el iPhone del autor, los títulos, el honor y los números en Anton salían cortados arriba; en un Samsung S23 se veían bien. iOS apoya la letra abajo cuando el alto de línea es menor que el de la fuente (KAN-29) | Media | Corregido el 21-nov: todo texto en Anton con alto de línea pasa por `antonLine` (M-41). Falta verlo en el iPhone |
+| DEF-24 | 22-nov-2026 | Con el cuerpo limitado a 1 MB, un arreglo enorme en las preferencias de avisos hacía que Zod armara un error por elemento: una petición subía 222 MB de memoria y dos o tres botaban la API gratuita (auditoría del 22-nov) | Alta | Corregido el 22-nov en `fix/auditoria-sprint9`: límite de 16 KB (S-20) |
+| DEF-25 | 22-nov-2026 | Las tablas en Supabase no tenían RLS: con la URL del proyecto y la clave anon, su Data API leía y escribía correos y hashes. Era el punto pendiente 3.6 #10 de la auditoría de cierre | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: migración con RLS en las 7 tablas (S-22). Se aplica en Supabase al desplegar |
+| DEF-26 | 22-nov-2026 | Publicar partidos no tenía límite: un script llenaba "Falta uno" de partidos falsos y disparaba avisos a todos los cercanos | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: 10 por cuenta cada hora (S-21) |
+| DEF-27 | 22-nov-2026 | En la web, tocar "Pagar" dos veces creaba otro cobro y pisaba el token del primero: pagar en la primera pestaña volvía sin pago que confirmar (HU-08) | Media | Corregido el 22-nov en `fix/auditoria-sprint9`: dentro de 2 minutos se reusa el cobro abierto (I-15b) |
 
 Cada defecto nuevo se registra aquí con fecha, pasos para reproducirlo y la historia afectada, y
 se enlaza a su issue en Jira.

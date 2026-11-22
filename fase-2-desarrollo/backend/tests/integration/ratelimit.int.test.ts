@@ -3,14 +3,15 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 // Antes de cargar la app: esta suite usa su propio límite (la general lo deja altísimo).
 vi.hoisted(() => {
   process.env['LOGIN_RATE_LIMIT'] = '3';
+  process.env['PUBLISH_RATE_LIMIT'] = '2';
 });
 
 import { prisma } from '../../src/config/prisma.js';
-import { api, dbReady, registerUser, uniqueEmail } from './helpers.js';
+import { api, auth, dbReady, matchPayload, publishMatch, registerUser, uniqueEmail } from './helpers.js';
 
 const hasDb = await dbReady();
 
-describe.skipIf(!hasDb)('Límite de intentos de login · S-12 (integración)', () => {
+describe.skipIf(!hasDb)('Límites de peticiones · S-12 y S-21 (integración)', () => {
   afterAll(() => prisma.$disconnect());
 
   it('S-12 · entrar bien no consume intentos; a la cuarta contraseña errada responde 429', async () => {
@@ -34,5 +35,19 @@ describe.skipIf(!hasDb)('Límite de intentos de login · S-12 (integración)', (
     const otro = await registerUser('Otro usuario');
     const res = await api().get('/api/v1/users/me').set('Authorization', `Bearer ${otro.token}`);
     expect(res.status).toBe(200);
+  });
+
+  it('S-21 · al tercer partido en una hora responde 429, y el límite es por cuenta, no por IP', async () => {
+    const spammer = await registerUser('Publica en ráfaga');
+    await publishMatch(spammer.token);
+    await publishMatch(spammer.token);
+
+    const tercero = await api().post('/api/v1/matches').set(auth(spammer.token)).send(matchPayload());
+    expect(tercero.status).toBe(429);
+    expect(tercero.body.error.code).toBe('TOO_MANY_REQUESTS');
+
+    // Misma IP, otra cuenta: puede publicar.
+    const otro = await registerUser('Organizador normal');
+    await expect(publishMatch(otro.token)).resolves.toMatchObject({ status: 'OPEN' });
   });
 });
