@@ -94,8 +94,9 @@ local (`DEMO_MODE` en `docker-compose.yml`) y no ocurre en un despliegue real.
 | HU-07 · Honor | El puntaje de honor (0 a 10) se recalcula al instante con cada reseña y cada asistencia registrada |
 | HU-02 · Carta | Ver la carta de jugador de cualquier participante: honor, partidos jugados y métricas, sin su correo |
 | Asistencia | El organizador marca quién asistió y quién no se presentó; eso suma partidos jugados y cuenta en el honor |
+| HU-11 · Moderación | Desde la carta de un compañero de partido se reporta su conducta (agresión, lenguaje ofensivo, juego sucio u otro). Un administrador ve el detalle y el historial y suspende 7 días o descarta; suspendido no puede publicar, postular ni destacar, y recibe un aviso. Probarlo: entrar como `admin@kancha.cl`, Perfil → Moderar reportes: Diego tiene un reporte pendiente |
 
-Los avisos (HU-10) volvieron al alcance el 20 de noviembre de 2026: llegan dentro de la app; el push con la app cerrada en Android es la tarea KAN-42, y en iPhone queda fuera porque exige la cuenta de desarrollador de Apple, que no es gratis.
+Los avisos (HU-10) llegan dentro de la app. El push con la app cerrada quedó fuera el 22 de noviembre de 2026: Kancha se usa en la web y en Expo Go, sin tiendas, y desde el SDK 53 Expo Go no recibe push en Android (KAN-42). HU-12 (pagar con tarjeta inscrita) sigue en el backlog.
 
 Los datos geográficos (límite de la comuna, ubicación de las canchas y direcciones) son de © colaboradores
 de [OpenStreetMap](https://www.openstreetmap.org/copyright), bajo licencia ODbL. La lista de canchas sale

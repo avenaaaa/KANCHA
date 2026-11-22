@@ -60,6 +60,29 @@ enum NotificationKind {
   NUDGE
   /// A los confirmados de un partido destacado: cuánto pone cada uno por el invitado (KAN-44).
   GUEST_COVER
+  /// Al jugador sancionado: su cuenta queda suspendida y hasta cuándo (HU-11).
+  SANCTION
+}
+
+/// HU-11: quién puede moderar. No hay pantalla para nombrar administradores: se define en la base.
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+/// HU-11: motivo de un reporte de conducta indebida.
+enum ReportReason {
+  AGRESION
+  LENGUAJE
+  JUEGO_SUCIO
+  OTRO
+}
+
+/// HU-11: un reporte espera al administrador, que suspende al jugador o lo descarta.
+enum ReportStatus {
+  PENDING
+  SANCTIONED
+  DISMISSED
 }
 
 enum PayStatus {
@@ -84,9 +107,13 @@ model User {
   punctualityRate Decimal? @db.Decimal(5, 2)
   fairPlayRate    Decimal? @db.Decimal(5, 2)
 
-  expoPushToken String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  expoPushToken  String?
+  /// HU-11: ADMIN modera los reportes.
+  role           Role      @default(PLAYER)
+  /// HU-11: hasta esta fecha no publica, no postula ni destaca. NULL = sin sanción.
+  suspendedUntil DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organizedMatches       Match[]                 @relation("organizer")
   participations         Participation[]
@@ -94,6 +121,9 @@ model User {
   ratingsReceived        Rating[]                @relation("rated")
   notificationPreference NotificationPreference?
   notifications          Notification[]
+  reportsMade            Report[]                @relation("reporter")
+  reportsReceived        Report[]                @relation("reported")
+  reportsResolved        Report[]                @relation("resolver")
 
   @@index([favoriteSport])
 }
@@ -130,6 +160,7 @@ model Match {
   participations Participation[]
   ratings        Rating[]
   notifications  Notification[]
+  reports        Report[]
 
   @@index([startsAt])
   @@index([sport, status])
@@ -244,4 +275,32 @@ model Notification {
   /// Un aviso de cada tipo por usuario y partido: el barrido periódico nunca lo repite.
   @@unique([userId, kind, matchId])
   @@index([userId, createdAt])
+}
+
+/// HU-11 (KAN-17): un jugador reporta la conducta de un compañero de partido. La resolución del
+/// administrador (quién, cuándo y por qué) queda en la misma fila: es el registro de la moderación.
+model Report {
+  id         String       @id @default(uuid())
+  matchId    String
+  reporterId String
+  reportedId String
+  reason     ReportReason
+  /// Hasta 280 caracteres (Zod).
+  comment    String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  resolvedById   String?
+  resolvedAt     DateTime?
+  resolutionNote String?
+
+  match      Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  reporter   User  @relation("reporter", fields: [reporterId], references: [id])
+  reported   User  @relation("reported", fields: [reportedId], references: [id])
+  resolvedBy User? @relation("resolver", fields: [resolvedById], references: [id])
+
+  /// Un reporte por compañero y partido, como la calificación. La base lo impide, no solo el servicio.
+  @@unique([matchId, reporterId, reportedId])
+  @@index([status, createdAt])
+  @@index([reportedId])
 }

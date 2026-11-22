@@ -290,11 +290,12 @@ function Fact({ icon, title, text }: { icon: 'clock' | 'pin' | 'wallet'; title: 
   );
 }
 
-/** Fila que abre la carta pública del jugador (HU-02). */
+/** Fila que abre la carta pública del jugador (HU-02). Lleva el partido para poder reportarlo (HU-11). */
 function PlayerLink({ userId, name, fill = false, children }: { userId: string; name: string; fill?: boolean; children: React.ReactNode }) {
+  const { id: matchId } = useLocalSearchParams<{ id: string }>();
   return (
     <Pressable
-      onPress={() => router.push(`/jugador/${userId}`)}
+      onPress={() => router.push(`/jugador/${userId}?partido=${matchId}`)}
       accessibilityRole="button"
       accessibilityLabel={`Ver la carta de ${name}`}
       style={({ pressed }) => [s.personRow, fill && { flex: 1 }, pressed && { opacity: 0.85 }]}

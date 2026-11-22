@@ -9,6 +9,10 @@ erDiagram
     USER ||--o| NOTIFICATION_PREFERENCE : "elige sus avisos"
     USER ||--o{ NOTIFICATION : "recibe"
     MATCH |o--o{ NOTIFICATION : "origina"
+    USER ||--o{ REPORT : "reporta"
+    USER ||--o{ REPORT : "es reportado"
+    USER |o--o{ REPORT : "resuelve como admin"
+    MATCH ||--o{ REPORT : "contextualiza"
 
     USER {
         uuid     id PK
@@ -22,6 +26,8 @@ erDiagram
         decimal  punctualityRate
         decimal  fairPlayRate
         string   expoPushToken
+        enum     role "PLAYER o ADMIN (HU-11)"
+        datetime suspendedUntil "null = sin sancion"
         datetime createdAt
     }
 
@@ -96,10 +102,24 @@ erDiagram
     NOTIFICATION {
         uuid     id PK
         uuid     userId FK
-        enum     kind "FALTA_UNO y otros 5"
+        enum     kind "FALTA_UNO y otros 7"
         uuid     matchId FK "null en el animo para jugar"
         string   title
         string   body
         datetime readAt "null = sin leer"
         datetime createdAt
+    }
+
+    REPORT {
+        uuid     id PK
+        uuid     matchId FK
+        uuid     reporterId FK
+        uuid     reportedId FK "CHECK distinto de reporterId"
+        enum     reason
+        string   comment "CHECK hasta 280"
+        enum     status "PENDING SANCTIONED DISMISSED"
+        datetime createdAt
+        uuid     resolvedById FK "el admin que resolvio"
+        datetime resolvedAt
+        string   resolutionNote
     }
