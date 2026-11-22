@@ -107,7 +107,6 @@ model User {
   punctualityRate Decimal? @db.Decimal(5, 2)
   fairPlayRate    Decimal? @db.Decimal(5, 2)
 
-  expoPushToken  String?
   /// HU-11: ADMIN modera los reportes.
   role           Role      @default(PLAYER)
   /// HU-11: hasta esta fecha no publica, no postula ni destaca. NULL = sin sanción.
@@ -258,7 +257,7 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/// Bandeja de avisos dentro de la app (HU-10). El push en Android la reutiliza (KAN-42).
+/// Bandeja de avisos dentro de la app (HU-10).
 model Notification {
   id        String           @id @default(uuid())
   userId    String

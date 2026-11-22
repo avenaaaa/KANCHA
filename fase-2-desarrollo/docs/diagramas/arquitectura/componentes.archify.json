@@ -164,20 +164,6 @@
       ]
     },
     {
-      "id": "push",
-      "type": "external",
-      "label": "Expo Push API",
-      "sublabel": "aviso de cupo (HU-10)",
-      "pos": [
-        290,
-        380
-      ],
-      "size": [
-        150,
-        64
-      ]
-    },
-    {
       "id": "tiles",
       "type": "external",
       "label": "OpenFreeMap",
@@ -297,13 +283,6 @@
       "from": "payment",
       "to": "transbank",
       "label": "Webpay",
-      "variant": "dashed"
-    },
-    {
-      "id": "matching-push",
-      "from": "matching",
-      "to": "push",
-      "label": "notifica",
       "variant": "dashed"
     }
   ],
