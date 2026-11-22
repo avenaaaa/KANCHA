@@ -775,6 +775,9 @@ partidos urgentes ("Falta uno") duran menos de dos horas, así que se repite ant
 
 > Ninguno de estos servicios pide tarjeta de crédito en su tier gratuito.
 > Supabase pausa proyectos tras ~1 semana sin uso: entra al dashboard la semana de la defensa.
+> Supabase también publica el schema `public` en su Data API. Las tablas tienen RLS sin políticas
+> (migración `20261122120000_rls_supabase`, S-22), así que esa API no las lee ni las escribe. La API
+> de Kancha entra como dueña de las tablas y RLS no la afecta.
 > Render duerme el servicio gratis tras 15 minutos sin tráfico y tarda cerca de un minuto en despertar:
 > abre la URL unos minutos antes de presentar.
 
@@ -925,6 +928,7 @@ TRUST_PROXY=0            # saltos de proxy delante de la API: 0 en local, 1 en R
 CORS_ORIGINS=            # orígenes web permitidos, separados por coma; vacío = cualquiera
 LOGIN_RATE_LIMIT=10      # contraseñas erradas por IP cada 15 min (S-12)
 REGISTER_RATE_LIMIT=20   # cuentas nuevas por IP cada hora (S-12)
+PUBLISH_RATE_LIMIT=10    # partidos publicados por cuenta cada hora (S-21)
 # DEMO_MODE=true solo lo define docker-compose.yml (ver §6.1)
 
 # Transbank — en 'integration' el SDK usa sus propias credenciales de prueba;

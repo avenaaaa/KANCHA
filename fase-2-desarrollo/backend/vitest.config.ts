@@ -15,6 +15,7 @@ export default defineConfig({
       // La suite registra cientos de cuentas desde una misma IP; S-12 se prueba con su propio límite.
       LOGIN_RATE_LIMIT: '100000',
       REGISTER_RATE_LIMIT: '100000',
+      PUBLISH_RATE_LIMIT: '100000',
     },
     // Las pruebas de integración comparten la base kancha_test: se ejecutan en serie.
     fileParallelism: false,

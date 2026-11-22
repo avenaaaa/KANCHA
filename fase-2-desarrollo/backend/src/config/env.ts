@@ -24,6 +24,8 @@ const schema = z
     LOGIN_RATE_LIMIT: z.coerce.number().int().positive().default(10),
     /** S-12: cuentas nuevas por IP cada hora. */
     REGISTER_RATE_LIMIT: z.coerce.number().int().positive().default(20),
+    /** S-21: partidos publicados por cuenta cada hora. */
+    PUBLISH_RATE_LIMIT: z.coerce.number().int().positive().default(10),
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().url(),
     JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres'),

@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { type Options } from 'express-rate-limit';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/errors.js';
 
@@ -7,11 +7,17 @@ import { AppError } from '../utils/errors.js';
  * un bcrypt de costo 12. El límite es por IP; detrás de un proxy hay que definir
  * TRUST_PROXY para que la IP sea la del cliente y no la del proxy.
  */
-const limiter = (limit: number, windowMs: number, skipSuccessfulRequests: boolean) =>
+const limiter = (
+  limit: number,
+  windowMs: number,
+  skipSuccessfulRequests: boolean,
+  keyGenerator?: Options['keyGenerator'],
+) =>
   rateLimit({
     limit,
     windowMs,
     skipSuccessfulRequests,
+    ...(keyGenerator && { keyGenerator }),
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     handler: (_req, _res, next) =>
@@ -23,3 +29,9 @@ export const loginLimiter = limiter(env.LOGIN_RATE_LIMIT, 15 * 60_000, true);
 
 /** Cada cuenta creada cuenta: frena el registro masivo. */
 export const registerLimiter = limiter(env.REGISTER_RATE_LIMIT, 60 * 60_000, false);
+
+/**
+ * S-21: partidos publicados por cuenta cada hora. Sin límite, un script llenaba "Falta uno" de
+ * partidos falsos y disparaba avisos a todos los cercanos. Va después de authenticate: cuenta por usuario.
+ */
+export const publishLimiter = limiter(env.PUBLISH_RATE_LIMIT, 60 * 60_000, false, (req) => req.user?.sub ?? 'anonimo');
