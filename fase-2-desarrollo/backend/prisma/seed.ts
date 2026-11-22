@@ -87,6 +87,7 @@ async function main() {
   }
   console.log('🟠 Sembrando datos de demostración de Kancha…');
 
+  await prisma.report.deleteMany();
   await prisma.rating.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.participation.deleteMany();
@@ -206,6 +207,38 @@ async function main() {
       },
     });
   }
+
+  // HU-11: la cuenta que modera y dos reportes a Diego, que "discute con el árbitro", en el partido
+  // histórico: uno pendiente para resolver en vivo y otro ya descartado, para que se vea el historial.
+  const admin = await prisma.user.create({
+    data: { email: 'admin@kancha.cl', name: 'Moderación Kancha', favoriteSport: Sport.FUTBOL, passwordHash, role: 'ADMIN' },
+  });
+  const diego = usuarios[4]!;
+  await prisma.report.create({
+    data: {
+      matchId: historico!.id,
+      reporterId: usuarios[5]!.id,
+      reportedId: diego.id,
+      reason: 'OTRO',
+      comment: 'Llegó tarde y se fue antes.',
+      status: 'DISMISSED',
+      createdAt: enHoras(-70),
+      resolvedById: admin.id,
+      resolvedAt: enHoras(-60),
+      resolutionNote: 'Eso lo mide la asistencia, no es conducta.',
+    },
+  });
+  await prisma.report.create({
+    data: {
+      matchId: historico!.id,
+      reporterId: usuarios[0]!.id,
+      reportedId: diego.id,
+      reason: 'LENGUAJE',
+      comment: 'Discutió con el árbitro todo el partido y trató mal a los rivales.',
+      createdAt: enHoras(-50),
+    },
+  });
+  console.log('   admin@kancha.cl modera; Diego tiene un reporte pendiente y uno descartado (HU-11)');
 
   // HU-06: un partido que terminó hace 3 horas, con la ventana de 48 h abierta y sin
   // reseñas, para calificar en vivo en la demo. Como el seed corre en cada arranque,

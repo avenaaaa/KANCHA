@@ -1,4 +1,4 @@
-import type { Notification, NotificationPreference } from '@prisma/client';
+import type { Notification, NotificationPreference, ReportReason } from '@prisma/client';
 import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { matchRepository, type MatchRow } from '../repositories/match.repository.js';
@@ -45,6 +45,9 @@ const dayFmt = new Intl.DateTimeFormat('es-CL', { timeZone: CHILE_TZ, weekday: '
 
 /** Hora de Chile, "19:30". */
 export const chileTime = (d: Date): string => timeFmt.format(d);
+
+/** Día y hora de Chile, "sábado, 29 de noviembre a las 19:30". */
+export const chileDateTime = (d: Date): string => `${dayFmt.format(d)} a las ${chileTime(d)}`;
 
 export interface Message {
   title: string;
@@ -122,6 +125,23 @@ export function guestCoverMessage(
       `Destacaron ${m.title}, a las ${chileTime(m.startsAt)}: quien llene el último cupo juega gratis. ` +
       `Su cuota de $${clp.format(share.amount)} la cubren entre los ${share.players} que ya están: ` +
       `$${clp.format(share.perPlayer)} cada uno, fuera de la app.`,
+  };
+}
+
+const REASON_LABEL: Record<ReportReason, string> = {
+  AGRESION: 'agresión',
+  LENGUAJE: 'lenguaje ofensivo',
+  JUEGO_SUCIO: 'juego sucio',
+  OTRO: 'conducta indebida',
+};
+
+/** HU-11: al jugador sancionado, el motivo, el partido y hasta cuándo. */
+export function sanctionMessage(s: { reason: ReportReason; matchTitle: string; until: Date }): Message {
+  return {
+    title: 'Tu cuenta está suspendida',
+    body:
+      `Por un reporte de ${REASON_LABEL[s.reason]} en ${s.matchTitle}. Hasta el ${chileDateTime(s.until)} ` +
+      'no puedes publicar, postular ni destacar partidos.',
   };
 }
 
@@ -295,6 +315,16 @@ export function onJoinRequested(m: MatchRow, now: Date = new Date()): Promise<vo
   return safely('postulación', () =>
     notificationRepository.renew({ userId: m.organizerId, kind: 'JOIN_REQUEST', matchId: m.id, ...joinRequestMessage(infoOf(m)), createdAt: now }),
   );
+}
+
+/** HU-11: el sancionado se entera dentro de la app. Sin partido: dos sanciones del mismo partido no chocan en el UNIQUE. */
+export function onSanctioned(
+  s: { userId: string; reason: ReportReason; matchTitle: string; until: Date },
+  now: Date = new Date(),
+): Promise<void> {
+  return safely('sanción', async () => {
+    await notificationRepository.addMany([{ userId: s.userId, kind: 'SANCTION', matchId: null, ...sanctionMessage(s), createdAt: now }]);
+  });
 }
 
 export function onJoinApproved(p: { userId: string; matchId: string; amountDue: number }, now: Date = new Date()): Promise<void> {

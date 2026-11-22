@@ -37,6 +37,7 @@ export const openapi = {
     { name: 'Pagos', description: 'HU-08 · KAN-14 · HU-09 · KAN-15 · Transbank Webpay Plus, ambiente de Integración' },
     { name: 'Calificaciones', description: 'HU-06 · KAN-12 · HU-07 · KAN-13 · Sistema de Honor' },
     { name: 'Avisos', description: 'HU-10 · KAN-16 · avisos dentro de la app; "Falta uno" es el prioritario' },
+    { name: 'Moderación', description: 'HU-11 · KAN-17 · reportes de conducta y suspensión de 7 días' },
   ],
   components: {
     securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
@@ -55,6 +56,40 @@ export const openapi = {
         },
       },
       Sport: { type: 'string', enum: ['FUTBOL', 'PADEL', 'BASQUETBOL'] },
+      ReportReason: { type: 'string', enum: ['AGRESION', 'LENGUAJE', 'JUEGO_SUCIO', 'OTRO'] },
+      ReportStatus: { type: 'string', enum: ['PENDING', 'SANCTIONED', 'DISMISSED'] },
+      Report: {
+        type: 'object',
+        description: 'HU-11: reporte de conducta. `resolution` es el registro de quién lo resolvió, cuándo y por qué',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          reason: { $ref: '#/components/schemas/ReportReason' },
+          comment: { type: 'string', nullable: true },
+          status: { $ref: '#/components/schemas/ReportStatus' },
+          createdAt: { type: 'string', format: 'date-time' },
+          match: { type: 'object', properties: { id: { type: 'string' }, title: { type: 'string' }, sport: { $ref: '#/components/schemas/Sport' }, startsAt: { type: 'string', format: 'date-time' } } },
+          reporter: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } },
+          reported: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              honorScore: { type: 'number', nullable: true },
+              matchesPlayed: { type: 'integer' },
+              suspendedUntil: { type: 'string', format: 'date-time', nullable: true },
+            },
+          },
+          resolution: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              by: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } },
+              at: { type: 'string', format: 'date-time' },
+              note: { type: 'string', nullable: true },
+            },
+          },
+        },
+      },
       Level: { type: 'string', enum: ['PRINCIPIANTE', 'MEDIO', 'AVANZADO'] },
       User: {
         type: 'object',
@@ -73,6 +108,13 @@ export const openapi = {
           punctualityRate: { type: 'number', nullable: true },
           fairPlayRate: { type: 'number', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
+          role: { type: 'string', enum: ['PLAYER', 'ADMIN'], description: 'Solo en el perfil propio (HU-11)' },
+          suspendedUntil: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Solo en el perfil propio. Hasta entonces no publica, no postula ni destaca (HU-11)',
+          },
         },
       },
       AuthResult: {
@@ -721,6 +763,100 @@ export const openapi = {
         responses: {
           200: { description: 'Preferencias guardadas', content: json('NotificationPreferences') },
           422: error({ code: 'VALIDATION_ERROR', message: 'Necesitamos tu ubicación para avisarte de partidos cerca' }),
+        },
+      },
+    },
+    '/matches/{id}/reports': {
+      post: {
+        tags: ['Moderación'],
+        summary: 'Reportar la conducta de un compañero del partido (HU-11)',
+        description:
+          'Solo entre jugadores del partido (organizador o cupo aprobado/pagado) y desde que empezó. Uno por ' +
+          'compañero y partido (UNIQUE matchId, reporterId, reportedId); la base impide además reportarse a sí ' +
+          'mismo y un comentario de más de 280 caracteres (CHECK).',
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['reportedId', 'reason'],
+                properties: {
+                  reportedId: { type: 'string', format: 'uuid' },
+                  reason: { $ref: '#/components/schemas/ReportReason' },
+                  comment: { type: 'string', maxLength: 280 },
+                },
+              },
+              example: { reportedId: '3f8a…', reason: 'AGRESION', comment: 'Empujó al arquero' },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Reporte pendiente de revisión', content: { 'application/json': { example: { id: '7d2e…', status: 'PENDING' } } } },
+          403: error({ code: 'FORBIDDEN', message: 'Solo los jugadores del partido pueden reportar' }),
+          409: error({ code: 'ALREADY_REPORTED', message: 'Ya reportaste a este jugador en este partido' }),
+          422: error({ code: 'SELF_REPORT', message: 'No puedes reportarte a ti mismo' }),
+        },
+      },
+    },
+    '/admin/reports': {
+      get: {
+        tags: ['Moderación'],
+        summary: 'Panel de reportes del administrador (HU-11)',
+        description: 'Los pendientes del más antiguo al más nuevo; los resueltos, del más reciente. Solo rol ADMIN.',
+        parameters: [{ name: 'status', in: 'query', schema: { $ref: '#/components/schemas/ReportStatus' }, description: 'PENDING por defecto' }],
+        responses: {
+          200: {
+            description: 'Reportes y cuántos quedan pendientes',
+            content: { 'application/json': { schema: { type: 'object', properties: { reports: { type: 'array', items: { $ref: '#/components/schemas/Report' } }, pending: { type: 'integer' } } } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo un administrador puede moderar reportes' }),
+        },
+      },
+    },
+    '/admin/reports/{id}': {
+      get: {
+        tags: ['Moderación'],
+        summary: 'Detalle de un reporte con el historial del reportado (HU-11)',
+        parameters: [idParam],
+        responses: {
+          200: {
+            description: 'El reporte y los otros reportes del mismo jugador',
+            content: { 'application/json': { schema: { allOf: [{ $ref: '#/components/schemas/Report' }, { type: 'object', properties: { history: { type: 'array', items: { $ref: '#/components/schemas/Report' } } } }] } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo un administrador puede moderar reportes' }),
+          404: error({ code: 'REPORT_NOT_FOUND', message: 'El reporte no existe' }),
+        },
+      },
+      patch: {
+        tags: ['Moderación'],
+        summary: 'Suspender 7 días o descartar (HU-11)',
+        description:
+          'La resolución (quién, cuándo y la nota) queda en el reporte, que es el registro de la moderación, y en el ' +
+          'log de la API. Suspender suma 7 días con la fila del jugador bloqueada y le envía el aviso SANCTION. ' +
+          'Suspendido, POST /matches, POST /matches/{id}/join y PATCH /matches/{id}/priority responden 403 ACCOUNT_SUSPENDED.',
+        parameters: [idParam],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: { action: { type: 'string', enum: ['SANCTION', 'DISMISS'] }, note: { type: 'string', maxLength: 280 } },
+              },
+              example: { action: 'SANCTION', note: 'Reincidente' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Reporte resuelto',
+            content: { 'application/json': { example: { id: '7d2e…', status: 'SANCTIONED', suspendedUntil: '2026-11-29T19:30:00.000Z' } } },
+          },
+          403: error({ code: 'FORBIDDEN', message: 'Solo un administrador puede moderar reportes' }),
+          409: error({ code: 'REPORT_ALREADY_RESOLVED', message: 'Este reporte ya fue resuelto' }),
         },
       },
     },

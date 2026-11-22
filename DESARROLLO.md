@@ -449,7 +449,10 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/users/me/notifications` | HU-10 | ✔ | Bandeja: los 50 últimos y cuántos sin leer. Los "Falta uno" vigentes (`urgent`) van primero · **implementado** |
 | PATCH | `/notifications/:id/read` | HU-10 | ✔ | Marca un aviso propio como leído; el de otro usuario responde 404 · **implementado** |
 | GET · PUT | `/users/me/notification-preferences` | HU-10 | ✔ | Qué avisos acepta. Sin guardar, todo apagado. Activar alguno exige ubicación y un deporte; "cerca", un día · **implementado** |
-| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **pendiente**: push en Android, KAN-42 (Sprint 9) |
+| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **fuera de alcance** desde el 22-nov: Expo Go no recibe push en Android (KAN-42) |
+| POST | `/matches/:id/reports` | HU-11 | ✔ | Reporta la conducta de un compañero del partido, desde que empezó y una vez por compañero (UNIQUE). 403 si no jugó, 409 `ALREADY_REPORTED`, `MATCH_NOT_STARTED`, 422 `SELF_REPORT` · **implementado** |
+| GET | `/admin/reports` · `/admin/reports/:id` | HU-11 | ✔ admin | Panel de reportes por estado y detalle con el historial del reportado. Solo `role = ADMIN` (S-23) · **implementado** |
+| PATCH | `/admin/reports/:id` | HU-11 | ✔ admin | `{ action, note? }` con `action` = `SANCTION` o `DISMISS`. Suspender suma 7 días con la fila del jugador bloqueada y le envía el aviso `SANCTION`; suspendido, publicar, postular y destacar responden 403 `ACCOUNT_SUSPENDED`. 409 `REPORT_ALREADY_RESOLVED` · **implementado** |
 | POST | `/matches` | HU-03 | ✔ | Publica partido (incluye `level`). Rechaza `startsAt` pasado · **implementado** |
 | GET | `/matches/nearby` | HU-04 | ✔ | `?lat=&lng=&radius=5000&sport=FUTBOL,PADEL&level=&from=&to=&urgent=true` · **implementado**, con el filtro de nivel y el botón "Falta uno" (`urgent`, KAN-37) disponibles en el mapa |
 | GET | `/matches/:id` | HU-04 | ✔ | Detalle + lista de participantes · **implementado** |
@@ -539,6 +542,12 @@ matching.service.ts  Al aprobar una participación: filledSlots++ y si llega a
                      un solo INSERT … SELECT con ST_DWithin desde el punto de cada usuario;
                      UNIQUE (userId, kind, matchId) impide repetirlos. Si un aviso falla,
                      la acción principal (postular, aprobar) no se deshace.
+                     Moderación (HU-11): moderation.service reusa la nómina del partido de
+                     las calificaciones para exigir que reportante y reportado jugaran juntos.
+                     El rol ADMIN lo revisa el servicio; la suspensión, el middleware
+                     requireActiveAccount en publicar, postular y destacar, que delega en
+                     el servicio. Resolver bloquea la fila del jugador (las sanciones se suman)
+                     y solo pasa de PENDING si nadie lo resolvió antes (updateMany condicionado).
 
 Pago y cancelación a la vez (auditoría de cierre, KAN-31)
                      Cancelar cierra un pago iniciado (FAILED). Un pago aprobado se registra
@@ -886,7 +895,7 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 | **6** | 13–26 oct | **Hecho.** HU-01, HU-03, HU-04, HU-05. Auth JWT, registro y login; `POST /matches` con PostGIS; `matching.service` con búsqueda por radio y postulación sin sobreventa; mapa nativo y web con filtro de 3 deportes; Swagger publicado |
 | **7** | 27 oct–09 nov | **Hecho.** HU-08, HU-09: Webpay Plus en Integración, comprobante, reembolso y retención. Expo SDK 58 para iPhone y Android (KAN-29) y DEF-05. **Adelantadas del Sprint 8:** HU-02, HU-06, HU-07: calificación con ventana de 48 h, honor recalculado con bloqueo de fila y carta de jugador pública. KAN-30: registro de asistencia y partidos jugados |
 | **8** | 10–23 nov | **Hecho al 17-nov:** auditoría de cierre y sus correcciones (KAN-31: pagos, integración, CI con cobertura y arranque real, límite de login S-12, DEF-07 a DEF-19), rechazo de postulaciones (KAN-32), botón "Falta uno" para los partidos urgentes (KAN-37), rediseño visual (KAN-33) límite real de la comuna con canchas existentes y dirección automática (KAN-38), pruebas de rendimiento con k6 (KAN-35, las cinco cumplen), `main` al día con `develop` (KAN-36), panel de partidos deslizable (KAN-39), canchas como pines al publicar (KAN-40) "Falta uno" destacado: el invitado entra gratis, al tiro si su honor es 7 o más (KAN-41), y avisos dentro de la app (HU-10, KAN-16: "Falta uno" prioritario, partidos cerca, postulaciones y ánimo para jugar), y cuenta atrás en las cartas con el equipamiento de cada cancha verificado (KAN-43), y la entrada gratis solo si falta 1, con aviso a los confirmados de cuánto pone cada uno (KAN-44). Kancha en la nube el 21-nov: API y web en Render, base en Supabase (KAN-34, §8). Documentos de la entrega (KAN-23) y releases `v0.6.0` a `v0.9.0` (KAN-36) el 21-nov. **Pendiente:** ver en el iPhone del autor el arreglo de las letras (KAN-29, DEF-23) y dependencias con versiones mayores (S-11) |
-| **9** | 24 nov–07 dic | **Push en Android** con la app compilada (KAN-42). **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
+| **9** | 24 nov–07 dic | **Moderación de reportes** (HU-11, adelantada al 22-nov). **Cierre de C1:** suite completa, cobertura, `fase-2-desarrollo/docs/evidencias/`. README final, video de respaldo, ensayo de la defensa. Congelar `main`. Tag `v1.0.0` |
 
 > **Replanificación del 27 de septiembre de 2026.** El Sprint 4 se usó en dejar operativo el ambiente y
 > las historias se corrieron un sprint. El plan quedó sin holgura: los sprints 8 y 9 combinan desarrollo,
@@ -907,6 +916,10 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 > (KAN-42), que exige compilar la app con EAS: desde el SDK 53, Expo Go no recibe push remotas en
 > Android. Costo $0: el servicio de push de Expo y la cuota gratuita de EAS. El push en iPhone queda fuera
 > porque exige la cuenta de desarrollador de Apple. El MVP suma 10 historias y 55 puntos.
+>
+> **Replanificación del 22 de noviembre de 2026.** La app se queda en la web y en Expo Go: sin tiendas, KAN-42
+> sale del alcance y los avisos siguen dentro de la app. HU-11 (moderación, 5 puntos) entra al Sprint 9 como
+> *Could*: 11 de 12 historias y 60 puntos. HU-12 sigue en el backlog para no tocar los pagos antes de la defensa.
 
 ---
 

@@ -35,7 +35,7 @@ recibir en una demo y en un piloto en La Florida.
 | **Caja negra** | ¿El sistema responde lo que promete el criterio de aceptación, sin mirar el código? | Vitest + Supertest, Swagger UI | `backend/tests/integration/` | 47 casos, todos cubiertos |
 | **Integración** | ¿API, base de datos y Transbank funcionan juntos? | Vitest + Supertest + PostGIS real | `backend/tests/integration/` | **93 ejecutadas contra PostGIS real, todas pasan** |
 | **Rendimiento** | ¿La búsqueda por radio responde rápido con datos reales? | k6, `EXPLAIN ANALYZE` | `backend/tests/performance/` | **5 de 5 ejecutadas el 20-nov, todas cumplen** |
-| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 22 controles: 21 verificados y S-11 parcial (22-nov) |
+| **Seguridad** | ¿Se puede entrar, leer o cobrar lo que no corresponde? | Supertest, `npm audit`, revisión OWASP | `backend/tests/integration/` | 23 controles: 22 verificados y S-11 parcial (22-nov) |
 
 Todas las herramientas son gratuitas, coherente con la decisión de costo $0 del proyecto.
 
@@ -162,6 +162,13 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | U-100 | `matching.service` · `decideApproval` | Destacado al que una cancelación dejó con 2 libres: quien entra paga su parte ($6.000) | KAN-44 · DEF-28 |
 | U-101 | `matching.service` · `isTrustedGuest` | Con menos de 3 personas distintas que lo calificaron, ni un honor de 10 entra al tiro | KAN-41 · DEF-30 |
 | U-102 | `match.service` · `isPriorityActive` | El destacado rige con 1 libre y lleno (ya entró el invitado); con 2 libres o sin destacar, no | KAN-44 · DEF-28 |
+| U-103 | `moderation.service` · `checkCanReport` | Un compañero (o el organizador) reporta a otro una vez empezado el partido | HU-11 |
+| U-104 | `moderation.service` · `checkCanReport` | No reporta quien no jugó, ni a sí mismo, ni a quien no jugó, ni antes de empezar | HU-11 |
+| U-105 | `moderation.service` · `isSuspended` | Suspendido hasta una fecha futura; NULL o una fecha pasada, no | HU-11 |
+| U-106 | `moderation.service` · `suspensionEnd` | Cada sanción suma 7 días: desde ahora, o a lo que quedaba si seguía suspendido | HU-11 |
+| U-107 | `notification.service` · `sanctionMessage` | El aviso al sancionado dice el motivo, el partido y hasta cuándo, en hora de Chile | HU-11 |
+| U-108 | `moderation.schema` · `createReportSchema` | Jugador válido, motivo de la lista, comentario hasta 280 y sin campos extra | HU-11 |
+| U-109 | `moderation.schema` · `resolveReportSchema` | La resolución es suspender o descartar, nada más | HU-11 |
 
 ### 4.3 Pruebas de la app
 
@@ -193,6 +200,8 @@ Casos agregados el 20 de noviembre (Sprint 8, "Falta uno" destacado):
 | M-39 | `lib/format.ts` · `countdown` | Cuenta atrás de la carta: días, horas y minutos, minutos:segundos en la última hora, "En juego" mientras dura y nada al terminar (KAN-43) | Pasa |
 | M-40 | `data/laFlorida.json` · `venuesForSport` | Las multicanchas de pasto sintético no se ofrecen para básquetbol, y ninguna cancha pública ofrece pádel (KAN-43) | Pasa |
 | M-41 | `theme/typography.ts` · `antonLine` | En iOS, Anton toma su alto natural (1,505 veces el tamaño) y los márgenes negativos le devuelven el espacio de diseño; en Android y la web no cambia nada (KAN-29) | Pasa |
+| M-42 | `lib/moderation.ts` · `REPORT_REASONS` | Los cuatro motivos de reporte con su texto, en orden (HU-11) | **Pasa** |
+| M-43 | `lib/moderation.ts` · `suspendedUntil`, `suspensionText` | La suspensión se muestra solo mientras dura, con su fecha de término (HU-11) | **Pasa** |
 
 ### 4.4 Unitarias pendientes
 
@@ -261,10 +270,13 @@ exista.
 | CN-44 | HU-10 | Equivalencia | Publicar un pádel a 1 km ante seis usuarios: uno que acepta partidos cerca y cinco que no calzan (apagado, otro deporte, otro día, otra hora, a 20 km) | Solo el primero recibe "Partido de pádel cerca"; ni los otros ni el organizador | Cubierto (integración) |
 | CN-45 | HU-10 | Equivalencia | Partido al que le falta 1 y empieza en 1 h; barrido dos veces; otro al que le falta 1 y empieza en 1,5 h, que el organizador destaca; el primero se llena | Un solo "Falta uno", primero en la bandeja; al organizador, "¿Lo destacas?" (leído al destacar); al destacar, el "Falta uno" del otro pasa a "Entras gratis"; lleno, deja de destacarse; marcar el aviso de otro, 404 | Cubierto (integración) |
 | CN-46 | HU-10 | Equivalencia | Un jugador postula y el organizador lo aprueba | El organizador recibe "Tienes postulaciones por revisar" y el jugador "Te aceptaron", con "Paga tu parte" | Cubierto (integración) |
-| CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y se registró hace 15 días, uno recién registrado y otro que acaba de postular, todos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al recién registrado y al que postuló, nada (DEF-29) | Escrita el 22-nov; se verifica en CI |
+| CN-47 | HU-10 | Límite | Barrido dos veces con un usuario que nunca jugó y se registró hace 15 días, uno recién registrado y otro que acaba de postular, todos con partidos cerca | Al primero un solo "Tu primer partido te espera"; al recién registrado y al que postuló, nada (DEF-29) | Cubierto (integración) |
 | CN-48 | KAN-44 | Equivalencia | Partido de $24.000 para 4 con un confirmado y un pendiente; el organizador lo destaca con 1 faltante | El confirmado recibe "Entra un invitado gratis": $6.000 entre los 3 que ya están, $2.000 cada uno; el organizador y el pendiente no lo reciben | Cubierto (integración) |
-| CN-49 | KAN-44 | Límite | Destacar con 1 libre; un confirmado cancela y quedan 2; postula un jugador con honor 8 y 3 calificadores; el organizador lo aprueba | Sin destacar en el detalle y fuera de "Falta uno"; queda `PENDING` y paga su parte ($6.000); con 1 libre otra vez, el destacado rige (DEF-28) | Escrita el 22-nov; se verifica en CI |
-| CN-50 | KAN-41 | Equivalencia | Un jugador con honor 10 calificado por solo 2 personas se une a un destacado | Queda `PENDING` sin ocupar el cupo: lo aprueba el organizador (DEF-30) | Escrita el 22-nov; se verifica en CI |
+| CN-49 | KAN-44 | Límite | Destacar con 1 libre; un confirmado cancela y quedan 2; postula un jugador con honor 8 y 3 calificadores; el organizador lo aprueba | Sin destacar en el detalle y fuera de "Falta uno"; queda `PENDING` y paga su parte ($6.000); con 1 libre otra vez, el destacado rige (DEF-28) | Cubierto (integración) |
+| CN-50 | KAN-41 | Equivalencia | Un jugador con honor 10 calificado por solo 2 personas se une a un destacado | Queda `PENDING` sin ocupar el cupo: lo aprueba el organizador (DEF-30) | Cubierto (integración) |
+| CN-51 | HU-11 | Equivalencia | Un compañero reporta; reporta dos veces; se reporta a sí mismo; reporta alguien que no jugó; reporta a quien no jugó; reporta antes de empezar | 201 `PENDING`; 409 `ALREADY_REPORTED`; 422 `SELF_REPORT`; 403; 422 `REPORTED_NOT_IN_MATCH`; 409 `MATCH_NOT_STARTED` | **Pasa** (PostGIS local, 22-nov) |
+| CN-52 | HU-11 | Equivalencia | El administrador abre el panel y el detalle de un jugador con un reporte anterior, lo suspende y vuelve a resolverlo | Ve el detalle y el historial; queda suspendido 7 días, con la resolución en el reporte; recibe el aviso `SANCTION`; postular y publicar responden 403 `ACCOUNT_SUSPENDED`; resolver de nuevo, 409 | **Pasa** (PostGIS local, 22-nov) |
+| CN-53 | HU-11 | Equivalencia | El administrador descarta un reporte con una nota | `DISMISSED`, sin suspensión; aparece en los descartados con su nota y el jugador sigue publicando | **Pasa** (PostGIS local, 22-nov) |
 
 ---
 
@@ -384,6 +396,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | S-20 | Abuso de recursos | Enviar un arreglo de 10.000 elementos en un campo que Zod limita a 7 | 413 antes de validar, sin agotar la memoria | **Verificado** el 22-nov (`health.int.test.ts`, sin base de datos) · DEF-24 |
 | S-21 | Abuso de recursos | Publicar partidos en ráfaga con una misma cuenta | 429 al pasar `PUBLISH_RATE_LIMIT` por hora; otra cuenta en la misma IP sigue publicando | **Verificado** el 22-nov en CI (`ratelimit.int.test.ts`) · DEF-26 |
 | S-22 | Exposición de datos | Revisar que las tablas de la app no queden abiertas a la Data API de Supabase | Toda tabla de `public` con RLS activo, también las nuevas | **Verificado** el 22-nov en CI (`rls.int.test.ts`) · DEF-25 |
+| S-23 | Control de acceso | Un jugador sin rol de administrador abre el panel, un reporte y trata de resolverlo | 403 en los tres casos; el reporte sigue pendiente | **Verificado** el 22-nov (`moderation.int.test.ts`, PostGIS local) |
 
 ---
 
@@ -401,6 +414,7 @@ Guiadas por el OWASP API Security Top 10. Cada control se prueba intentando romp
 | HU-08 | Pago fraccionado | U-11 a U-16, U-21, U-22, U-57 a U-63 | CN-22 a CN-25, CN-29 | I-06, I-07, I-12 a I-15, I-15b | S-03, S-08, S-13, S-16 |
 | HU-09 | Retención por deserción | U-17 a U-20, U-64 a U-68, U-72 | CN-26 a CN-28, CN-33, CN-36 | I-08 | S-03 |
 | HU-10 | Avisos de partidos cercanos y de "Falta uno" | U-91 a U-99, M-36 a M-38 | CN-43 a CN-48 | I-10 | S-19, S-20 |
+| HU-11 | Moderar reportes de usuarios | U-103 a U-109, M-42, M-43 | CN-51 a CN-53 | CN-51 a CN-53 contra PostgreSQL (`moderation.int.test.ts`) | S-23 |
 | KAN-30 | Asistencia y partidos jugados | U-71 | CN-30 a CN-32 | I-11 | S-15 |
 | KAN-32 | Rechazar postulación | U-79 | CN-37, CN-38 | I-17 | S-17 |
 | KAN-37 | Filtro "Falta uno" (urgentes) | U-80 a U-82, M-27, M-33 | CN-39, CN-40 | I-04 | S-04 |
