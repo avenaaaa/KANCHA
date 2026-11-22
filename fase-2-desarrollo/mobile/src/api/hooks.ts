@@ -223,8 +223,7 @@ export function useRateTeammate(matchId: string) {
 }
 
 /**
- * HU-10: bandeja de avisos. Se vuelve a pedir cada 30 s: así un aviso llega en menos de 60 s
- * aunque todavía no haya push (KAN-42).
+ * HU-10: bandeja de avisos. Se vuelve a pedir cada 30 s: así un aviso llega en menos de 60 s.
  */
 export function useInbox(enabled = true) {
   return useQuery({ queryKey: keys.inbox, queryFn: () => api<Inbox>('/users/me/notifications'), enabled, refetchInterval: 30_000 });

@@ -42,7 +42,7 @@ Estas cuatro decisiones ya están tomadas. No se revisan durante el desarrollo s
 | Mapa (web) | `maplibre-gl` + tiles oscuros de OpenFreeMap / CARTO | 5.x | Libre, sin API key |
 | Geodatos | Límite de La Florida (OpenStreetMap) y 36 canchas investigadas, empaquetados en la app (`mobile/src/data/laFlorida.json`) · dirección de un punto con Nominatim | — | Libre (ODbL), sin API key |
 | Geolocalización | `expo-location` | — | Libre |
-| Notificaciones push | `expo-notifications` + Expo Push API | — | Libre |
+| Avisos | Bandeja dentro de la app y barrido periódico en la API (HU-10) | — | Libre |
 | Tipografías | Anton + Roboto vía `@expo-google-fonts` | — | Libre |
 | Testing | Jest 30 (`jest-expo`) + React Native Testing Library 14 | — | Libre |
 
@@ -134,7 +134,7 @@ prohíben guardarlos en otra aplicación.
 ┌────────────────────────┐        ┌───────────────────────────────┐
 │ PostgreSQL 16 + PostGIS│        │ SERVICIOS EXTERNOS            │
 │ users · matches ·      │        │ • Transbank Webpay (Integr.)  │
-│ participations ·       │        │ • Expo Push API               │
+│ participations ·       │        │ • Nominatim (OSM)             │
 │ ratings · payments     │        │ • Tiles OSM / OpenFreeMap     │
 └────────────────────────┘        └───────────────────────────────┘
 
@@ -279,7 +279,6 @@ model User {
   attendanceRate  Decimal? @db.Decimal(5,2)
   punctualityRate Decimal? @db.Decimal(5,2)
   fairPlayRate    Decimal? @db.Decimal(5,2)
-  expoPushToken String?
   createdAt    DateTime @default(now())
 
   organizedMatches Match[]         @relation("organizer")
@@ -449,7 +448,6 @@ Base: `/api/v1`. Autenticación: `Authorization: Bearer <jwt>`. Todo en JSON. Mo
 | GET | `/users/me/notifications` | HU-10 | ✔ | Bandeja: los 50 últimos y cuántos sin leer. Los "Falta uno" vigentes (`urgent`) van primero · **implementado** |
 | PATCH | `/notifications/:id/read` | HU-10 | ✔ | Marca un aviso propio como leído; el de otro usuario responde 404 · **implementado** |
 | GET · PUT | `/users/me/notification-preferences` | HU-10 | ✔ | Qué avisos acepta. Sin guardar, todo apagado. Activar alguno exige ubicación y un deporte; "cerca", un día · **implementado** |
-| PATCH | `/users/me/push-token` | HU-10 | ✔ | Registra token de Expo Push · **fuera de alcance** desde el 22-nov: Expo Go no recibe push en Android (KAN-42) |
 | POST | `/matches/:id/reports` | HU-11 | ✔ | Reporta la conducta de un compañero del partido, desde que empezó y una vez por compañero (UNIQUE). 403 si no jugó, 409 `ALREADY_REPORTED`, `MATCH_NOT_STARTED`, 422 `SELF_REPORT` · **implementado** |
 | GET | `/admin/reports` · `/admin/reports/:id` | HU-11 | ✔ admin | Panel de reportes por estado y detalle con el historial del reportado. Solo `role = ADMIN` (S-23) · **implementado** |
 | PATCH | `/admin/reports/:id` | HU-11 | ✔ admin | `{ action, note? }` con `action` = `SANCTION` o `DISMISS`. Suspender suma 7 días con la fila del jugador bloqueada y le envía el aviso `SANCTION`; suspendido, publicar, postular y destacar responden 403 `ACCOUNT_SUSPENDED`. 409 `REPORT_ALREADY_RESOLVED` · **implementado** |
@@ -839,22 +837,6 @@ de la red local en el celular). En la nube se define con la URL pública de Rend
 **Prueba manual (5-nov-2026):** pago aprobado en Integración con la VISA de prueba; el comprobante
 está en `fase-2-desarrollo/docs/evidencias/sprint-07/`.
 
-### Siguiente iteración: tarjeta inscrita con Oneclick (HU-12, KAN-45)
-
-La cuota del invitado de un "Falta uno" destacado hoy la cubre el grupo fuera de la app (KAN-44). Es
-mala práctica: queda a confianza y sin registro. La solución diseñada es Webpay **Oneclick Mall**, que
-viene en el mismo `transbank-sdk` 6.1.1 y tiene ambiente de integración gratis:
-
-| Paso | Qué pasa |
-|---|---|
-| Inscripción | Una vez, por Transbank. Kancha guarda solo `tbkUser`, el tipo y los 4 últimos dígitos; el número queda en Transbank (PCI DSS) |
-| Cupo normal | Al aprobarse la postulación se cobra a la tarjeta, sin redirección; si el cargo falla, el cupo se pierde |
-| Destacado | Los confirmados reciben "¿Cubres $X para que entre un invitado gratis?"; se cobra solo a quienes dicen Sí, solo cuando el invitado entra y sin comisión. Nunca se cobra sin un Sí explícito |
-
-Modelo: `PaymentMethod` (userId, tbkUser, cardType, last4), `CoverPledge` (matchId, userId, amount,
-status) y `Payment.kind` (SLOT | GUEST_COVER). Estimación: 8 puntos. Quedó fuera de esta fase para no
-tocar los pagos antes de la defensa.
-
 ---
 
 ## 10. Plan de pruebas (competencia C1)
@@ -912,15 +894,11 @@ Respeta el roadmap de `CLAUDE.md`. Este es el detalle técnico de cada sprint.
 > y seguridad, y el Sprint 9 para el cierre de pruebas y la defensa.
 >
 > **Replanificación del 20 de noviembre de 2026.** El autor reincorporó HU-10, reescrita como avisos que
-> el usuario elige, con "Falta uno" como prioritario (8 puntos). Se partió en dos para no arriesgar el
-> despliegue: los avisos dentro de la app en el Sprint 8 (KAN-16) y el push en Android en el Sprint 9
-> (KAN-42), que exige compilar la app con EAS: desde el SDK 53, Expo Go no recibe push remotas en
-> Android. Costo $0: el servicio de push de Expo y la cuota gratuita de EAS. El push en iPhone queda fuera
-> porque exige la cuenta de desarrollador de Apple. El MVP suma 10 historias y 55 puntos.
+> el usuario elige, con "Falta uno" como prioritario (8 puntos). Se hizo dentro de la app en el Sprint 8
+> (KAN-16), con costo $0. El MVP suma 10 historias y 55 puntos.
 >
-> **Replanificación del 22 de noviembre de 2026.** La app se queda en la web y en Expo Go: sin tiendas, KAN-42
-> sale del alcance y los avisos siguen dentro de la app. HU-11 (moderación, 5 puntos) entra al Sprint 9 como
-> *Could*: 11 de 12 historias y 60 puntos. HU-12 sigue en el backlog para no tocar los pagos antes de la defensa.
+> **Replanificación del 22 de noviembre de 2026.** HU-11 (moderación, 5 puntos) entra al Sprint 9 como
+> *Could* y se termina ese mismo día: 11 historias y 60 puntos, todas entregadas.
 
 ---
 
@@ -1021,7 +999,7 @@ Prepara los tres caminos. Si uno falla, sigues con el siguiente sin perder el hi
 | PostGIS no disponible en el hosting gratis elegido | Alto | Supabase y Neon lo soportan; verifícalo en Sprint 3, no en Sprint 8 |
 | El mapa nativo se comporta distinto al web | Medio | Interfaz `KanchaMap` común; probar en ambos desde el primer día del Sprint 6 |
 | Sprint 7 (pagos con Transbank) se desborda | Alto | Las funciones de cálculo ya existen y están probadas: el riesgo es la integración con Webpay, que se empieza el primer día del sprint |
-| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | Mitigado el 8-nov: HU-10 (*Could*) salió del alcance y las historias del Sprint 8 se terminaron en el Sprint 7. Al reincorporarla el 20-nov se dejó el push (KAN-42) para después del despliegue |
+| Los sprints 8 y 9 combinan desarrollo, despliegue y defensa | Alto | Mitigado el 8-nov: HU-10 (*Could*) salió del alcance y las historias del Sprint 8 se terminaron en el Sprint 7. Al reincorporarla el 20-nov se hizo solo dentro de la app |
 | El barrido de avisos se detiene cuando Render duerme la API (15 min sin tráfico) | Medio | Los avisos por evento no dependen de él. Para la demo la API está despierta; si hiciera falta, un cron externo gratuito que llame a la API |
 | Trabajo en solitario, sin revisor de código | Medio | Pull Requests a ti mismo + CI obligatorio: la disciplina reemplaza al revisor |
 | Deuda de documentación al final | Alto | Cada release de sprint incluye su documentación; no la dejes para el Sprint 9 |
@@ -1042,7 +1020,7 @@ npx prisma init --datasource-provider postgresql
 
 # 3. App Expo
 cd .. && npx create-expo-app@latest mobile --template default
-cd mobile && npx expo install expo-router expo-location expo-notifications react-native-maps
+cd mobile && npx expo install expo-router expo-location react-native-maps
 npm i zustand @tanstack/react-query react-hook-form zod maplibre-gl
 
 # 4. Levantar todo (desde la raíz del repo)

@@ -113,7 +113,7 @@ const clp = new Intl.NumberFormat('es-CL');
 
 /**
  * KAN-44: a los confirmados de un partido destacado, cuánto pone cada uno por la cuota del invitado.
- * shortcut: el grupo la paga fuera de la app; cobrarla con tarjeta inscrita (Oneclick) es la siguiente iteración.
+ * El grupo la paga fuera de la app: Kancha le dice a cada uno cuánto pone y no cobra comisión por ese cupo.
  */
 export function guestCoverMessage(
   m: Pick<MatchInfo, 'title' | 'startsAt'>,

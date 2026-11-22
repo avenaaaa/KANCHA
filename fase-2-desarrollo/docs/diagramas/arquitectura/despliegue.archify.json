@@ -93,20 +93,6 @@
       ]
     },
     {
-      "id": "push",
-      "type": "external",
-      "label": "Expo Push API",
-      "sublabel": "notificaciones",
-      "pos": [
-        560,
-        240
-      ],
-      "size": [
-        150,
-        64
-      ]
-    },
-    {
       "id": "estatico",
       "type": "cloud",
       "label": "Render Static Site",
@@ -221,12 +207,6 @@
       "toSide": "top"
     },
     {
-      "id": "api-push",
-      "from": "api",
-      "to": "push",
-      "variant": "dashed"
-    },
-    {
       "id": "estatico-servicio",
       "from": "estatico",
       "to": "servicio",
@@ -254,12 +234,6 @@
       "variant": "dashed",
       "fromSide": "top",
       "toSide": "bottom"
-    },
-    {
-      "id": "servicio-push",
-      "from": "servicio",
-      "to": "push",
-      "variant": "dashed"
     },
     {
       "id": "expo-servicio",
@@ -294,7 +268,6 @@
       "title": "Servicios externos",
       "items": [
         "Transbank Webpay en ambiente de Integración, sin dinero real",
-        "Expo Push API para el aviso de cupo liberado",
         "La app nativa en Expo Go usa la API de la nube"
       ]
     }

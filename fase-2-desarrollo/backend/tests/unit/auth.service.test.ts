@@ -15,7 +15,6 @@ const usuario = {
   attendanceRate: null,
   punctualityRate: null,
   fairPlayRate: null,
-  expoPushToken: null,
   createdAt: new Date('2026-10-17T15:00:00Z'),
   updatedAt: new Date('2026-10-17T15:00:00Z'),
 } as unknown as User;
